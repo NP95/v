@@ -25,10 +25,12 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
+
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        703bd9caab50b139428cea1aaff9974ebee5742e # release-1.10.0  
+  GIT_TAG        release-1.11.0  
   )
 
 FetchContent_MakeAvailable(googletest)
@@ -50,10 +52,11 @@ set(Verilator_INCLUDE_DIR
 add_library(verilated SHARED ${Verilator_SRCS})
 target_include_directories(verilated PUBLIC ${Verilator_INCLUDE_DIR})
 
+set(VERILATOR_OBJ "Vobj")
+
 set(VERILATOR_ARGS
   "-cc"
-  "--Mdir Vobj"
-  "--trace"
+  "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")
 
@@ -73,4 +76,35 @@ set(VERILATOR_COMMAND_LIST
   "${VERILATOR_INCLUDES}"
   "${VERILATOR_SOURCES}")
 
+macro (verilate_set_param k v)
+  list(APPEND VERILATOR_COMMAND_LIST "-G${k}=${v}")
+endmacro ()
+
+macro (verilate_tb cfg)
+  string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
+  
+  add_custom_target(verilate_${cfg}
+    COMMAND ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
+    COMMENT "Verilating (verilate_${cfg})..."
+    )
+
+  set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/${VERILATOR_OBJ}/Vtb__ALL.a")
+endmacro ()
+
+macro (build_test_cfg cfg src)
+  verilate_tb(${cfg})
+
+  set(target "${cfg}_test")
+  add_executable(${target} ${src})
+  target_include_directories(${target} PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    "${Verilator_INCLUDE_DIR}")
+  target_link_libraries(${target} gtest_main gtest pthread verilated ${VERILATOR_A})
+  add_dependencies(${target} verilate_${cfg})
+
+  add_test(NAME ${target} COMMAND ${target})
+endmacro ()
+
 add_subdirectory(cfg_0)
+add_subdirectory(cfg_1)
