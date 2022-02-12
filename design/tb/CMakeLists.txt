@@ -35,22 +35,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-list(APPEND TB_SRCS
-  "${RTL_SOURCES}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
-
-set(Verilator_SRCS
+add_library(verilated SHARED 
   "${Verilator_INCLUDE_DIR}/verilated.cpp"
   "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
   "${Verilator_INCLUDE_DIR}/verilated_save.cpp"
-  "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp"
-  )
-set(Verilator_INCLUDE_DIR
-  "${Verilator_INCLUDE_DIR}"
-  "${Verilator_INCLUDE_DIR}/vltstd"
-  )
-add_library(verilated SHARED ${Verilator_SRCS})
-target_include_directories(verilated PUBLIC ${Verilator_INCLUDE_DIR})
+  "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
+
+target_include_directories(verilated PUBLIC
+  ${Verilator_INCLUDE_DIR}
+  ${VerilatorDpi_INCLUDE_DIR})
 
 set(VERILATOR_OBJ "Vobj")
 
@@ -60,24 +53,26 @@ set(VERILATOR_ARGS
   "--build"
   "--top tb")
 
-if (ENABLE_TRACE)
+if (ENABLE_VCD)
   list(APPEND VERILATOR_ARGS "--trace")
 endif ()
 
 set(VERILATOR_INCLUDES
   "-I${CMAKE_SOURCE_DIR}/design/rtl")
 
-set(VERILATOR_SOURCES
+set(TB_SOURCES
   "${RTL_SOURCES}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/v/pd/sram1r1w.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
 
 set(VERILATOR_COMMAND_LIST
   "${VERILATOR_ARGS}"
   "${VERILATOR_INCLUDES}"
-  "${VERILATOR_SOURCES}")
+  "${TB_SOURCES}")
 
-macro (verilate_set_param k v)
+macro (set_tb_param k v)
   list(APPEND VERILATOR_COMMAND_LIST "-G${k}=${v}")
+  set(${k} ${v})
 endmacro ()
 
 macro (verilate_tb cfg)
@@ -85,9 +80,9 @@ macro (verilate_tb cfg)
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
   
   add_custom_target(verilate_${cfg}
-    COMMAND ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
-    COMMENT "Verilating (verilate_${cfg})..."
-    )
+    COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
+      ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
+    COMMENT "Verilating (verilate_${cfg})...")
 
   set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/${VERILATOR_OBJ}/Vtb__ALL.a")
 endmacro ()

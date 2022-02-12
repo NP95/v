@@ -25,7 +25,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-verilate_set_param("CONTEXT_N" 128)
-verilate_set_param("ENTRIES_N" 4)
+set_tb_param("CONTEXT_N" 128)
+set_tb_param("ENTRIES_N" 4)
 
+configure_file(cfg_1.h.in cfg_1.h)
 build_test_cfg(cfg_1 cfg_1.cc)

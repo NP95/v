@@ -1,5 +1,5 @@
 ##========================================================================== //
-## Copyright (c) 2020, Stephen Henry
+## Copyright (c) 2022, Stephen Henry
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,9 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-list(APPEND
-  VERILATOR_COMMAND_LIST
-  "-GCONTEXT_N=10"
-  "-GENTRIES_N=10")
+set_tb_param("CONTEXT_N" 10)
+set_tb_param("ENTRIES_N" 10)
 
-string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
+configure_file(cfg_0.h.in cfg_0.h)
+build_test_cfg(cfg_0 cfg_0.cc)
 
-add_executable(cfg_0 cfg_0.cc)
-target_include_directories(cfg_0 PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
-  ${Verilator_INCLUDE_DIR}
-  )
-target_link_libraries(cfg_0 gtest_main gtest pthread verilated ${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a)
-add_dependencies(cfg_0 verilate_cfg_0)
-
-add_custom_target(verilate_cfg_0
-  COMMAND ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
-  COMMENT "Verilating (verilate_cfg_0)..."
-  )
-add_test(NAME cfg_0 COMMAND cfg_0)

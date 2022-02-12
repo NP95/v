@@ -26,8 +26,10 @@
 ##========================================================================== //
 
 set(RTL_SOURCES
-  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/pd/sram1r1w.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v.sv"
   )
 
-add_subdirectory(tb)
+if (Verilator_EXE)
+  enable_testing()
+  add_subdirectory(tb)
+endif ()

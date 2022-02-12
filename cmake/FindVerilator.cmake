@@ -28,32 +28,58 @@
 ## OF THE POSSIBILITY OF SUCH DAMAGE.
 ## ==================================================================== ##
 
-find_path(Verilator_INCLUDE_DIR verilated.h
-  PATH_SUFFIXES include
-  HINTS /Users/shenry/root/verilator/share/verilator/include
-  HINTS /Users/Shared/tools/verilator/latest/share/verilator/include
-  HINTS /usr/share/verilator/include
-  HINTS /opt/verilator/latest/share/verilator/include
-  DOC "Searching for Verilator installation."
-  )
+if (DEFINED VERILATOR_ROOT)
 
-find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
-  PATH_SUFFIXES include
-  HINTS /Users/shenry/root/verilator/share/verilator/include/vltstd
-  HINTS /Users/Shared/tools/verilator/latest/share/verilator/include/vltstd
-  HINTS /usr/share/verilator/include/vltstd
-  HINTS /opt/verilator/latest/share/verilator/include/vltstd
-  DOC "Searching for Verilator installation."
-  )
+  # Explicit Verilator installation at VERILATOR_ROOT
 
-find_program(Verilator_EXE
-  verilator
-  HINTS /Users/shenry/root/verilator/bin
-  HINTS /Users/Shared/tools/verilator/latest/bin
-  HINTS /usr/bin/verilator
-  HINTS /opt/verilator/latest/bin
-  DOC "Searching for Verilator executable."
-  )
+  find_path(Verilator_INCLUDE_DIR verilated.h
+    HINTS ${VERILATOR_ROOT}/include
+    DOC "Searching for Verilator installation."
+    )
+
+  find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
+    HINTS ${VERILATOR_ROOT}/include/vltstd
+    DOC "Searching for Verilator installation."
+    )
+
+  find_program(Verilator_EXE
+    verilator
+    HINTS ${VERILATOR_ROOT}/bin
+    DOC "Searching for Verilator executable."
+    )
+
+else ()
+
+  # Otherwise, search for system installation of Verilator
+
+  find_path(Verilator_INCLUDE_DIR verilated.h
+    PATH_SUFFIXES include
+    HINTS /usr/share/verilator/include
+    HINTS /opt/verilator/latest/share/verilator/include
+    DOC "Searching for Verilator installation."
+    )
+
+  find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
+    PATH_SUFFIXES include
+    HINTS /usr/share/verilator/include/vltstd
+    HINTS /opt/verilator/latest/share/verilator/include/vltstd
+    DOC "Searching for Verilator installation."
+    )
+
+  find_program(Verilator_EXE
+    verilator
+    HINTS /usr/bin/verilator
+    HINTS /opt/verilator/latest/bin
+    DOC "Searching for Verilator executable."
+    )
+
+  if (NOT DEFINED ENV{VERILATOR_ROOT})
+    message(FATAL_ERROR
+      "Environment does not define VERILATOR_ROOT, which is "
+      "required by the Verilator installation.")
+  endif()
+
+endif()
 
 if (Verilator_EXE)
   execute_process(COMMAND ${Verilator_EXE} "--version"
@@ -65,9 +91,6 @@ if (Verilator_EXE)
   set(VERILATOR_VERSION
     ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
-  message(STATUS "Verilator INCLUDE_DIR=${Verilator_INCLUDE_DIR}")
-  message(STATUS "Verilator DPI_INCLUDE_DIR=${VerilatorDpi_INCLUDE_DIR}")
-  message(STATUS "Verilator EXE=${Verilator_EXE}")
 else()
-  message(FATAL "Verilator not found!")
+  message(WARNING "Verilator not found! Simulation is not supported")
 endif ()

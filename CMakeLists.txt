@@ -25,22 +25,20 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-cmake_minimum_required(VERSION 3.0...3.5)
-project(m)
+cmake_minimum_required(VERSION 3.5)
+
+project(v)
+
+option(ENABLE_VCD "Enable waveform tracing." ON)
+
+#option(VERILATOR_ROOT "Verilator installation root")
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_MODULE_PATH
-  "${CMAKE_MODULE_PATH}"
-  "${CMAKE_SORUCE_DIR}/cmake"
-  )
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(FetchContent)
+include(FindVerilator)
 
-## TODO: clean up.
-include(cmake/FindVerilator.cmake)
 
-enable_testing()
-
-set(ENABLE_TRACE ON)
 add_subdirectory(design)

@@ -27,6 +27,7 @@
 
 #include "gtest/gtest.h"
 #include "Vobj/Vtb.h"
+#include "cfg_0.h"
 
 TEST(foo, foo_1)
 {
