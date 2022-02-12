@@ -1,0 +1,6 @@
+((nil . ((fill-column . 80)))
+ (verilog-mode . ((verilog-indent-level . 0)
+                  (verilog-indent-level-behavioral . 0)
+                  (verilog-indent-level-declaration . 0)
+                  (verilog-indent-level-module . 0)
+                  (verilog-auto-lineup . all))))
