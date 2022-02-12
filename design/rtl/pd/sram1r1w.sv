@@ -23,32 +23,9 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-// ========================================================================== //
+//========================================================================== //
 
-module tb #(
-  // Total number of contexts
-    parameter int CONTEXT_N = 128
-
-  // Number of entries per context
-  , parameter int ENTRIES_N = 4
-
-) (
-  // ======================================================================== //
-  // Clk/Reset
-    input clk
-  , input rst
+module sram1r1w (
 );
 
-// ========================================================================== //
-//                                                                            //
-//  UUT                                                                       //
-//                                                                            //
-// ========================================================================== //
-
-v u_v (
-  //
-    .clk                      (clk)
-  , .rst                      (rst)
-);
-  
-endmodule // v
+endmodule // sram1r1w

@@ -25,21 +25,23 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "-cc\n")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/filelist "--Mdir Vobj\n")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/filelist "--trace\n")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/filelist "--top tb\n")
+list(APPEND
+  VERILATOR_COMMAND_LIST
+  "-GCONTEXT_N=10"
+  "-GENTRIES_N=10")
 
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/filelist "-I${CMAKE_SOURCE_DIR}/design/rtl\n")
-string(REGEX REPLACE ";" "\n" FILELIST "${TB_SRCS}")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
+string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
 
 add_executable(cfg_0 cfg_0.cc)
-target_include_directories(cfg_0 PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(cfg_0 gtest_main gtest pthread)
-add_test(NAME cfg_0 COMMAND cfg_0)
+target_include_directories(cfg_0 PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+  ${Verilator_INCLUDE_DIR}
+  )
+target_link_libraries(cfg_0 gtest_main gtest pthread verilated ${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a)
+add_dependencies(cfg_0 verilate_cfg_0)
 
 add_custom_target(verilate_cfg_0
   COMMAND ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
-  COMMENT "Verilating..."
+  COMMENT "Verilating (verilate_cfg_0)..."
   )
+add_test(NAME cfg_0 COMMAND cfg_0)

@@ -41,4 +41,6 @@ include(FetchContent)
 include(cmake/FindVerilator.cmake)
 
 enable_testing()
+
+set(ENABLE_TRACE ON)
 add_subdirectory(design)

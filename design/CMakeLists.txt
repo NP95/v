@@ -26,7 +26,8 @@
 ##========================================================================== //
 
 set(RTL_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/rtl/v.sv
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/pd/sram1r1w.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v.sv"
   )
 
 add_subdirectory(tb)

@@ -35,4 +35,6 @@ module v (
   , input rst
 );
 
+sram1r1w u_sram1r1w ();
+
 endmodule // v

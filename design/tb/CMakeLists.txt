@@ -37,4 +37,40 @@ list(APPEND TB_SRCS
   "${RTL_SOURCES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
 
+set(Verilator_SRCS
+  "${Verilator_INCLUDE_DIR}/verilated.cpp"
+  "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
+  "${Verilator_INCLUDE_DIR}/verilated_save.cpp"
+  "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp"
+  )
+set(Verilator_INCLUDE_DIR
+  "${Verilator_INCLUDE_DIR}"
+  "${Verilator_INCLUDE_DIR}/vltstd"
+  )
+add_library(verilated SHARED ${Verilator_SRCS})
+target_include_directories(verilated PUBLIC ${Verilator_INCLUDE_DIR})
+
+set(VERILATOR_ARGS
+  "-cc"
+  "--Mdir Vobj"
+  "--trace"
+  "--build"
+  "--top tb")
+
+if (ENABLE_TRACE)
+  list(APPEND VERILATOR_ARGS "--trace")
+endif ()
+
+set(VERILATOR_INCLUDES
+  "-I${CMAKE_SOURCE_DIR}/design/rtl")
+
+set(VERILATOR_SOURCES
+  "${RTL_SOURCES}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
+
+set(VERILATOR_COMMAND_LIST
+  "${VERILATOR_ARGS}"
+  "${VERILATOR_INCLUDES}"
+  "${VERILATOR_SOURCES}")
+
 add_subdirectory(cfg_0)
