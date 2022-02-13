@@ -68,6 +68,10 @@ module v #(
 , output v_pkg::size_t                            o_lv0_size
 
 // -------------------------------------------------------------------------- //
+// Status
+, output logic                                    o_busy_r
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst
@@ -79,9 +83,33 @@ module v #(
 //                                                                            //
 // ========================================================================== //
 
-logic                                   state_wen;
-v_pkg::addr_t                           state_waddr;
-v_pkg::state_t                          state_wdata;
+logic                                   init_wen_r;
+v_pkg::addr_t                           init_waddr_r;
+v_pkg::state_t                          init_wdata_r;
+
+logic                                   state_wen_r;
+v_pkg::addr_t                           state_waddr_r;
+v_pkg::state_t                          state_wdata_r;
+
+logic                                   wen;
+v_pkg::addr_t                           waddr;
+v_pkg::state_t                          wdata;
+
+// ========================================================================== //
+//                                                                            //
+//  Combinatorial Logic                                                       //
+//                                                                            //
+// ========================================================================== //
+  
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : table_update_PROC
+
+  wen 	= o_busy_r ? init_wen_r : state_wen_r;
+  waddr = o_busy_r ? init_waddr_r : state_waddr_r;
+  wdata = o_busy_r ? init_wdata_r : state_wdata_r;
+
+end // block: table_update_PROC
 
 // ========================================================================== //
 //                                                                            //
@@ -103,9 +131,9 @@ v_update_pipe u_v_update_pipe (
   , .o_state_ren                        ()
   , .o_state_raddr                      ()
   //
-  , .o_state_wen                        (state_wen)
-  , .o_state_waddr                      (state_waddr)
-  , .o_state_wdata                      (state_wdata)
+  , .o_state_wen_r                      (state_wen_r)
+  , .o_state_waddr_r                    (state_waddr_r)
+  , .o_state_wdata_r                    (state_wdata_r)
   //
   , .clk                                (clk)
   , .rst                                (rst)
@@ -119,15 +147,14 @@ sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_update (
   , .i_raddr                            ()
   , .o_rdata                            ()
   //
-  , .i_wen                              (state_wen)
-  , .i_waddr                            (state_waddr)
-  , .i_wdata                            (state_wdata)
+  , .i_wen                              (wen)
+  , .i_waddr                            (waddr)
+  , .i_wdata                            (wdata)
   //
   , .clk                                (clk)
 );
 
 // -------------------------------------------------------------------------- //
-//
 v_query_pipe u_v_query_pipe (
   //
     .clk                                (clk)
@@ -142,11 +169,25 @@ sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_query (
   , .i_raddr                            ()
   , .o_rdata                            ()
   //
-  , .i_wen                              (state_wen)
-  , .i_waddr                            (state_waddr)
-  , .i_wdata                            (state_wdata)
+  , .i_wen                              (wen)
+  , .i_waddr                            (waddr)
+  , .i_wdata                            (wdata)
   //
   , .clk                                (clk)
+);
+
+// -------------------------------------------------------------------------- //
+//
+v_init #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_init (
+  //
+    .o_init_wen_r                       (init_wen_r)
+  , .o_init_waddr_r                     (init_waddr_r)
+  , .o_init_wdata_r                     (init_wdata_r)
+  //
+  , .o_busy_r                           (o_busy_r)
+  //
+  , .clk                                (clk)
+  , .rst                                (rst)
 );
 
 endmodule // v

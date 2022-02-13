@@ -47,14 +47,186 @@ module v_update_pipe (
 , output logic                                    o_state_ren
 , output v_pkg::addr_t                            o_state_raddr
 //
-, output logic                                    o_state_wen
-, output v_pkg::addr_t                            o_state_waddr
-, output v_pkg::state_t                           o_state_wdata
+, output logic                                    o_state_wen_r
+, output v_pkg::addr_t                            o_state_waddr_r
+, output v_pkg::state_t                           o_state_wdata_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst
 );
+
+// ========================================================================== //
+//                                                                            //
+//  Wires                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+// S1:
+//
+logic                                             s1_upd_vld_r;
+logic                                             s1_upd_vld_w;
+//
+logic                                             s1_upd_en;
+//
+v_pkg::id_t                                       s1_upd_prod_id_w;
+v_pkg::cmd_t                                      s1_upd_cmd_w;
+v_pkg::key_t                                      s1_upd_key_w;
+v_pkg::size_t                                     s1_upd_size_w;
+//
+v_pkg::id_t                                       s1_upd_prod_id_r;
+v_pkg::cmd_t                                      s1_upd_cmd_r;
+v_pkg::key_t                                      s1_upd_key_r;
+v_pkg::size_t                                     s1_upd_size_r;
+//
+logic                                             s1_state_ren;
+v_pkg::addr_t                                     s1_state_raddr;
+
+// S2:
+//
+logic                                             s2_upd_vld_r;
+logic                                             s2_upd_vld_w;
+//
+logic                                             s2_upd_en;
+//
+v_pkg::id_t                                       s2_upd_prod_id_w;
+v_pkg::cmd_t                                      s2_upd_cmd_w;
+v_pkg::key_t                                      s2_upd_key_w;
+v_pkg::size_t                                     s2_upd_size_w;
+//
+v_pkg::id_t                                       s2_upd_prod_id_r;
+v_pkg::cmd_t                                      s2_upd_cmd_r;
+v_pkg::key_t                                      s2_upd_key_r;
+v_pkg::size_t                                     s2_upd_size_r;
+
+// S3:
+//
+logic                                             s3_upd_vld_r;
+logic                                             s3_upd_vld_w;
+//
+logic                                             s3_upd_en;
+
+// ========================================================================== //
+//                                                                            //
+//  Combinatorial Logic                                                       //
+//                                                                            //
+// ========================================================================== //
+
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : s0_PROC
+
+  // Pipeline controls:
+  //
+  s1_upd_en 	   = i_upd_vld;
+
+  s1_upd_prod_id_w = i_upd_prod_id;
+  s1_upd_cmd_w 	   = i_upd_cmd;
+  s1_upd_key_w 	   = i_upd_key;
+  s1_upd_size_w    = i_upd_size;
+
+end // block: s0_PROC
+
+
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : s1_PROC
+
+  //
+  s1_state_ren 	   = s1_upd_vld_r;
+  s1_state_raddr   = '0;
+
+  // Pipeline controls:
+  //
+  s2_upd_en 	   = s1_upd_vld_r;
+
+  s2_upd_prod_id_w = s1_upd_prod_id_r;
+  s2_upd_cmd_w 	   = s1_upd_cmd_r;
+  s2_upd_key_w 	   = s1_upd_key_r;
+  s2_upd_size_w    = s1_upd_size_r;
+
+end // block: s1_PROC
+
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : s2_PROC
+
+end // block: s2_PROC
+
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : s3_PROC
+
+end // block: s3_PROC
+  
+// ========================================================================== //
+//                                                                            //
+//  Flops                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    s1_upd_vld_r <= 'b0;
+  else
+    s1_upd_vld_r <= s1_upd_vld_w;
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (s1_upd_en) begin
+    s1_upd_prod_id_r <= s1_upd_prod_id_w;
+    s1_upd_cmd_r     <= s1_upd_cmd_w;
+    s1_upd_key_r     <= s1_upd_key_w;
+    s1_upd_size_r    <= s1_upd_size_w;
+  end
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    s2_upd_vld_r <= 'b0;
+  else
+    s2_upd_vld_r <= s2_upd_vld_w;
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (s2_upd_en) begin
+    s2_upd_prod_id_r <= s2_upd_prod_id_w;
+    s2_upd_cmd_r     <= s2_upd_cmd_w;
+    s2_upd_key_r     <= s2_upd_key_w;
+    s2_upd_size_r    <= s2_upd_size_w;
+  end
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    s3_upd_vld_r <= 'b0;
+  else
+    s3_upd_vld_r <= s3_upd_vld_w;
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (s3_upd_en)
+    ;
+  
+// ========================================================================== //
+//                                                                            //
+//  Outputs                                                                   //
+//                                                                            //
+// ========================================================================== //
+
+assign o_state_ren = s1_state_ren;
+assign o_state_raddr = s1_state_raddr;
+
+assign o_state_wen_r = '0;
+assign o_state_waddr_r = '0;
+assign o_state_wdata_r = '0;
 
 endmodule // v_update_pipe

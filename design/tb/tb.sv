@@ -68,6 +68,10 @@ module tb #(
 , output v_pkg::size_t                            o_lv0_size
 
 // -------------------------------------------------------------------------- //
+// Status
+, output logic                                    o_busy_r
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst
@@ -99,6 +103,8 @@ v #(.CONTEXT_N, .ENTRIES_N) u_v (
   , .o_lv0_prod_id                      (o_lv0_prod_id)
   , .o_lv0_key                          (o_lv0_key)
   , .o_lv0_size                         (o_lv0_size)
+  //
+  , .o_busy_r                           (o_busy_r)
   //
   , .clk                                (clk)
   , .rst                                (rst)

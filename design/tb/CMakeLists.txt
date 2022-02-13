@@ -35,7 +35,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-set(V_TB_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(V_TB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Build verilator support library
 verilator_build(vlib)

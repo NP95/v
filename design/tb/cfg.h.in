@@ -28,8 +28,8 @@
 #ifndef V_DESIGN_TB_CFG_H
 #define V_DESIGN_TB_CFG_H
 
-#cmakedefine CONTEXT_N
+#cmakedefine CONTEXT_N @CONTEXT_N@
 
-#cmakedefine ENTRIES_N
+#cmakedefine ENTRIES_N @ENTRIES_N@
 
 #endif
