@@ -25,12 +25,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef DESIGN_RTL_V_PKG_VH
-`define DESIGN_RTL_V_PKG_VH
+`include "common_defs.vh"
 
-package v_pkg;
+`include "v_pkg.vh"
 
+module v_query_pipe (
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+  input                                           clk
+, input                                           rst
+);
 
-endpackage // v_pkg
-
-`endif
+endmodule // v_query_pipe

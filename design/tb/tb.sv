@@ -25,6 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 // ========================================================================== //
 
+`include "common_defs.vh"
+
+`include "v_pkg.vh"
+
 module tb #(
 
 // -------------------------------------------------------------------------- //
@@ -37,8 +41,35 @@ module tb #(
 ) (
 
 // -------------------------------------------------------------------------- //
+// List Update Bus
+  input                                           i_upd_vld
+, input v_pkg::id_t                               i_upd_prod_id
+, input v_pkg::cmd_t                              i_upd_cmd
+, input v_pkg::key_t                              i_upd_key
+, input v_pkg::size_t                             i_upd_size
+
+// -------------------------------------------------------------------------- //
+// List Query Bus
+, input                                           i_lut_vld
+, input v_pkg::id_t                               i_lut_prod_id
+, input v_pkg::level_t                            i_lut_level
+//
+, output v_pkg::key_t                             o_lut_key
+, output v_pkg::size_t                            o_lut_size
+, output logic                                    o_lut_error
+, output v_pkg::listsize_t                        o_lut_listsize
+
+// -------------------------------------------------------------------------- //
+// Notify Bus
+
+, output logic                                    o_lv0_vld
+, output v_pkg::id_t                              o_lv0_prod_id
+, output v_pkg::key_t                             o_lv0_key
+, output v_pkg::size_t                            o_lv0_size
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
-  input                                           clk
+, input                                           clk
 , input                                           rst
 );
 
@@ -50,8 +81,27 @@ module tb #(
 
 v #(.CONTEXT_N, .ENTRIES_N) u_v (
   //
-    .clk                      (clk)
-  , .rst                      (rst)
+    .i_upd_vld                          (i_upd_vld)
+  , .i_upd_prod_id                      (i_upd_prod_id)
+  , .i_upd_cmd                          (i_upd_cmd)
+  , .i_upd_key                          (i_upd_key)
+  , .i_upd_size                         (i_upd_size)
+  //
+  , .i_lut_vld                          (i_lut_vld)
+  , .i_lut_prod_id                      (i_lut_prod_id)
+  , .i_lut_level                        (i_lut_level)
+  , .o_lut_key                          (o_lut_key)
+  , .o_lut_size                         (o_lut_size)
+  , .o_lut_error                        (o_lut_error)
+  , .o_lut_listsize                     (o_lut_listsize)
+  //
+  , .o_lv0_vld                          (o_lv0_vld)
+  , .o_lv0_prod_id                      (o_lv0_prod_id)
+  , .o_lv0_key                          (o_lv0_key)
+  , .o_lv0_size                         (o_lv0_size)
+  //
+  , .clk                                (clk)
+  , .rst                                (rst)
 );
   
 endmodule // v

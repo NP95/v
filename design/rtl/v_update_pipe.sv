@@ -25,13 +25,36 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef DESIGN_TB_V_COMMON_DEFS_VH
-`define DESIGN_TB_V_COMMON_DEFS_VH
+`include "common_defs.vh"
 
-// Disable implicit nets
-`default_nettype none
+`include "v_pkg.vh"
 
-// Common timing
-`timescale 1ns/1ps
+module v_update_pipe (
 
-`endif
+// -------------------------------------------------------------------------- //
+// List Update Bus
+  input                                           i_upd_vld
+, input v_pkg::id_t                               i_upd_prod_id
+, input v_pkg::cmd_t                              i_upd_cmd
+, input v_pkg::key_t                              i_upd_key
+, input v_pkg::size_t                             i_upd_size
+
+// -------------------------------------------------------------------------- //
+// State Interface
+//
+, input v_pkg::state_t                            i_state_rdata
+//
+, output logic                                    o_state_ren
+, output v_pkg::addr_t                            o_state_raddr
+//
+, output logic                                    o_state_wen
+, output v_pkg::addr_t                            o_state_waddr
+, output v_pkg::state_t                           o_state_wdata
+
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+, input                                           clk
+, input                                           rst
+);
+
+endmodule // v_update_pipe

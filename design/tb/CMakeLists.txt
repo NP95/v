@@ -35,6 +35,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
+set(V_TB_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
 # Build verilator support library
 verilator_build(vlib)
 
@@ -51,7 +53,6 @@ if (ENABLE_VCD)
 endif ()
 
 set(VERILATOR_INCLUDES
-  "-I${CMAKE_SOURCE_DIR}/design/rtl"
   "-I${CMAKE_CURRENT_SOURCE_DIR}/v")
 
 set(TB_SOURCES

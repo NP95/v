@@ -25,13 +25,41 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef DESIGN_TB_V_COMMON_DEFS_VH
-`define DESIGN_TB_V_COMMON_DEFS_VH
+`ifndef DESIGN_RTL_V_PKG_VH
+`define DESIGN_RTL_V_PKG_VH
 
-// Disable implicit nets
-`default_nettype none
+package v_pkg;
 
-// Common timing
-`timescale 1ns/1ps
+localparam int CONTEXT_N = @CONTEXT_N@;
+
+
+localparam int ENTRIES_N = @ENTRIES_N@;
+
+typedef enum logic [1:0] {  CMD_CLEAR   = 2'b00,
+			    CMD_ADD     = 2'b01,
+			    CMD_DELETE  = 2'b10,
+			    CMD_REPLACE = 2'b11
+			  } cmd_t;
+
+typedef logic [63:0] key_t;
+
+typedef logic [5:0]  id_t;
+
+typedef logic [31:0] size_t;
+
+
+typedef logic [7:0]  level_t;
+
+typedef logic [7:0]  listsize_t;
+
+
+typedef struct packed {
+logic 	       foo;
+} state_t;
+
+typedef logic [$clog2(CONTEXT_N) - 1:0] addr_t;
+
+
+endpackage // v_pkg
 
 `endif
