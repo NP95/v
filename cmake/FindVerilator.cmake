@@ -94,15 +94,18 @@ if (Verilator_EXE)
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
 
   macro (verilator_build vlib)
-    add_library(${vlib} SHARED 
+    set(Verilator_SRCS
       "${Verilator_INCLUDE_DIR}/verilated.cpp"
       "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
-      "${Verilator_INCLUDE_DIR}/verilated_save.cpp"
-      "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
+      "${Verilator_INCLUDE_DIR}/verilated_save.cpp")
+    if (ENABLE_VCD)
+      list(APPEND Verilator_SRCS
+	"${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
+    endif ()
 
-    target_include_directories(${vlib} PUBLIC
-      ${Verilator_INCLUDE_DIR}
-      ${VerilatorDpi_INCLUDE_DIR})
+    add_library(${vlib} SHARED "${Verilator_SRCS}")
+    list(APPEND Verilator_INCLUDE_DIR "${VerilatorDpi_INCLUDE_DIR}")
+    target_include_directories(${vlib} PUBLIC "${Verilator_INCLUDE_DIR}")
   endmacro ()
   
 else()
