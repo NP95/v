@@ -29,11 +29,11 @@
 
 `include "v_pkg.vh"
 
-module v_query_pipe (
+module v_pipe_query (
 // -------------------------------------------------------------------------- //
 // Clk/Reset
   input                                           clk
 , input                                           rst
 );
 
-endmodule // v_query_pipe
+endmodule // v_pipe_query

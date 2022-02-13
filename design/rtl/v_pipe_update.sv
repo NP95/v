@@ -29,7 +29,7 @@
 
 `include "v_pkg.vh"
 
-module v_update_pipe (
+module v_pipe_update (
 
 // -------------------------------------------------------------------------- //
 // List Update Bus
@@ -229,4 +229,4 @@ assign o_state_wen_r = '0;
 assign o_state_waddr_r = '0;
 assign o_state_wdata_r = '0;
 
-endmodule // v_update_pipe
+endmodule // v_pipe_update

@@ -119,7 +119,7 @@ end // block: table_update_PROC
 
 // -------------------------------------------------------------------------- //
 //
-v_update_pipe u_v_update_pipe (
+v_pipe_update u_v_pipe_update (
   //
     .i_upd_vld                          (i_upd_vld)
   , .i_upd_prod_id                      (i_upd_prod_id)
@@ -155,7 +155,7 @@ sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_update (
 );
 
 // -------------------------------------------------------------------------- //
-v_query_pipe u_v_query_pipe (
+v_pipe_query u_v_pipe_query (
   //
     .clk                                (clk)
   , .rst                                (rst)

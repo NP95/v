@@ -26,8 +26,8 @@
 ##========================================================================== //
 
 set(RTL_SOURCES
-  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_update_pipe.sv"
-  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_query_pipe.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_pipe_update.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_pipe_query.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_init.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v.sv"
   )
