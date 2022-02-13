@@ -29,12 +29,21 @@
 
 `include "v_pkg.vh"
 
-module v (
+module v #(
 
-  // ======================================================================== //
-  // Clk/Reset
-    input clk
-  , input rst
+// -------------------------------------------------------------------------- //
+// Total number of contexts
+  parameter int CONTEXT_N = 128
+
+// -------------------------------------------------------------------------- //
+// Number of entries per context
+, parameter int ENTRIES_N = 4
+) (
+
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+  input                                           clk
+, input                                           rst
 );
 
 sram1r1w u_sram1r1w ();
