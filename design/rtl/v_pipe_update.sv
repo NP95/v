@@ -59,6 +59,21 @@ module v_pipe_update (
 , output v_pkg::size_t                            o_lv0_size_r
 
 // -------------------------------------------------------------------------- //
+// Update Pipeline Interface
+//
+, output                                          o_s1_upd_vld_r
+, output v_pkg::id_t                              o_s1_upd_prod_id_r
+//
+, output                                          o_s2_upd_vld_r
+, output v_pkg::id_t                              o_s2_upd_prod_id_r
+//
+, output                                          o_s3_upd_vld_r
+, output v_pkg::id_t                              o_s3_upd_prod_id_r
+//
+, output                                          o_s4_upd_vld_r
+, output v_pkg::id_t                              o_s4_upd_prod_id_r
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst

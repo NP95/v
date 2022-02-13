@@ -35,6 +35,8 @@ localparam int CONTEXT_N = @CONTEXT_N@;
 
 localparam int ENTRIES_N = @ENTRIES_N@;
 
+typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
+
 typedef enum logic [1:0] {  CMD_CLEAR   = 2'b00,
 			    CMD_ADD     = 2'b01,
 			    CMD_DELETE  = 2'b10,
@@ -45,17 +47,17 @@ typedef logic [63:0] key_t;
 
 typedef logic [31:0] volume_t;
 
-typedef logic [5:0]  id_t;
-
 typedef logic [31:0] size_t;
 
 
-typedef logic [7:0]  level_t;
+typedef logic [$clog2(ENTRIES_N) - 1:0]  level_t;
 
 typedef logic [7:0]  listsize_t;
 
 
 typedef struct packed {
+  listsize_t listsize;
+  logic [ENTRIES_N - 1:0] vld;
   key_t [ENTRIES_N - 1:0] key;
   volume_t [ENTRIES_N - 1:0] volume;
 } state_t;

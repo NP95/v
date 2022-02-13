@@ -38,7 +38,7 @@ module v_pipe_query (
 , input v_pkg::level_t                            i_lut_level
 //
 , output v_pkg::key_t                             o_lut_key
-, output v_pkg::size_t                            o_lut_size
+, output v_pkg::volume_t                          o_lut_size
 , output logic                                    o_lut_error
 , output v_pkg::listsize_t                        o_lut_listsize
 
@@ -49,6 +49,21 @@ module v_pipe_query (
 //
 , output logic                                    o_state_ren
 , output v_pkg::addr_t                            o_state_raddr
+
+// -------------------------------------------------------------------------- //
+// Update Pipeline Interface
+//
+, input                                           i_s1_upd_vld_r
+, input v_pkg::id_t                               i_s1_upd_prod_id_r
+//
+, input                                           i_s2_upd_vld_r
+, input v_pkg::id_t                               i_s2_upd_prod_id_r
+//
+, input                                           i_s3_upd_vld_r
+, input v_pkg::id_t                               i_s3_upd_prod_id_r
+//
+, input                                           i_s4_upd_vld_r
+, input v_pkg::id_t                               i_s4_upd_prod_id_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
@@ -62,36 +77,130 @@ module v_pipe_query (
 //                                                                            //
 // ========================================================================== //
 
+// S0
+logic                                   s0_state_ren;
+v_pkg::id_t                             s0_state_raddr;
+
 // S1
+logic                                   s1_lut_en;
+v_pkg::id_t                             s1_lut_prod_id_w;
+v_pkg::id_t                             s1_lut_prod_id_r;
+v_pkg::level_t                          s1_lut_level_w;
+v_pkg::level_t                          s1_lut_level_r;
+logic                                   s1_lut_error_w;
+logic                                   s1_lut_error_r;
+
+v_pkg::listsize_t                       s1_lut_listsize;
+logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec;
+v_pkg::key_t                            s1_lut_key;
+v_pkg::volume_t                         s1_lut_volume;
+logic                                   s1_lut_error;
 
 // ========================================================================== //
 //                                                                            //
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
-  
+
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : s0_PROC
+always_comb begin : s0_ucode_PROC
 
-end // block: s0_PROC
-  
+  // State table lookup
+  s0_state_ren     = i_lut_vld;
+  s0_state_raddr   = i_lut_prod_id;
+
+  s1_lut_en        = i_lut_vld;
+  s1_lut_prod_id_w = i_lut_prod_id;
+  s1_lut_level_w   = i_lut_level;
+
+  // Flag indicating "list busy or not valid entry".
+  //
+  // We consider the "list busy" whenever there is a in-flight operation to the
+  // currently addressed ID in the update pipeline. Whenever an update is
+  // in-flight, we simply error-out. Otherwise, it would be possible to use some
+  // more sophisticated forwarding, but this is probably overkill in this
+  // context and is not required by the specification.
+  //
+  // We consider a "not valid entry" whenever the queried entry is empty. In
+  // this case, although the size returned is valid (zero), the key/volume tuple
+  // is not. This calculation is computed in S1 once data has returned from the
+  // state table.
+  //
+  s1_lut_error_w   = (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == i_lut_prod_id)) |
+                     (i_s2_upd_vld_r & (i_s2_upd_prod_id_r == i_lut_prod_id)) |
+                     (i_s3_upd_vld_r & (i_s3_upd_prod_id_r == i_lut_prod_id)) |
+                     (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id));
+
+end // block: s0_ucode_PROC
+
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : s1_PROC
+always_comb begin : s1_ucode_PROC
 
-end // block: s1_PROC
+  s1_lut_listsize = i_state_rdata.listsize;
+
+  // Error on prior hazard in update pipeline, or whenever table size is zero.
+  s1_lut_error 	  = s1_lut_error_r | (i_state_rdata.listsize == '0);
+
+end // block: s1_ucode_PROC
 
 // ========================================================================== //
 //                                                                            //
 //  Flops                                                                     //
 //                                                                            //
 // ========================================================================== //
-  
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (s1_lut_en) begin : s1_ucode_reg_PROC
+    s1_lut_prod_id_r <= s1_lut_prod_id_w;
+    s1_lut_level_r   <= s1_lut_level_w;
+    s1_lut_error_r   <= s1_lut_error_w;
+  end // block: s1_ucode_reg_PROC
+
+// ========================================================================== //
+//                                                                            //
+//  Instances                                                                 //
+//                                                                            //
+// ========================================================================== //
+
+dec #(.N(v_pkg::ENTRIES_N)) u_s1_id_dec (
+//
+  .i_x                                  (s1_lut_level_r)
+//
+, .o_y                                  (s1_lut_level_dec)
+);
+
+mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
+//
+  .i_x                                  (i_state_rdata.key)
+, .i_sel                                (s1_lut_level_dec)
+//
+, .o_y                                  (s1_lut_key)
+);
+
+mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
+//
+  .i_x                                  (i_state_rdata.volume)
+, .i_sel                                (s1_lut_level_dec)
+//
+, .o_y                                  (s1_lut_volume)
+);
+
 // ========================================================================== //
 //                                                                            //
 //  Outputs                                                                   //
 //                                                                            //
 // ========================================================================== //
+
+assign o_lut_key = s1_lut_key;
+assign o_lut_size = s1_lut_volume;
+assign o_lut_error = s1_lut_error;
+assign o_lut_listsize = s1_lut_listsize;
+
+assign o_state_ren = s0_state_ren;
+assign o_state_raddr = s0_state_raddr;
 
 endmodule // v_pipe_query

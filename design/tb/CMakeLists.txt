@@ -52,24 +52,25 @@ if (ENABLE_VCD)
   list(APPEND VERILATOR_ARGS "--trace")
 endif ()
 
-set(VERILATOR_INCLUDES
-  "-I${CMAKE_CURRENT_SOURCE_DIR}/v")
-
 set(TB_SOURCES
   "${RTL_SOURCES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/v/pd/sram1r1w.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
-
-set(VERILATOR_COMMAND_LIST
-  "${VERILATOR_ARGS}"
-  "${VERILATOR_INCLUDES}"
-  "${TB_SOURCES}")
 
 macro (set_tb_param k v)
   set(${k} ${v})
 endmacro ()
 
 macro (verilate_tb cfg)
+  set(VERILATOR_INCLUDES
+    "-I${CMAKE_CURRENT_BUILD_DIR}"
+    "-I${V_TB_ROOT}/v")
+
+  set(VERILATOR_COMMAND_LIST
+    "${VERILATOR_ARGS}"
+    "${VERILATOR_INCLUDES}"
+    "${TB_SOURCES}")
+
   string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
   

@@ -85,6 +85,16 @@ logic                                   wen;
 v_pkg::addr_t                           waddr;
 v_pkg::state_t                          wdata;
 
+//
+logic                                   s1_upd_vld_r;
+v_pkg::id_t                             s1_upd_prod_id_r;
+logic                                   s2_upd_vld_r;
+v_pkg::id_t                             s2_upd_prod_id_r;
+logic                                   s3_upd_vld_r;
+v_pkg::id_t                             s3_upd_prod_id_r;
+logic                                   s4_upd_vld_r;
+v_pkg::id_t                             s4_upd_prod_id_r;
+
 // ========================================================================== //
 //                                                                            //
 //  Combinatorial Logic                                                       //
@@ -130,6 +140,15 @@ v_pipe_update u_v_pipe_update (
   , .o_lv0_key_r                        (o_lv0_key_r)
   , .o_lv0_size_r                       (o_lv0_size_r)
   //
+  , .o_s1_upd_vld_r                     (s1_upd_vld_r)
+  , .o_s1_upd_prod_id_r                 (s1_upd_prod_id_r)
+  , .o_s2_upd_vld_r                     (s2_upd_vld_r)
+  , .o_s2_upd_prod_id_r                 (s2_upd_prod_id_r)
+  , .o_s3_upd_vld_r                     (s3_upd_vld_r)
+  , .o_s3_upd_prod_id_r                 (s3_upd_prod_id_r)
+  , .o_s4_upd_vld_r                     (s4_upd_vld_r)
+  , .o_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
+  //
   , .clk                                (clk)
   , .rst                                (rst)
 );
@@ -164,6 +183,15 @@ v_pipe_query u_v_pipe_query (
   , .i_state_rdata                      ()
   , .o_state_ren                        ()
   , .o_state_raddr                      ()
+  //
+  , .i_s1_upd_vld_r                     (s1_upd_vld_r)
+  , .i_s1_upd_prod_id_r                 (s1_upd_prod_id_r)
+  , .i_s2_upd_vld_r                     (s2_upd_vld_r)
+  , .i_s2_upd_prod_id_r                 (s2_upd_prod_id_r)
+  , .i_s3_upd_vld_r                     (s3_upd_vld_r)
+  , .i_s3_upd_prod_id_r                 (s3_upd_prod_id_r)
+  , .i_s4_upd_vld_r                     (s4_upd_vld_r)
+  , .i_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
   //
   , .clk                                (clk)
   , .rst                                (rst)

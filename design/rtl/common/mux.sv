@@ -66,15 +66,15 @@ always_comb begin : mux_PROC
 
     // Consolidate mux branches [0, N) for bit 'i'.
     for (int j = 0; i < N; i++) begin
-      mux_bit [i][j] = i_sel[i] & i_x[j][i];
+      mux_bit [i][j] = (i_sel[j] & i_x[j][i]);
     end
 
-    // AND-reduction to form final result for bit 'i'.
+    // OR-reduction to form final result for bit 'i'.
     y [i] = (|mux_bit[i]);
   end
 
 end // block: mux_PROC
-  
+
 // ========================================================================== //
 //                                                                            //
 //  Outputs                                                                   //
@@ -84,4 +84,3 @@ end // block: mux_PROC
 assign o_y = y;
 
 endmodule // mux
-
