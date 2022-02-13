@@ -90,7 +90,21 @@ if (Verilator_EXE)
     VERILATOR_MINOR_VERSION ${v_version})
   set(VERILATOR_VERSION
     ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
+
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
+
+  macro (verilator_build vlib)
+    add_library(${vlib} SHARED 
+      "${Verilator_INCLUDE_DIR}/verilated.cpp"
+      "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
+      "${Verilator_INCLUDE_DIR}/verilated_save.cpp"
+      "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
+
+    target_include_directories(${vlib} PUBLIC
+      ${Verilator_INCLUDE_DIR}
+      ${VerilatorDpi_INCLUDE_DIR})
+  endmacro ()
+  
 else()
   message(WARNING "Verilator not found! Simulation is not supported")
 endif ()

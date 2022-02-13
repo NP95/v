@@ -25,6 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "common_defs.vh"
+
 module sram1r1w (
 );
 

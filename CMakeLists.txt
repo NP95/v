@@ -31,7 +31,7 @@ project(v)
 
 option(ENABLE_VCD "Enable waveform tracing." ON)
 
-#option(VERILATOR_ROOT "Verilator installation root")
+option(VERILATOR_ROOT "Verilator installation root")
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -40,5 +40,5 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(FetchContent)
 include(FindVerilator)
 
-
+enable_testing()
 add_subdirectory(design)

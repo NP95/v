@@ -30,6 +30,5 @@ set(RTL_SOURCES
   )
 
 if (Verilator_EXE)
-  enable_testing()
   add_subdirectory(tb)
 endif ()

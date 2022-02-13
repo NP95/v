@@ -25,6 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "common_defs.vh"
+
 `include "v_pkg.vh"
 
 module v (

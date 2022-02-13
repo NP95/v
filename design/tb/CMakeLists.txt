@@ -35,15 +35,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-add_library(verilated SHARED 
-  "${Verilator_INCLUDE_DIR}/verilated.cpp"
-  "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
-  "${Verilator_INCLUDE_DIR}/verilated_save.cpp"
-  "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
-
-target_include_directories(verilated PUBLIC
-  ${Verilator_INCLUDE_DIR}
-  ${VerilatorDpi_INCLUDE_DIR})
+# Build verilator support library
+verilator_build(vlib)
 
 set(VERILATOR_OBJ "Vobj")
 
@@ -58,7 +51,8 @@ if (ENABLE_VCD)
 endif ()
 
 set(VERILATOR_INCLUDES
-  "-I${CMAKE_SOURCE_DIR}/design/rtl")
+  "-I${CMAKE_SOURCE_DIR}/design/rtl"
+  "-I${CMAKE_CURRENT_SOURCE_DIR}/v")
 
 set(TB_SOURCES
   "${RTL_SOURCES}"
@@ -95,7 +89,7 @@ macro (build_test_cfg cfg src)
   target_include_directories(${target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}"
     "${Verilator_INCLUDE_DIR}")
-  target_link_libraries(${target} gtest_main gtest pthread verilated ${VERILATOR_A})
+  target_link_libraries(${target} gtest_main gtest pthread vlib ${VERILATOR_A})
   add_dependencies(${target} verilate_${cfg})
 
   add_test(NAME ${target} COMMAND ${target})
