@@ -37,11 +37,19 @@ localparam int ENTRIES_N = @ENTRIES_N@;
 
 typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
 
-typedef enum logic [1:0] {  CMD_CLEAR   = 2'b00,
-			    CMD_ADD     = 2'b01,
-			    CMD_DELETE  = 2'b10,
-			    CMD_REPLACE = 2'b11
-			  } cmd_t;
+typedef enum logic [1:0] {  // Clear contents of list
+                            CMD_CLEAR   = 2'b00,
+                                        
+                            // Add new entry to list, may implicitly delete
+			    // entry if list is currently full occupied.
+                            CMD_ADD     = 2'b01,
+                                        
+                            // Delete entry by key value.
+                            CMD_DELETE  = 2'b10,
+
+                            // Replace entry by key.
+                            CMD_REPLACE = 2'b11
+                          } cmd_t;
 
 typedef logic [63:0] key_t;
 

@@ -27,18 +27,26 @@
 
 `include "common_defs.vh"
 
-module cmp #(
-  // Width of comparitor
-  parameter int W
-) (
+`include "v_pkg.vh"
+
+module v_pipe_update_exe (
 // -------------------------------------------------------------------------- //
-//
-  input [W - 1:0]                                 i_a
-, input [W - 1:0]                                 i_b
-//
-, output logic                                    o_eq
-, output logic                                    o_gt
-, output logic                                    o_lt
+// Command Interface
+  input v_pkg::cmd_t                              i_pipe_cmd_r
+, input v_pkg::key_t                              i_pipe_key_r
+, input v_pkg::volume_t                           i_pipe_volume_r
+
+// -------------------------------------------------------------------------- //
+// State Current
+, input [v_pkg::ENTRIES_N - 1:0]                  i_stcur_vld_r
+, input v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
+, input v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
+
+// -------------------------------------------------------------------------- //
+// State Next
+, output logic [v_pkg::ENTRIES_N - 1:0]           o_stnxt_vld
+, output v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
+, output v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
 );
 
 // ========================================================================== //
@@ -47,67 +55,30 @@ module cmp #(
 //                                                                            //
 // ========================================================================== //
 
-`ifdef GATEY
-logic [W - 1:0]                         a_xor_b;
-logic [W - 1:0]                         a_andnot_b;
-`endif
-logic                                   eq;
-logic                                   gt;
-logic                                   lt;
-
-// TOOD: magnitude comparison is supposed to be signed!!!!
+logic [v_pkg::ENTRIES_N - 1:0]          cmp_eq;
+logic [v_pkg::ENTRIES_N - 1:0]          cmp_gt;
+logic [v_pkg::ENTRIES_N - 1:0]          cmp_lt;
 
 // ========================================================================== //
 //                                                                            //
-//  Combinatorial Logic                                                       //
+//  Instances                                                                 //
 //                                                                            //
 // ========================================================================== //
-
-`ifdef GATEY
 
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : cmp_PROC
+for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 
-  // EQ:
-  for (int i = 0; i < W; i++) begin
-    a_xor_b    = (a[i] ^ b[i]);
-    a_andnot_b = (a[i] & ~b[i]);
-  end
+  cmp #(.W($bits(v_pkg::key_t))) u_cmp (
+  //
+    .i_a                                  (i_pipe_key_r)
+  , .i_b                                  (i_stcur_keys_r [i])
+  //
+  , .o_eq                                 (cmp_eq [i])
+  , .o_gt                                 (cmp_gt [i])
+  , .o_lt                                 (cmp_lt [i])
+  );
 
-  // Equal if no bits differ.
-  eq = (~|a_xor_b);
+end
 
-  // Greater if the first highest bit in A
-  gt = (i_a > i_b); // TODO
-
-  // If not equal, or greater-than, it must be less-than.
-  lt = ~(eq | gt);
-
-end // block: cmp_PROC
-
-`else // !`ifdef GATEY
-
-// -------------------------------------------------------------------------- //
-//
-always_comb begin : cmp_PROC
-
-  eq = (i_a == i_b);
-  gt = (i_a > i_b);
-  lt = ~(eq | gt);
-
-end // block: cmp_PROC
-
-`endif
-
-// ========================================================================== //
-//                                                                            //
-//  Outputs                                                                   //
-//                                                                            //
-// ========================================================================== //
-
-assign o_eq = eq;
-assign o_gt = gt;
-assign o_lt = lt;
-
-endmodule // cmp
+endmodule // v_pipe_update_exe

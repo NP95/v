@@ -29,5 +29,5 @@ set_tb_param("CONTEXT_N" 128)
 set_tb_param("ENTRIES_N" 4)
 
 configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
-configure_file("${V_TB_ROOT}/v_pkg.vh.in" v_pkg.vh)
+configure_file("${CMAKE_SOURCE_DIR}/design/rtl/v_pkg.vh.in" v_pkg.vh)
 build_test_cfg(cfg_1 cfg_1.cc)

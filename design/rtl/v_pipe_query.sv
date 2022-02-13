@@ -166,6 +166,8 @@ always_ff @(posedge clk)
 //                                                                            //
 // ========================================================================== //
 
+// -------------------------------------------------------------------------- //
+//
 dec #(.N(v_pkg::ENTRIES_N)) u_s1_id_dec (
 //
   .i_x                                  (s1_lut_level_r)
@@ -173,6 +175,8 @@ dec #(.N(v_pkg::ENTRIES_N)) u_s1_id_dec (
 , .o_y                                  (s1_lut_level_dec)
 );
 
+// -------------------------------------------------------------------------- //
+//
 mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 //
   .i_x                                  (i_state_rdata.key)
@@ -181,6 +185,8 @@ mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 , .o_y                                  (s1_lut_key)
 );
 
+// -------------------------------------------------------------------------- //
+//
 mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
 //
   .i_x                                  (i_state_rdata.volume)
