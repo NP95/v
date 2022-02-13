@@ -27,31 +27,20 @@
 
 `include "common_defs.vh"
 
-module v_init #(
-
-// -------------------------------------------------------------------------- //
-// Word count
+module mux #(
+  // Number of Mux. Inputs
   parameter int N
-
-// -------------------------------------------------------------------------- //
-// Word width
+  // Width of Mux.
 , parameter int W
 ) (
+// -------------------------------------------------------------------------- //
+//
+  input logic [N - 1:0][W - 1:0]                  i_x
+, input logic [N - 1:0]                           i_sel
 
 // -------------------------------------------------------------------------- //
-// Memory Interfacex
-  output logic                                    o_init_wen_r
-, output logic [$clog2(N) - 1:0]                  o_init_waddr_r
-, output logic [W - 1:0]                          o_init_wdata_r
-
-// -------------------------------------------------------------------------- //
-// Status
-, output logic                                    o_busy_r
-
-// -------------------------------------------------------------------------- //
-// Clk/Reset
-, input                                           clk
-, input                                           rst
+//
+, output logic [W - 1:0]                          o_y
 );
 
 // ========================================================================== //
@@ -60,78 +49,39 @@ module v_init #(
 //                                                                            //
 // ========================================================================== //
 
-localparam int BUSY_B = 1;
-localparam int CNT_EN_B = 0;
-
-typedef enum logic [1:0] {  FSM_STATE_IN_RESET = 2'b10,
-                            FSM_STATE_INIT     = 2'b11,
-                            FSM_STATE_DONE     = 2'b00
-                          } fsm_state_t;
-
-fsm_state_t                             fsm_state_r;
-fsm_state_t                             fsm_state_w;
-
-logic                                   fsm_last_word;
-logic [$clog2(N):0]                     waddr_r;
-logic [$clog2(N):0]                     waddr_w;
-logic                                   waddr_en;
+logic [W - 1:0][N - 1:0]                mux_bit;
+logic [W - 1:0]                         y;
 
 // ========================================================================== //
 //                                                                            //
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
+
+// -------------------------------------------------------------------------- //
+//
+always_comb begin : mux_PROC
+
+  for (int i = 0; i < W; i++) begin
+
+    // Consolidate mux branches [0, N) for bit 'i'.
+    for (int j = 0; i < N; i++) begin
+      mux_bit [i][j] = i_sel[i] & i_x[j][i];
+    end
+
+    // AND-reduction to form final result for bit 'i'.
+    y [i] = (|mux_bit[i]);
+  end
+
+end // block: mux_PROC
   
-// -------------------------------------------------------------------------- //
-//
-always_comb begin : fsm_PROC
-
-  waddr_en = fsm_state_r [CNT_EN_B];
-  waddr_w  = (fsm_state_r == FSM_STATE_IN_RESET) ? '0 : (waddr_r + 'b1);
-
-  fsm_last_word = (waddr_w == N[$clog2(N):0]);
-
-  // FSM state transition logic:
-  case (fsm_state_r)
-    FSM_STATE_IN_RESET: fsm_state_w = FSM_STATE_INIT;
-    FSM_STATE_INIT:     fsm_state_w =
-      fsm_last_word ? FSM_STATE_DONE : FSM_STATE_INIT;
-    FSM_STATE_DONE:     fsm_state_w = fsm_state_r;
-    default:            fsm_state_w = 'x;
-  endcase // case (fsm_state_r)
-
-end // block: fsm_PROC
-
-// ========================================================================== //
-//                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    fsm_state_r <= FSM_STATE_IN_RESET;
-  else
-    fsm_state_r <= fsm_state_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (waddr_en)
-    waddr_r <= waddr_w;
-
 // ========================================================================== //
 //                                                                            //
 //  Outputs                                                                   //
 //                                                                            //
 // ========================================================================== //
 
-assign o_busy_r = fsm_state_r [BUSY_B];
+assign o_y = y;
 
-assign o_init_wen_r = o_busy_r;
-assign o_init_waddr_r = waddr_r [$clog2(N) - 1:0];
-assign o_init_wdata_r = '0;
+endmodule // mux
 
-endmodule // v_init

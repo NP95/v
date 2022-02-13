@@ -29,16 +29,7 @@
 
 `include "v_pkg.vh"
 
-module tb #(
-
-// -------------------------------------------------------------------------- //
-// Total number of contexts
-  parameter int CONTEXT_N = 128
-
-// -------------------------------------------------------------------------- //
-// Number of entries per context
-, parameter int ENTRIES_N = 4
-) (
+module tb (
 
 // -------------------------------------------------------------------------- //
 // List Update Bus
@@ -62,10 +53,10 @@ module tb #(
 // -------------------------------------------------------------------------- //
 // Notify Bus
 
-, output logic                                    o_lv0_vld
-, output v_pkg::id_t                              o_lv0_prod_id
-, output v_pkg::key_t                             o_lv0_key
-, output v_pkg::size_t                            o_lv0_size
+, output logic                                    o_lv0_vld_r
+, output v_pkg::id_t                              o_lv0_prod_id_r
+, output v_pkg::key_t                             o_lv0_key_r
+, output v_pkg::size_t                            o_lv0_size_r
 
 // -------------------------------------------------------------------------- //
 // Status
@@ -83,7 +74,7 @@ module tb #(
 //                                                                            //
 // ========================================================================== //
 
-v #(.CONTEXT_N, .ENTRIES_N) u_v (
+v u_v (
   //
     .i_upd_vld                          (i_upd_vld)
   , .i_upd_prod_id                      (i_upd_prod_id)
@@ -99,10 +90,10 @@ v #(.CONTEXT_N, .ENTRIES_N) u_v (
   , .o_lut_error                        (o_lut_error)
   , .o_lut_listsize                     (o_lut_listsize)
   //
-  , .o_lv0_vld                          (o_lv0_vld)
-  , .o_lv0_prod_id                      (o_lv0_prod_id)
-  , .o_lv0_key                          (o_lv0_key)
-  , .o_lv0_size                         (o_lv0_size)
+  , .o_lv0_vld_r                        (o_lv0_vld_r)
+  , .o_lv0_prod_id_r                    (o_lv0_prod_id_r)
+  , .o_lv0_key_r                        (o_lv0_key_r)
+  , .o_lv0_size_r                       (o_lv0_size_r)
   //
   , .o_busy_r                           (o_busy_r)
   //

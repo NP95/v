@@ -26,6 +26,8 @@
 ##========================================================================== //
 
 set(RTL_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/dec.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/mux.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_pipe_update.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_pipe_query.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/v_init.sv"

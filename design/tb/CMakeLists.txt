@@ -66,7 +66,6 @@ set(VERILATOR_COMMAND_LIST
   "${TB_SOURCES}")
 
 macro (set_tb_param k v)
-  list(APPEND VERILATOR_COMMAND_LIST "-G${k}=${v}")
   set(${k} ${v})
 endmacro ()
 

@@ -29,16 +29,7 @@
 
 `include "v_pkg.vh"
 
-module v #(
-
-// -------------------------------------------------------------------------- //
-// Total number of contexts
-  parameter int CONTEXT_N = 128
-
-// -------------------------------------------------------------------------- //
-// Number of entries per context
-, parameter int ENTRIES_N = 4
-) (
+module v (
 
 // -------------------------------------------------------------------------- //
 // List Update Bus
@@ -61,11 +52,10 @@ module v #(
 
 // -------------------------------------------------------------------------- //
 // Notify Bus
-
-, output logic                                    o_lv0_vld
-, output v_pkg::id_t                              o_lv0_prod_id
-, output v_pkg::key_t                             o_lv0_key
-, output v_pkg::size_t                            o_lv0_size
+, output logic                                    o_lv0_vld_r
+, output v_pkg::id_t                              o_lv0_prod_id_r
+, output v_pkg::key_t                             o_lv0_key_r
+, output v_pkg::size_t                            o_lv0_size_r
 
 // -------------------------------------------------------------------------- //
 // Status
@@ -135,13 +125,18 @@ v_pipe_update u_v_pipe_update (
   , .o_state_waddr_r                    (state_waddr_r)
   , .o_state_wdata_r                    (state_wdata_r)
   //
+  , .o_lv0_vld_r                        (o_lv0_vld_r)
+  , .o_lv0_prod_id_r                    (o_lv0_prod_id_r)
+  , .o_lv0_key_r                        (o_lv0_key_r)
+  , .o_lv0_size_r                       (o_lv0_size_r)
+  //
   , .clk                                (clk)
   , .rst                                (rst)
 );
 
 // -------------------------------------------------------------------------- //
 //
-sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_update (
+sram1r1w #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_update (
   //
     .i_ren                              ()
   , .i_raddr                            ()
@@ -157,13 +152,26 @@ sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_update (
 // -------------------------------------------------------------------------- //
 v_pipe_query u_v_pipe_query (
   //
-    .clk                                (clk)
+    .i_lut_vld                          (i_lut_vld)
+  , .i_lut_prod_id                      (i_lut_prod_id)
+  , .i_lut_level                        (i_lut_level)
+  //
+  , .o_lut_key                          (o_lut_key)
+  , .o_lut_size                         (o_lut_size)
+  , .o_lut_error                        (o_lut_error)
+  , .o_lut_listsize                     (o_lut_listsize)
+  //
+  , .i_state_rdata                      ()
+  , .o_state_ren                        ()
+  , .o_state_raddr                      ()
+  //
+  , .clk                                (clk)
   , .rst                                (rst)
 );
 
 // -------------------------------------------------------------------------- //
 //
-sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_query (
+sram1r1w #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_query (
   //
     .i_ren                              ()
   , .i_raddr                            ()
@@ -178,7 +186,7 @@ sram1r1w #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_sram1r1w_query (
 
 // -------------------------------------------------------------------------- //
 //
-v_init #(.W($bits(v_pkg::state_t)), .N(v_pkg::CONTEXT_N)) u_init (
+v_init #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
   //
     .o_init_wen_r                       (init_wen_r)
   , .o_init_waddr_r                     (init_waddr_r)

@@ -52,6 +52,13 @@ module v_pipe_update (
 , output v_pkg::state_t                           o_state_wdata_r
 
 // -------------------------------------------------------------------------- //
+// Notify Bus
+, output logic                                    o_lv0_vld_r
+, output v_pkg::id_t                              o_lv0_prod_id_r
+, output v_pkg::key_t                             o_lv0_key_r
+, output v_pkg::size_t                            o_lv0_size_r
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst
@@ -225,8 +232,15 @@ always_ff @(posedge clk)
 assign o_state_ren = s1_state_ren;
 assign o_state_raddr = s1_state_raddr;
 
+// State update
 assign o_state_wen_r = '0;
 assign o_state_waddr_r = '0;
 assign o_state_wdata_r = '0;
+
+// Notify interface
+assign o_lv0_vld_r = '0;
+assign o_lv0_prod_id_r = '0;
+assign o_lv0_key_r = '0;
+assign o_lv0_size_r = '0;
 
 endmodule // v_pipe_update
