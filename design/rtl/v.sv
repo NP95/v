@@ -86,6 +86,8 @@ logic                                   init_wen_r;
 v_pkg::addr_t                           init_waddr_r;
 v_pkg::state_t                          init_wdata_r;
 //
+logic                                   init_r;
+//
 logic                                   state_wen_r;
 v_pkg::addr_t                           state_waddr_r;
 v_pkg::state_t                          state_wdata_r;
@@ -229,10 +231,20 @@ v_init #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
   , .o_init_waddr_r                     (init_waddr_r)
   , .o_init_wdata_r                     (init_wdata_r)
   //
+  , .i_init                             (1'b0)
+  //
   , .o_busy_r                           (o_busy_r)
   //
   , .clk                                (clk)
   , .rst                                (rst)
 );
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    init_r <= 'b1;
+  else
+    init_r <= 'b0;
 
 endmodule // v

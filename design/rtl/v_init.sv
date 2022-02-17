@@ -45,7 +45,9 @@ module v_init #(
 , output logic [W - 1:0]                          o_init_wdata_r
 
 // -------------------------------------------------------------------------- //
-// Status
+// Control/Status
+, input                                           i_init
+//
 , output logic                                    o_busy_r
 
 // -------------------------------------------------------------------------- //
@@ -60,23 +62,32 @@ module v_init #(
 //                                                                            //
 // ========================================================================== //
 
-localparam int BUSY_B = 1;
-localparam int CNT_EN_B = 0;
-
-typedef enum logic [1:0] {  FSM_STATE_IN_RESET = 2'b10,
-                            FSM_STATE_INIT     = 2'b11,
-                            FSM_STATE_DONE     = 2'b00
+typedef enum logic [2:0] {  FSM_STATE_IDLE = 3'b001,
+                            FSM_STATE_BUSY = 3'b010,
+                            FSM_STATE_DONE = 3'b100,
+                            FSM_STATE_EXIT = 3'b000
                           } fsm_state_t;
 
+localparam int FSM_STATE_W = $bits(fsm_state_t);
+
+
+logic                                   fsm_state_en;
 fsm_state_t                             fsm_state_r;
 fsm_state_t                             fsm_state_w;
+fsm_state_t                             fsm_state_idle_next;
+fsm_state_t                             fsm_state_busy_next;
+fsm_state_t                             fsm_state_done_next;
+logic                                   st_idle;
+logic                                   st_busy;
+logic                                   st_done;
+logic                                   st_exit;
+logic                                   busy_r;
+logic                                   busy_w;
 
-// Extended address type to represent the inclusive range [0, N].
-typedef logic [$clog2(N + 1) - 1:0]     addr_t;
-logic                                   fsm_last_word;
-addr_t                                  waddr_r;
-addr_t                                  waddr_w;
 logic                                   waddr_en;
+logic [$clog2(N) - 1:0]                 waddr_r;
+logic [$clog2(N) - 1:0]                 waddr_w;
+logic                                   waddr_is_final;
 
 // ========================================================================== //
 //                                                                            //
@@ -85,26 +96,48 @@ logic                                   waddr_en;
 // ========================================================================== //
   
 // -------------------------------------------------------------------------- //
-//
-always_comb begin : fsm_PROC
+// State decoders
 
-  waddr_en = fsm_state_r [CNT_EN_B];
-  waddr_w  = (fsm_state_r == FSM_STATE_IN_RESET) ? '0 : (waddr_r + 'b1);
+assign st_idle = (fsm_state_r == FSM_STATE_IDLE);
+assign st_busy = (fsm_state_r == FSM_STATE_BUSY);
+assign st_done = (fsm_state_r == FSM_STATE_DONE);
+assign st_exit = (fsm_state_r == FSM_STATE_EXIT);
 
-  fsm_last_word = (waddr_w == addr_t'(N));
+// -------------------------------------------------------------------------- //
+// Status:
+assign busy_w = (fsm_state_w == FSM_STATE_IDLE) ||
+		(fsm_state_w == FSM_STATE_BUSY);
 
-  // TODO: rework and tidy-up.
-  
-  // FSM state transition logic:
-  case (fsm_state_r)
-    FSM_STATE_IN_RESET: fsm_state_w = FSM_STATE_INIT;
-    FSM_STATE_INIT:     fsm_state_w =
-      fsm_last_word ? FSM_STATE_DONE : FSM_STATE_INIT;
-    FSM_STATE_DONE:     fsm_state_w = fsm_state_r;
-    default:            fsm_state_w = 'x;
-  endcase // case (fsm_state_r)
+// -------------------------------------------------------------------------- //
+// Address:
+assign waddr_en = (st_busy | i_init);
 
-end // block: fsm_PROC
+
+assign waddr_w  = st_idle ? '0 :
+                  st_busy ? (waddr_r + 'b1) :
+                  waddr_r;
+
+localparam int FINAL_ADDRESS = N - 1;
+
+assign waddr_is_final = (waddr_r == FINAL_ADDRESS[$clog2(N) - 1:0]);
+
+// -------------------------------------------------------------------------- //
+// State transitions:
+
+assign fsm_state_en = i_init | (fsm_state_r != fsm_state_w);
+
+assign fsm_state_idle_next = FSM_STATE_BUSY;
+
+// Remain in BUSY state until entire address range has been exhausted.
+assign fsm_state_busy_next = waddr_is_final ? FSM_STATE_DONE : FSM_STATE_BUSY;
+
+assign fsm_state_done_next = FSM_STATE_EXIT;
+
+// State update mux.
+assign fsm_state_w = ({FSM_STATE_W{i_init}} & FSM_STATE_IDLE) |
+                     ({FSM_STATE_W{st_idle}} & fsm_state_idle_next) |
+                     ({FSM_STATE_W{st_busy}} & fsm_state_busy_next) |
+                     ({FSM_STATE_W{st_done}} & fsm_state_done_next) ;
 
 // ========================================================================== //
 //                                                                            //
@@ -115,9 +148,13 @@ end // block: fsm_PROC
 // -------------------------------------------------------------------------- //
 //
 always_ff @(posedge clk)
-  if (rst)
-    fsm_state_r <= FSM_STATE_IN_RESET;
-  else
+  if (waddr_en)
+    waddr_r <= waddr_w;
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (fsm_state_en)
     fsm_state_r <= fsm_state_w;
 
 // -------------------------------------------------------------------------- //
@@ -126,15 +163,23 @@ always_ff @(posedge clk)
   if (waddr_en)
     waddr_r <= waddr_w;
 
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    busy_r <= 'b1;
+  else
+    busy_r <= busy_w;
+
 // ========================================================================== //
 //                                                                            //
 //  Outputs                                                                   //
 //                                                                            //
 // ========================================================================== //
 
-assign o_busy_r = fsm_state_r [BUSY_B];
+assign o_busy_r = busy_r;
 
-assign o_init_wen_r = o_busy_r;
+assign o_init_wen_r = '0;
 assign o_init_waddr_r = waddr_r [$clog2(N) - 1:0];
 assign o_init_wdata_r = '0;
 
