@@ -168,20 +168,20 @@ logic                                             s4_upd_vld_w;
 v_pkg::id_t                                       s4_upd_prod_id_w;
 v_pkg::state_t                                    s4_upd_state_w;
 
-// S4:
-//
-//
-logic                                             s4_upd_vld_r;
-v_pkg::id_t                                       s4_upd_prod_id_r;
-v_pkg::state_t                                    s4_upd_state_r;
-logic                                             s4_upd_notify_r;
-
 
 // EXE
 logic                                             exe_notify_vld;
 v_pkg::key_t                                      exe_notify_key;
 v_pkg::volume_t                                   exe_notify_volume;
 
+// Writeback
+logic                                             wrbk_vld_w;
+logic                                             wrbk_vld_r;
+logic                                             wrbk_en;
+v_pkg::id_t                                       wrbk_prod_id_w;
+v_pkg::id_t                                       wrbk_prod_id_r;
+v_pkg::state_t                                    wrbk_state_w;
+v_pkg::state_t                                    wrbk_state_r;
 
 // Notify bus:
 logic                                             lv0_vld_w;
@@ -222,8 +222,8 @@ always_comb begin : s1_PROC
   // Writeback collision: Forward write-back state to S2 read port on collision;
   // also kill lookup into state table to prevent possible data corruption where
   // memory does not support forwarding.
-  s2_upd_wrbk_vld_w = s4_upd_vld_r & (s4_upd_prod_id_w == s1_upd_prod_id_r);
-  s2_upd_wrbk_w     = s4_upd_state_r;
+  s2_upd_wrbk_vld_w = wrbk_vld_r & (wrbk_prod_id_r == s1_upd_prod_id_r);
+  s2_upd_wrbk_w     = wrbk_state_r;
 
   //
   s1_state_ren 	    = s1_upd_vld_r & (~s2_upd_wrbk_vld_w);
@@ -245,7 +245,7 @@ end // block: s1_PROC
 //
 
 // Attempt hit on current writeback.
-assign s2_upd_state_fwd [1] = s4_upd_vld_r & (s4_upd_prod_id_r == s2_upd_prod_id_r);
+assign s2_upd_state_fwd [1] = wrbk_vld_r & (wrbk_prod_id_r == s2_upd_prod_id_r);
 // Otherwise, attempt hit on prior writeback
 assign s2_upd_state_fwd [0] = s2_upd_wrbk_vld_r;
 
@@ -254,7 +254,7 @@ assign s2_upd_state_sel_early = (|s2_upd_state_fwd);
 // Early state forwarding; the state that is expected to arrival
 // relatively early into the current cycle.
 assign s2_upd_state_early =
-   {v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & s4_upd_state_r |
+   {v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & wrbk_state_r |
    {v_pkg::STATE_BITS{s2_upd_state_fwd[0]}} & s2_upd_wrbk_r;
 
 // Final State forwarding injecting those signals (from RAM) that is expected to
@@ -276,15 +276,13 @@ assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
 assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
 assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
 
-//assign s3_exe_stcur_count_r = s3_upd_state_r.listsize;
 
-assign s4_upd_en = s3_upd_vld_r;
 
-// Ucode:
-//assign s4_upd_prod_id_w = s3_upd_prod_id_r;
-//assign s4_upd_key_w = s3_upd_key_r;
-//assign s4_upd_size_w = s3_upd_size_r;
-//assign s4_upd_notify_w = 'b0;
+// Writeback:
+assign wrbk_vld_w = s3_upd_vld_r;
+assign wrbk_en = wrbk_vld_w;
+assign wrbk_prod_id_w = s3_upd_prod_id_r;
+assign wrbk_state_w = '0;
 
 // Notify bus:
 assign lv0_vld_w = s3_upd_vld_r & exe_notify_vld;
@@ -292,10 +290,6 @@ assign lv0_en = lv0_vld_w;
 assign lv0_prod_id_w = s3_upd_prod_id_r;
 assign lv0_key_w = exe_notify_key;
 assign lv0_size_w = exe_notify_volume;
-
-// -------------------------------------------------------------------------- //
-// S4 Stage: Writeback Stage
-//
 
 // ========================================================================== //
 //                                                                            //
@@ -366,22 +360,18 @@ always_ff @(posedge clk)
 //
 always_ff @(posedge clk)
   if (rst)
-    s4_upd_vld_r <= 'b0;
+    wrbk_vld_r <= 'b0;
   else
-    s4_upd_vld_r <= s4_upd_vld_w;
+    wrbk_vld_r <= wrbk_vld_w;
 
 // -------------------------------------------------------------------------- //
 //
-/*
 always_ff @(posedge clk)
-  if (s4_upd_en) begin
-    s4_upd_prod_id_r <= s4_upd_prod_id_w;
-    s4_upd_key_r     <= s4_upd_key_w;
-    s4_upd_size_r    <= s4_upd_size_w;
-
-    s4_upd_notify_r  <= s4_upd_notify_w;
+  if (wrbk_en) begin
+    wrbk_prod_id_r <= wrbk_prod_id_w;
+    wrbk_state_r   <= wrbk_state_w;
   end
-*/
+
 // -------------------------------------------------------------------------- //
 //
 always_ff @(posedge clk)
@@ -447,9 +437,9 @@ assign o_state_ren = s1_state_ren;
 assign o_state_raddr = s1_state_raddr;
 
 // State update
-assign o_state_wen_r = s4_upd_vld_r;
-assign o_state_waddr_r = s4_upd_prod_id_r;
-assign o_state_wdata_r = s4_upd_state_r;
+assign o_state_wen_r = wrbk_vld_r;
+assign o_state_waddr_r = wrbk_prod_id_r;
+assign o_state_wdata_r = wrbk_state_r;
 
 // Notify interface
 assign o_lv0_vld_r = lv0_vld_r;

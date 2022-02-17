@@ -73,14 +73,23 @@ module v (
 //                                                                            //
 // ========================================================================== //
 
+//
+logic                                   update_ren;
+v_pkg::addr_t                           update_raddr;
+v_pkg::state_t                          update_rdata;
+//
+logic                                   query_ren;
+v_pkg::addr_t                           query_raddr;
+v_pkg::state_t                          query_rdata;
+//
 logic                                   init_wen_r;
 v_pkg::addr_t                           init_waddr_r;
 v_pkg::state_t                          init_wdata_r;
-
+//
 logic                                   state_wen_r;
 v_pkg::addr_t                           state_waddr_r;
 v_pkg::state_t                          state_wdata_r;
-
+//
 logic                                   wen;
 v_pkg::addr_t                           waddr;
 v_pkg::state_t                          wdata;
@@ -127,9 +136,9 @@ v_pipe_update u_v_pipe_update (
   , .i_upd_key                          (i_upd_key)
   , .i_upd_size                         (i_upd_size)
   //
-  , .i_state_rdata                      ()
-  , .o_state_ren                        ()
-  , .o_state_raddr                      ()
+  , .i_state_rdata                      (update_rdata)
+  , .o_state_ren                        (update_ren)
+  , .o_state_raddr                      (update_raddr)
   //
   , .o_state_wen_r                      (state_wen_r)
   , .o_state_waddr_r                    (state_waddr_r)
@@ -157,9 +166,9 @@ v_pipe_update u_v_pipe_update (
 //
 sram1r1w #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_update (
   //
-    .i_ren                              ()
-  , .i_raddr                            ()
-  , .o_rdata                            ()
+    .i_ren                              (update_ren)
+  , .i_raddr                            (update_raddr)
+  , .o_rdata                            (update_rdata)
   //
   , .i_wen                              (wen)
   , .i_waddr                            (waddr)
@@ -180,9 +189,9 @@ v_pipe_query u_v_pipe_query (
   , .o_lut_error                        (o_lut_error)
   , .o_lut_listsize                     (o_lut_listsize)
   //
-  , .i_state_rdata                      ()
-  , .o_state_ren                        ()
-  , .o_state_raddr                      ()
+  , .i_state_rdata                      (update_rdata)
+  , .o_state_ren                        (update_ren)
+  , .o_state_raddr                      (update_raddr)
   //
   , .i_s1_upd_vld_r                     (s1_upd_vld_r)
   , .i_s1_upd_prod_id_r                 (s1_upd_prod_id_r)
@@ -201,9 +210,9 @@ v_pipe_query u_v_pipe_query (
 //
 sram1r1w #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_query (
   //
-    .i_ren                              ()
-  , .i_raddr                            ()
-  , .o_rdata                            ()
+    .i_ren                              (query_ren)
+  , .i_raddr                            (query_raddr)
+  , .o_rdata                            (query_rdata)
   //
   , .i_wen                              (wen)
   , .i_waddr                            (waddr)

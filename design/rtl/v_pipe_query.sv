@@ -80,20 +80,26 @@ module v_pipe_query (
 // S0
 logic                                   s0_state_ren;
 v_pkg::id_t                             s0_state_raddr;
-
-// S1
+logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_w;
 logic                                   s1_lut_en;
 v_pkg::id_t                             s1_lut_prod_id_w;
-v_pkg::id_t                             s1_lut_prod_id_r;
 v_pkg::level_t                          s1_lut_level_w;
-v_pkg::level_t                          s1_lut_level_r;
+logic                                   s1_lut_error_is_busy;
 logic                                   s1_lut_error_w;
+
+// S1
+v_pkg::id_t                             s1_lut_prod_id_r;
+v_pkg::level_t                          s1_lut_level_r;
 logic                                   s1_lut_error_r;
+logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_r;
+v_pkg::key_t                            s1_lut_key_r;
+v_pkg::volume_t                         s1_lut_volume_r;
 
 v_pkg::listsize_t                       s1_lut_listsize;
 logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec;
 v_pkg::key_t                            s1_lut_key;
 v_pkg::volume_t                         s1_lut_volume;
+logic                                   s1_lut_error_invalid_entry;
 logic                                   s1_lut_error;
 
 // ========================================================================== //
@@ -103,47 +109,59 @@ logic                                   s1_lut_error;
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// S0:
 //
-always_comb begin : s0_ucode_PROC
+// State table lookup
+assign s0_state_ren     = i_lut_vld;
+assign s0_state_raddr   = i_lut_prod_id;
 
-  // State table lookup
-  s0_state_ren     = i_lut_vld;
-  s0_state_raddr   = i_lut_prod_id;
+assign s1_lut_en        = i_lut_vld;
+assign s1_lut_prod_id_w = i_lut_prod_id;
+assign s1_lut_level_w   = i_lut_level;
 
-  s1_lut_en        = i_lut_vld;
-  s1_lut_prod_id_w = i_lut_prod_id;
-  s1_lut_level_w   = i_lut_level;
+// Flag indicating "list busy or not valid entry".
+//
+// We consider the "list busy" whenever there is a in-flight operation to the
+// currently addressed ID in the update pipeline. Whenever an update is
+// in-flight, we simply error-out. Otherwise, it would be possible to use some
+// more sophisticated forwarding, but this is probably overkill in this
+// context and is not required by the specification.
+//
+assign s1_lut_error_is_busy   =
+    (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == i_lut_prod_id)) |
+    (i_s2_upd_vld_r & (i_s2_upd_prod_id_r == i_lut_prod_id)) |
+    (i_s3_upd_vld_r & (i_s3_upd_prod_id_r == i_lut_prod_id)) |
+    (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id));
 
-  // Flag indicating "list busy or not valid entry".
-  //
-  // We consider the "list busy" whenever there is a in-flight operation to the
-  // currently addressed ID in the update pipeline. Whenever an update is
-  // in-flight, we simply error-out. Otherwise, it would be possible to use some
-  // more sophisticated forwarding, but this is probably overkill in this
-  // context and is not required by the specification.
-  //
-  // We consider a "not valid entry" whenever the queried entry is empty. In
-  // this case, although the size returned is valid (zero), the key/volume tuple
-  // is not. This calculation is computed in S1 once data has returned from the
-  // state table.
-  //
-  s1_lut_error_w   = (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == i_lut_prod_id)) |
-                     (i_s2_upd_vld_r & (i_s2_upd_prod_id_r == i_lut_prod_id)) |
-                     (i_s3_upd_vld_r & (i_s3_upd_prod_id_r == i_lut_prod_id)) |
-                     (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id));
-
-end // block: s0_ucode_PROC
+assign s1_lut_error = s1_lut_error_is_busy;
 
 // -------------------------------------------------------------------------- //
+// S1
+
+// The validity of each entry in the state table is retained as a bit-vector. To
+// compute the list occupancy (size) from this require would require a
+// population count operation. Although not too difficult to implement using a
+// CSA structure, this is quite a lot of combinatorial logic to attached to the
+// late-arriving data from the state table RAM. Due to the fact that this is
+// latency constrained path, it's not possible to pipeline this operation over
+// multiple cycles. To overcome this problem, we retain a current list count in
+// the table itself which is updated each time an entry is modified. The query
+// pipeline simply retains this pre-computed state.
 //
-always_comb begin : s1_ucode_PROC
+assign s1_lut_listsize = i_state_rdata.listsize;
 
-  s1_lut_listsize = i_state_rdata.listsize;
+// A 'level' is invalid if its associated valid bit is 'b0. As above, we retain
+// a bit-vector containing the valid entries within the state. To compute
+// whether we are querying a valid entry, we simply consider the valid bit
+// associated with its entry. We can perform this calculation trivially using
+// the decoded version of the level, which we otherwise require to mux out the
+// state from the RAM.
+//
+assign s1_lut_error_invalid_entry =
+    ((s1_lut_level_dec_r & i_state_rdata.vld) == '0);
 
-  // Error on prior hazard in update pipeline, or whenever table size is zero.
-  s1_lut_error 	  = s1_lut_error_r | (i_state_rdata.listsize == '0);
-
-end // block: s1_ucode_PROC
+// Form final error state
+assign s1_lut_error = s1_lut_error_r | s1_lut_error_invalid_entry;
 
 // ========================================================================== //
 //                                                                            //
@@ -155,9 +173,11 @@ end // block: s1_ucode_PROC
 //
 always_ff @(posedge clk)
   if (s1_lut_en) begin : s1_ucode_reg_PROC
-    s1_lut_prod_id_r <= s1_lut_prod_id_w;
-    s1_lut_level_r   <= s1_lut_level_w;
-    s1_lut_error_r   <= s1_lut_error_w;
+    s1_lut_prod_id_r   <= s1_lut_prod_id_w;
+    s1_lut_level_r     <= s1_lut_level_w;
+    s1_lut_error_r     <= s1_lut_error_w;
+
+    s1_lut_level_dec_r <= s1_lut_level_dec_w;
   end // block: s1_ucode_reg_PROC
 
 // ========================================================================== //
@@ -168,11 +188,11 @@ always_ff @(posedge clk)
 
 // -------------------------------------------------------------------------- //
 //
-dec #(.N(v_pkg::ENTRIES_N)) u_s1_id_dec (
+dec #(.N(v_pkg::ENTRIES_N)) u_s0_id_dec (
 //
-  .i_x                                  (s1_lut_level_r)
+  .i_x                                  (i_lut_level)
 //
-, .o_y                                  (s1_lut_level_dec)
+, .o_y                                  (s1_lut_level_dec_w)
 );
 
 // -------------------------------------------------------------------------- //
@@ -180,7 +200,7 @@ dec #(.N(v_pkg::ENTRIES_N)) u_s1_id_dec (
 mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 //
   .i_x                                  (i_state_rdata.key)
-, .i_sel                                (s1_lut_level_dec)
+, .i_sel                                (s1_lut_level_dec_r)
 //
 , .o_y                                  (s1_lut_key)
 );
@@ -190,7 +210,7 @@ mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
 //
   .i_x                                  (i_state_rdata.volume)
-, .i_sel                                (s1_lut_level_dec)
+, .i_sel                                (s1_lut_level_dec_r)
 //
 , .o_y                                  (s1_lut_volume)
 );
