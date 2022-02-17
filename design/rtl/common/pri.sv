@@ -27,31 +27,17 @@
 
 `include "common_defs.vh"
 
-module v_init #(
-
-// -------------------------------------------------------------------------- //
-// Word count
-  parameter int N
-
-// -------------------------------------------------------------------------- //
-// Word width
-, parameter int W
+module pri #(
+  // Width of vector
+  parameter int W
 ) (
+// -------------------------------------------------------------------------- //
+//
+  input [W - 1:0]                                 i_x
 
 // -------------------------------------------------------------------------- //
-// Memory Interfacex
-  output logic                                    o_init_wen_r
-, output logic [$clog2(N) - 1:0]                  o_init_waddr_r
-, output logic [W - 1:0]                          o_init_wdata_r
-
-// -------------------------------------------------------------------------- //
-// Status
-, output logic                                    o_busy_r
-
-// -------------------------------------------------------------------------- //
-// Clk/Reset
-, input                                           clk
-, input                                           rst
+//
+, output logic [W - 1:0]                          o_y
 );
 
 // ========================================================================== //
@@ -60,71 +46,35 @@ module v_init #(
 //                                                                            //
 // ========================================================================== //
 
-localparam int BUSY_B = 1;
-localparam int CNT_EN_B = 0;
-
-typedef enum logic [1:0] {  FSM_STATE_IN_RESET = 2'b10,
-                            FSM_STATE_INIT     = 2'b11,
-                            FSM_STATE_DONE     = 2'b00
-                          } fsm_state_t;
-
-fsm_state_t                             fsm_state_r;
-fsm_state_t                             fsm_state_w;
-
-// Extended address type to represent the inclusive range [0, N].
-typedef logic [$clog2(N + 1) - 1:0]     addr_t;
-logic                                   fsm_last_word;
-addr_t                                  waddr_r;
-addr_t                                  waddr_w;
-logic                                   waddr_en;
+logic [W - 1:0][W - 1:0]                prior_bits;
+logic [W - 1:0]                         y;
 
 // ========================================================================== //
 //                                                                            //
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
-  
-// -------------------------------------------------------------------------- //
-//
-always_comb begin : fsm_PROC
-
-  waddr_en = fsm_state_r [CNT_EN_B];
-  waddr_w  = (fsm_state_r == FSM_STATE_IN_RESET) ? '0 : (waddr_r + 'b1);
-
-  fsm_last_word = (waddr_w == addr_t'(N));
-
-  // TODO: rework and tidy-up.
-  
-  // FSM state transition logic:
-  case (fsm_state_r)
-    FSM_STATE_IN_RESET: fsm_state_w = FSM_STATE_INIT;
-    FSM_STATE_INIT:     fsm_state_w =
-      fsm_last_word ? FSM_STATE_DONE : FSM_STATE_INIT;
-    FSM_STATE_DONE:     fsm_state_w = fsm_state_r;
-    default:            fsm_state_w = 'x;
-  endcase // case (fsm_state_r)
-
-end // block: fsm_PROC
-
-// ========================================================================== //
-//                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
 
 // -------------------------------------------------------------------------- //
 //
-always_ff @(posedge clk)
-  if (rst)
-    fsm_state_r <= FSM_STATE_IN_RESET;
-  else
-    fsm_state_r <= fsm_state_w;
+always_comb begin : pri_PROC
 
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (waddr_en)
-    waddr_r <= waddr_w;
+  for (int i = 0; i < W; i++) begin
+
+
+    for (int j = 0; j < W; j++) begin
+
+      prior_bits[i][j] = (j < i) ? i_x [j] : 1'b0;
+
+    end // for (int j = 0; j < W; j++)
+
+    // Output priority selection if current input bit is high and prior bits in
+    // word are 'b0.
+    y [i] = i_x [i] & (prior_bits[i] == '0);
+    
+  end // for (int i = 0; i < W; i++)
+
+end // block: pri_PROC
 
 // ========================================================================== //
 //                                                                            //
@@ -132,10 +82,8 @@ always_ff @(posedge clk)
 //                                                                            //
 // ========================================================================== //
 
-assign o_busy_r = fsm_state_r [BUSY_B];
+// -------------------------------------------------------------------------- //
+//
+assign o_y = y;
 
-assign o_init_wen_r = o_busy_r;
-assign o_init_waddr_r = waddr_r [$clog2(N) - 1:0];
-assign o_init_wdata_r = '0;
-
-endmodule // v_init
+endmodule // pri

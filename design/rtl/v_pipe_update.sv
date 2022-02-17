@@ -85,17 +85,18 @@ module v_pipe_update (
 //                                                                            //
 // ========================================================================== //
 
-// S1:
-//
-logic                                             s1_upd_vld_r;
-logic                                             s1_upd_vld_w;
-//
+// S0:
 logic                                             s1_upd_en;
+logic                                             s1_upd_vld_w;
 //
 v_pkg::id_t                                       s1_upd_prod_id_w;
 v_pkg::cmd_t                                      s1_upd_cmd_w;
 v_pkg::key_t                                      s1_upd_key_w;
 v_pkg::size_t                                     s1_upd_size_w;
+
+// S1:
+//
+logic                                             s1_upd_vld_r;
 //
 v_pkg::id_t                                       s1_upd_prod_id_r;
 v_pkg::cmd_t                                      s1_upd_cmd_r;
@@ -104,30 +105,75 @@ v_pkg::size_t                                     s1_upd_size_r;
 //
 logic                                             s1_state_ren;
 v_pkg::addr_t                                     s1_state_raddr;
-
-// S2:
-//
-logic                                             s2_upd_vld_r;
-logic                                             s2_upd_vld_w;
 //
 logic                                             s2_upd_en;
+logic                                             s2_upd_vld_w;
 //
 v_pkg::id_t                                       s2_upd_prod_id_w;
 v_pkg::cmd_t                                      s2_upd_cmd_w;
 v_pkg::key_t                                      s2_upd_key_w;
 v_pkg::size_t                                     s2_upd_size_w;
 //
+logic                                             s2_upd_wrbk_vld_w;
+v_pkg::state_t                                    s2_upd_wrbk_w;
+
+// S2:
+//
+logic                                             s2_upd_vld_r;
+//
+logic                                             s2_upd_wrbk_vld_r;
+v_pkg::state_t                                    s2_upd_wrbk_r;
+//
 v_pkg::id_t                                       s2_upd_prod_id_r;
 v_pkg::cmd_t                                      s2_upd_cmd_r;
 v_pkg::key_t                                      s2_upd_key_r;
 v_pkg::size_t                                     s2_upd_size_r;
+//
+logic [1:0]                                       s2_upd_state_fwd;
+logic [1:0]                                       s2_upd_state_sel;
+logic                                             s2_upd_state_sel_early;
+v_pkg::state_t                                    s2_upd_state_early;
+//
+logic                                             s3_upd_en;
+logic                                             s3_upd_vld_w;
+//
+v_pkg::state_t                                    s3_upd_state_w;
+v_pkg::id_t                                       s3_upd_prod_id_w;
+v_pkg::cmd_t                                      s3_upd_cmd_w;
+v_pkg::key_t                                      s3_upd_key_w;
+v_pkg::size_t                                     s3_upd_size_w;
 
 // S3:
 //
 logic                                             s3_upd_vld_r;
-logic                                             s3_upd_vld_w;
 //
-logic                                             s3_upd_en;
+v_pkg::state_t                                    s3_upd_state_r;
+v_pkg::id_t                                       s3_upd_prod_id_r;
+v_pkg::cmd_t                                      s3_upd_cmd_r;
+v_pkg::key_t                                      s3_upd_key_r;
+v_pkg::size_t                                     s3_upd_size_r;
+//
+logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stcur_vld_r;
+v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stcur_keys_r;
+v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stcur_volumes_r;
+v_pkg::level_t                                    s3_exe_stcur_count_r;
+//
+logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stnxt_vld;
+v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stnxt_keys;
+v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stnxt_volumes;
+v_pkg::level_t                                    s3_exe_stnxt_count;
+//
+logic                                             s4_upd_en;
+logic                                             s4_upd_vld_w;
+v_pkg::id_t                                       s4_upd_prod_id_w;
+v_pkg::state_t                                    s4_upd_state_w;
+
+// S4:
+//
+//
+logic                                             s4_upd_vld_r;
+v_pkg::id_t                                       s4_upd_prod_id_r;
+v_pkg::state_t                                    s4_upd_state_r;
 
 // ========================================================================== //
 //                                                                            //
@@ -154,30 +200,71 @@ end // block: s0_PROC
 //
 always_comb begin : s1_PROC
 
+  // Writeback collision: Forward write-back state to S2 read port on collision;
+  // also kill lookup into state table to prevent possible data corruption where
+  // memory does not support forwarding.
+  s2_upd_wrbk_vld_w = s4_upd_vld_r & (s4_upd_prod_id_w == s1_upd_prod_id_r);
+  s2_upd_wrbk_w     = s4_upd_state_r;
+
   //
-  s1_state_ren 	   = s1_upd_vld_r;
-  s1_state_raddr   = '0;
+  s1_state_ren 	    = s1_upd_vld_r & (~s2_upd_wrbk_vld_w);
+  s1_state_raddr    = s1_upd_prod_id_r;
 
   // Pipeline controls:
   //
-  s2_upd_en 	   = s1_upd_vld_r;
+  s2_upd_en 	    = s1_upd_vld_r;
 
-  s2_upd_prod_id_w = s1_upd_prod_id_r;
-  s2_upd_cmd_w 	   = s1_upd_cmd_r;
-  s2_upd_key_w 	   = s1_upd_key_r;
-  s2_upd_size_w    = s1_upd_size_r;
+  s2_upd_prod_id_w  = s1_upd_prod_id_r;
+  s2_upd_cmd_w 	    = s1_upd_cmd_r;
+  s2_upd_key_w 	    = s1_upd_key_r;
+  s2_upd_size_w     = s1_upd_size_r;
 
 end // block: s1_PROC
 
 // -------------------------------------------------------------------------- //
+// S2 Stage: State arrival and EXE-forwarding stage.
 //
-always_comb begin : s2_PROC
 
-end // block: s2_PROC
+// Attempt hit on current writeback.
+assign s2_upd_state_fwd [1] = s4_upd_vld_r & (s4_upd_prod_id_r == s2_upd_prod_id_r);
+// Otherwise, attempt hit on prior writeback
+assign s2_upd_state_fwd [0] = s2_upd_wrbk_vld_r;
+
+assign s2_upd_state_sel_early = (|s2_upd_state_fwd);
+
+// Early state forwarding; the state that is expected to arrival
+// relatively early into the current cycle.
+assign s2_upd_state_early =
+   {v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & s4_upd_state_r |
+   {v_pkg::STATE_BITS{s2_upd_state_fwd[0]}} & s2_upd_wrbk_r;
+
+// Final State forwarding injecting those signals (from RAM) that is expected to
+// arrive relatively late into the cycle. To this so that such state is injected
+// late into the overall combinatorial logic cone.
+assign s3_upd_state_w =
+   {v_pkg::STATE_BITS{ s2_upd_state_sel_early}} & s2_upd_state_early |
+   {v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata;
+
+assign s3_upd_prod_id_w = s2_upd_prod_id_r;
+assign s3_upd_cmd_w = s2_upd_cmd_r;
+assign s3_upd_key_w = s2_upd_key_r;
+assign s3_upd_size_w = s2_upd_size_r;
 
 // -------------------------------------------------------------------------- //
+// S3 Stage: Execute Stage
 //
+assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
+assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
+assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
+// TODO: rationalize this.
+//assign s3_exe_stcur_count_r = s3_upd_state_r.listsize;
+
 always_comb begin : s3_PROC
+
+
+  s4_upd_vld_w     = 'b0;
+  s4_upd_prod_id_w = '0;
+  s4_upd_state_w   = '0;
 
 end // block: s3_PROC
   
@@ -199,10 +286,11 @@ always_ff @(posedge clk)
 //
 always_ff @(posedge clk)
   if (s1_upd_en) begin
-    s1_upd_prod_id_r <= s1_upd_prod_id_w;
-    s1_upd_cmd_r     <= s1_upd_cmd_w;
-    s1_upd_key_r     <= s1_upd_key_w;
-    s1_upd_size_r    <= s1_upd_size_w;
+    // Pipeline ucode:
+    s1_upd_prod_id_r  <= s1_upd_prod_id_w;
+    s1_upd_cmd_r      <= s1_upd_cmd_w;
+    s1_upd_key_r      <= s1_upd_key_w;
+    s1_upd_size_r     <= s1_upd_size_w;
   end
 
 // -------------------------------------------------------------------------- //
@@ -217,10 +305,24 @@ always_ff @(posedge clk)
 //
 always_ff @(posedge clk)
   if (s2_upd_en) begin
+    // Writeback collision ucode:
+    s2_upd_wrbk_vld_r <= s2_upd_wrbk_vld_w;
+    s2_upd_wrbk_r     <= s2_upd_wrbk_w;
+
     s2_upd_prod_id_r <= s2_upd_prod_id_w;
     s2_upd_cmd_r     <= s2_upd_cmd_w;
     s2_upd_key_r     <= s2_upd_key_w;
     s2_upd_size_r    <= s2_upd_size_w;
+  end
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (s3_upd_en) begin
+    s3_upd_prod_id_r <= s3_upd_prod_id_w;
+    s3_upd_cmd_r     <= s3_upd_cmd_w;
+    s3_upd_key_r     <= s3_upd_key_w;
+    s3_upd_size_r    <= s3_upd_size_w;
   end
 
 // -------------------------------------------------------------------------- //
@@ -245,19 +347,30 @@ always_ff @(posedge clk)
   
 // -------------------------------------------------------------------------- //
 //
+pri #(.W(2)) u_s3_forwarding_pri (
+  //
+    .i_x                                (s2_upd_state_fwd)
+  //
+  , .o_y                                (s2_upd_state_sel)
+);
+
+// -------------------------------------------------------------------------- //
+//
 v_pipe_update_exe u_v_pipe_update_exe (
   //
-    .i_pipe_cmd_r                       ()
-  , .i_pipe_key_r                       ()
-  , .i_pipe_volume_r                    ()
+    .i_pipe_cmd_r                       (s3_upd_cmd_r)
+  , .i_pipe_key_r                       (s3_upd_key_r)
+  , .i_pipe_volume_r                    (s3_upd_size_r)
   //
-  , .i_stcur_vld_r                      ()
-  , .i_stcur_keys_r                     ()
-  , .i_stcur_volumes_r                  ()
+  , .i_stcur_vld_r                      (s3_exe_stcur_vld_r)
+  , .i_stcur_keys_r                     (s3_exe_stcur_keys_r)
+  , .i_stcur_volumes_r                  (s3_exe_stcur_volumes_r)
+  , .i_stcur_count_r                    (s3_exe_stcur_count_r)
   //
-  , .o_stnxt_vld                        ()
-  , .o_stnxt_keys                       ()
-  , .o_stnxt_volumes                    ()
+  , .o_stnxt_vld                        (s3_exe_stnxt_vld)
+  , .o_stnxt_keys                       (s3_exe_stnxt_keys)
+  , .o_stnxt_volumes                    (s3_exe_stnxt_volumes)
+  , .o_stnxt_count                      (s3_exe_stnxt_count)
 );
 
 // ========================================================================== //
@@ -270,9 +383,9 @@ assign o_state_ren = s1_state_ren;
 assign o_state_raddr = s1_state_raddr;
 
 // State update
-assign o_state_wen_r = '0;
-assign o_state_waddr_r = '0;
-assign o_state_wdata_r = '0;
+assign o_state_wen_r = s4_upd_vld_r;
+assign o_state_waddr_r = s4_upd_prod_id_r;
+assign o_state_wdata_r = s4_upd_state_r;
 
 // Notify interface
 assign o_lv0_vld_r = '0;

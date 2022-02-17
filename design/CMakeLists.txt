@@ -26,6 +26,10 @@
 ##========================================================================== //
 
 set(RTL_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/vld.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/mask.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/lzd.sv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/pri.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/cmp.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/dec.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/mux.sv"
