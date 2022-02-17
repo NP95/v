@@ -32,8 +32,9 @@ package v_pkg;
 
 localparam int CONTEXT_N = @CONTEXT_N@;
 
-
 localparam int ENTRIES_N = @ENTRIES_N@;
+
+localparam bit IS_BID_TABLE = 'b0;
 
 typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
 

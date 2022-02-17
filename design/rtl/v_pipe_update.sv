@@ -174,6 +174,25 @@ v_pkg::state_t                                    s4_upd_state_w;
 logic                                             s4_upd_vld_r;
 v_pkg::id_t                                       s4_upd_prod_id_r;
 v_pkg::state_t                                    s4_upd_state_r;
+logic                                             s4_upd_notify_r;
+
+
+// EXE
+logic                                             exe_notify_vld;
+v_pkg::key_t                                      exe_notify_key;
+v_pkg::volume_t                                   exe_notify_volume;
+
+
+// Notify bus:
+logic                                             lv0_vld_w;
+logic                                             lv0_vld_r;
+logic                                             lv0_en;
+v_pkg::id_t                                       lv0_prod_id_w;
+v_pkg::id_t                                       lv0_prod_id_r;
+v_pkg::key_t                                      lv0_key_w;
+v_pkg::key_t                                      lv0_key_r;
+v_pkg::volume_t                                   lv0_size_w;
+v_pkg::volume_t                                   lv0_size_r;
 
 // ========================================================================== //
 //                                                                            //
@@ -256,18 +275,28 @@ assign s3_upd_size_w = s2_upd_size_r;
 assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
 assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
 assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
-// TODO: rationalize this.
+
 //assign s3_exe_stcur_count_r = s3_upd_state_r.listsize;
 
-always_comb begin : s3_PROC
+assign s4_upd_en = s3_upd_vld_r;
 
+// Ucode:
+//assign s4_upd_prod_id_w = s3_upd_prod_id_r;
+//assign s4_upd_key_w = s3_upd_key_r;
+//assign s4_upd_size_w = s3_upd_size_r;
+//assign s4_upd_notify_w = 'b0;
 
-  s4_upd_vld_w     = 'b0;
-  s4_upd_prod_id_w = '0;
-  s4_upd_state_w   = '0;
+// Notify bus:
+assign lv0_vld_w = s3_upd_vld_r & exe_notify_vld;
+assign lv0_en = lv0_vld_w;
+assign lv0_prod_id_w = s3_upd_prod_id_r;
+assign lv0_key_w = exe_notify_key;
+assign lv0_size_w = exe_notify_volume;
 
-end // block: s3_PROC
-  
+// -------------------------------------------------------------------------- //
+// S4 Stage: Writeback Stage
+//
+
 // ========================================================================== //
 //                                                                            //
 //  Flops                                                                     //
@@ -318,6 +347,14 @@ always_ff @(posedge clk)
 // -------------------------------------------------------------------------- //
 //
 always_ff @(posedge clk)
+  if (rst)
+    s3_upd_vld_r <= 'b0;
+  else
+    s3_upd_vld_r <= s3_upd_vld_w;
+
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
   if (s3_upd_en) begin
     s3_upd_prod_id_r <= s3_upd_prod_id_w;
     s3_upd_cmd_r     <= s3_upd_cmd_w;
@@ -329,15 +366,38 @@ always_ff @(posedge clk)
 //
 always_ff @(posedge clk)
   if (rst)
-    s3_upd_vld_r <= 'b0;
+    s4_upd_vld_r <= 'b0;
   else
-    s3_upd_vld_r <= s3_upd_vld_w;
+    s4_upd_vld_r <= s4_upd_vld_w;
+
+// -------------------------------------------------------------------------- //
+//
+/*
+always_ff @(posedge clk)
+  if (s4_upd_en) begin
+    s4_upd_prod_id_r <= s4_upd_prod_id_w;
+    s4_upd_key_r     <= s4_upd_key_w;
+    s4_upd_size_r    <= s4_upd_size_w;
+
+    s4_upd_notify_r  <= s4_upd_notify_w;
+  end
+*/
+// -------------------------------------------------------------------------- //
+//
+always_ff @(posedge clk)
+  if (rst)
+    lv0_vld_r <= 'b0;
+  else
+    lv0_vld_r <= lv0_vld_w;
 
 // -------------------------------------------------------------------------- //
 //
 always_ff @(posedge clk)
-  if (s3_upd_en)
-    ;
+  if (lv0_en) begin
+    lv0_prod_id_r <= lv0_prod_id_w;
+    lv0_key_r 	  <= lv0_key_w;
+    lv0_size_r 	  <= lv0_size_w;
+  end
 
 // ========================================================================== //
 //                                                                            //
@@ -371,6 +431,10 @@ v_pipe_update_exe u_v_pipe_update_exe (
   , .o_stnxt_keys                       (s3_exe_stnxt_keys)
   , .o_stnxt_volumes                    (s3_exe_stnxt_volumes)
   , .o_stnxt_count                      (s3_exe_stnxt_count)
+  //
+  , .o_notify_vld                       (exe_notify_vld)
+  , .o_notify_key                       (exe_notify_key)
+  , .o_notify_volume                    (exe_notify_volume)
 );
 
 // ========================================================================== //
@@ -388,9 +452,9 @@ assign o_state_waddr_r = s4_upd_prod_id_r;
 assign o_state_wdata_r = s4_upd_state_r;
 
 // Notify interface
-assign o_lv0_vld_r = '0;
-assign o_lv0_prod_id_r = '0;
-assign o_lv0_key_r = '0;
-assign o_lv0_size_r = '0;
+assign o_lv0_vld_r = lv0_vld_r;
+assign o_lv0_prod_id_r = lv0_prod_id_r;
+assign o_lv0_key_r = lv0_key_r;
+assign o_lv0_size_r = lv0_size_r;
 
 endmodule // v_pipe_update
