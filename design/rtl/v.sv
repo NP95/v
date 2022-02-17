@@ -111,12 +111,12 @@ v_pkg::id_t                             s4_upd_prod_id_r;
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
-  
+
 // -------------------------------------------------------------------------- //
 //
 always_comb begin : table_update_PROC
 
-  wen 	= o_busy_r ? init_wen_r : state_wen_r;
+  wen   = o_busy_r ? init_wen_r : state_wen_r;
   waddr = o_busy_r ? init_waddr_r : state_waddr_r;
   wdata = o_busy_r ? init_wdata_r : state_wdata_r;
 

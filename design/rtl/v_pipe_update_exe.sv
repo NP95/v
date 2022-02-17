@@ -168,7 +168,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
   , .o_lt                                 (cmp_lt [i])
   );
 
-end
+end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
 // The list is ordered from MSB (left) to LSB (right) on decreasing key in the
 // BID_TABLE case, or increasing key (!BID_TABLE, i.e. ask-table) case. Compare
@@ -196,8 +196,8 @@ end
 //
 // Valid (next)  1           1           1          1          0
 //
-assign add_mask_cmp = i_stcur_vld_r & 
-		      (cmp_eq | (v_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
+assign add_mask_cmp = i_stcur_vld_r &
+                      (cmp_eq | (v_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
 
 // Use Leading-Zero Detect (LZD) to compute insertion position.
 //
@@ -334,7 +334,7 @@ assign mask_left = ({v_pkg::ENTRIES_N{op_del}} & del_mask_left);
 assign mask_insert_key = ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert);
 
 assign mask_insert_vol = ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert) |
-			 ({v_pkg::ENTRIES_N{op_rep}} & match_sel);
+                         ({v_pkg::ENTRIES_N{op_rep}} & match_sel);
 
 for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 
@@ -342,7 +342,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
     // Right-most entry:
 
     assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_left [i]);
-    
+
     assign stnxt_keys_upt [i] =
       // Insertion,
       ({v_pkg::KEY_BITS{mask_insert_key [i]}} & i_pipe_key_r) |
@@ -361,7 +361,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
     // Left-most entry:
 
     assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_insert_vol [i]);
-    
+
     assign stnxt_keys_upt [i] =
       // Insertion,
       ({v_pkg::KEY_BITS{mask_insert_key [i]}} & i_pipe_key_r) |
@@ -381,7 +381,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 
     assign stnxt_keys_do_upt [i] =
       (mask_insert_key [i] | mask_left [i] | mask_right [i]);
-    
+
     assign stnxt_keys_upt [i] =
       // Insertion,
       ({v_pkg::KEY_BITS{mask_insert_key [i]}} & i_pipe_key_r) |
@@ -446,7 +446,7 @@ assign notify_did_add = op_add & add_mask_insert [v_pkg::ENTRIES_N - 1];
 
 // Replace or Delete operations took place into the N'th entry.
 assign notify_did_rep_or_del = (op_rep | op_del) &
-			       match_sel [v_pkg::ENTRIES_N - 1];
+                               match_sel [v_pkg::ENTRIES_N - 1];
 
 assign notify_vld =
    (notify_cleared_list | notify_did_add | notify_did_rep_or_del);

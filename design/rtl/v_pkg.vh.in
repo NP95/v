@@ -40,14 +40,11 @@ typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
 
 typedef enum logic [1:0] {  // Clear contents of list
                             CMD_CLEAR   = 2'b00,
-                                        
                             // Add new entry to list, may implicitly delete
-			    // entry if list is currently full occupied.
+                            // entry if list is currently full occupied.
                             CMD_ADD     = 2'b01,
-                                        
                             // Delete entry by key value.
                             CMD_DELETE  = 2'b10,
-
                             // Replace entry by key.
                             CMD_REPLACE = 2'b11
                           } cmd_t;
@@ -75,10 +72,9 @@ typedef struct packed {
   volume_t [ENTRIES_N - 1:0] volume;
 } state_t;
 
-localparam int 	  STATE_BITS = $bits(state_t);
+localparam int      STATE_BITS = $bits(state_t);
 
 typedef logic [$clog2(CONTEXT_N) - 1:0] addr_t;
-
 
 endpackage // v_pkg
 

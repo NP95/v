@@ -161,7 +161,7 @@ assign s1_lut_error_invalid_entry =
     ((s1_lut_level_dec_r & i_state_rdata.vld) == '0);
 
 // Form final error state
-assign s1_lut_error = s1_lut_error_r | s1_lut_error_invalid_entry;
+assign s1_lut_error = (s1_lut_error_r | s1_lut_error_invalid_entry);
 
 // ========================================================================== //
 //                                                                            //

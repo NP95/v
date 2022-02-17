@@ -201,44 +201,38 @@ v_pkg::volume_t                                   lv0_size_r;
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// Stage S0
+
+// Pipeline controls:
 //
-always_comb begin : s0_PROC
+assign s1_upd_en = i_upd_vld;
 
-  // Pipeline controls:
-  //
-  s1_upd_en 	   = i_upd_vld;
-
-  s1_upd_prod_id_w = i_upd_prod_id;
-  s1_upd_cmd_w 	   = i_upd_cmd;
-  s1_upd_key_w 	   = i_upd_key;
-  s1_upd_size_w    = i_upd_size;
-
-end // block: s0_PROC
+assign s1_upd_prod_id_w = i_upd_prod_id;
+assign s1_upd_cmd_w = i_upd_cmd;
+assign s1_upd_key_w = i_upd_key;
+assign s1_upd_size_w = i_upd_size;
 
 // -------------------------------------------------------------------------- //
-//
-always_comb begin : s1_PROC
+// Stage S1
 
-  // Writeback collision: Forward write-back state to S2 read port on collision;
-  // also kill lookup into state table to prevent possible data corruption where
-  // memory does not support forwarding.
-  s2_upd_wrbk_vld_w = wrbk_vld_r & (wrbk_prod_id_r == s1_upd_prod_id_r);
-  s2_upd_wrbk_w     = wrbk_state_r;
+// Writeback collision: Forward write-back state to S2 read port on collision;
+// also kill lookup into state table to prevent possible data corruption where
+// memory does not support forwarding.
+assign s2_upd_wrbk_vld_w = wrbk_vld_r & (wrbk_prod_id_r == s1_upd_prod_id_r);
+assign s2_upd_wrbk_w = wrbk_state_r;
 
   //
-  s1_state_ren 	    = s1_upd_vld_r & (~s2_upd_wrbk_vld_w);
-  s1_state_raddr    = s1_upd_prod_id_r;
+assign s1_state_ren = s1_upd_vld_r & (~s2_upd_wrbk_vld_w);
+assign s1_state_raddr = s1_upd_prod_id_r;
 
   // Pipeline controls:
   //
-  s2_upd_en 	    = s1_upd_vld_r;
+assign s2_upd_en = s1_upd_vld_r;
 
-  s2_upd_prod_id_w  = s1_upd_prod_id_r;
-  s2_upd_cmd_w 	    = s1_upd_cmd_r;
-  s2_upd_key_w 	    = s1_upd_key_r;
-  s2_upd_size_w     = s1_upd_size_r;
-
-end // block: s1_PROC
+assign s2_upd_prod_id_w = s1_upd_prod_id_r;
+assign s2_upd_cmd_w = s1_upd_cmd_r;
+assign s2_upd_key_w = s1_upd_key_r;
+assign s2_upd_size_w = s1_upd_size_r;
 
 // -------------------------------------------------------------------------- //
 // S2 Stage: State arrival and EXE-forwarding stage.
@@ -275,8 +269,6 @@ assign s3_upd_size_w = s2_upd_size_r;
 assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
 assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
 assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
-
-
 
 // Writeback:
 assign wrbk_vld_w = s3_upd_vld_r;
@@ -385,8 +377,8 @@ always_ff @(posedge clk)
 always_ff @(posedge clk)
   if (lv0_en) begin
     lv0_prod_id_r <= lv0_prod_id_w;
-    lv0_key_r 	  <= lv0_key_w;
-    lv0_size_r 	  <= lv0_size_w;
+    lv0_key_r     <= lv0_key_w;
+    lv0_size_r      <= lv0_size_w;
   end
 
 // ========================================================================== //
@@ -394,7 +386,7 @@ always_ff @(posedge clk)
 //  Instances                                                                 //
 //                                                                            //
 // ========================================================================== //
-  
+
 // -------------------------------------------------------------------------- //
 //
 pri #(.W(2)) u_s3_forwarding_pri (

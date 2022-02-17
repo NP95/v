@@ -63,10 +63,26 @@ module tb (
 , output logic                                    o_busy_r
 
 // -------------------------------------------------------------------------- //
+// Testbench State
+, output logic [31:0]                             o_tb_cycle
+//
+, output logic                                    o_tb_wrbk_vld_r
+, output v_pkg::id_t                              o_tb_wrbk_prod_id_r
+, output v_pkg::state_t                           o_tb_wrbk_state_r
+
+// -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
 , input                                           rst
 );
+
+// ========================================================================== //
+//                                                                            //
+//  Wires                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+int                                     tb_cycle;
 
 // ========================================================================== //
 //                                                                            //
@@ -100,5 +116,30 @@ v u_v (
   , .clk                                (clk)
   , .rst                                (rst)
 );
-  
+
+// ========================================================================== //
+//                                                                            //
+//  TB                                                                        //
+//                                                                            //
+// ========================================================================== //
+
+initial tb_cycle = 0;
+
+always_ff @(posedge clk)
+  tb_cycle <= tb_cycle + 'b1;
+
+
+// ========================================================================== //
+//                                                                            //
+//  Outputs                                                                   //
+//                                                                            //
+// ========================================================================== //
+
+assign o_tb_cycle = tb_cycle;
+
+// Expose updates to the state table.
+assign o_tb_wrbk_vld_r = u_v.u_v_pipe_update.wrbk_vld_r;
+assign o_tb_wrbk_prod_id_r = u_v.u_v_pipe_update.wrbk_prod_id_r;
+assign o_tb_wrbk_state_r = u_v.u_v_pipe_update.wrbk_state_r;
+
 endmodule // v
