@@ -28,8 +28,12 @@
 #ifndef V_DESIGN_TB_CFG_H
 #define V_DESIGN_TB_CFG_H
 
-#cmakedefine CONTEXT_N @CONTEXT_N@
+namespace cfg {
 
-#cmakedefine ENTRIES_N @ENTRIES_N@
+  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+
+  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+
+} // namespace cfg
 
 #endif

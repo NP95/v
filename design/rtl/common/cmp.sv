@@ -47,15 +47,9 @@ module cmp #(
 //                                                                            //
 // ========================================================================== //
 
-`ifdef GATEY
-logic [W - 1:0]                         a_xor_b;
-logic [W - 1:0]                         a_andnot_b;
-`endif
 logic                                   eq;
 logic                                   gt;
 logic                                   lt;
-
-// TOOD: magnitude comparison is supposed to be signed!!!!
 
 // ========================================================================== //
 //                                                                            //
@@ -63,42 +57,15 @@ logic                                   lt;
 //                                                                            //
 // ========================================================================== //
 
-`ifdef GATEY
-
 // -------------------------------------------------------------------------- //
 //
 always_comb begin : cmp_PROC
 
-  // EQ:
-  for (int i = 0; i < W; i++) begin
-    a_xor_b    = (a[i] ^ b[i]);
-    a_andnot_b = (a[i] & ~b[i]);
-  end
-
-  // Equal if no bits differ.
-  eq = (~|a_xor_b);
-
-  // Greater if the first highest bit in A
-  gt = (i_a > i_b); // TODO
-
-  // If not equal, or greater-than, it must be less-than.
-  lt = ~(eq | gt);
+  eq = ($signed(i_a) == $signed(i_b));
+  gt = ($signed(i_a) > $signed(i_b));
+  lt = ($signed(i_a) < $signed(i_b));
 
 end // block: cmp_PROC
-
-`else // !`ifdef GATEY
-
-// -------------------------------------------------------------------------- //
-//
-always_comb begin : cmp_PROC
-
-  eq = (i_a == i_b);
-  gt = (i_a > i_b);
-  lt = ~(eq | gt);
-
-end // block: cmp_PROC
-
-`endif
 
 // ========================================================================== //
 //                                                                            //

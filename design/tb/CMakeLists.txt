@@ -30,7 +30,7 @@ set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.11.0  
+  GIT_TAG        release-1.11.0
   )
 
 FetchContent_MakeAvailable(googletest)
@@ -44,6 +44,7 @@ set(VERILATOR_OBJ "Vobj")
 
 set(VERILATOR_ARGS
   "-cc"
+#  "-Wall"
   "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")
@@ -73,7 +74,7 @@ macro (verilate_tb cfg)
 
   string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
-  
+
   add_custom_target(verilate_${cfg}
     COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
       ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
@@ -86,7 +87,7 @@ macro (build_test_cfg cfg src)
   verilate_tb(${cfg})
 
   set(target "${cfg}_test")
-  add_executable(${target} ${src})
+  add_executable(${target} ${TB_CPP})
   target_include_directories(${target} PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}"
     "${Verilator_INCLUDE_DIR}")
@@ -96,5 +97,14 @@ macro (build_test_cfg cfg src)
   add_test(NAME ${target} COMMAND ${target})
 endmacro ()
 
-add_subdirectory(cfg_0)
-add_subdirectory(cfg_1)
+set_tb_param("CONTEXT_N" 10)
+set_tb_param("ENTRIES_N" 10)
+
+configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
+configure_file("${CMAKE_SOURCE_DIR}/design/rtl/v_pkg.vh.in" v_pkg.vh)
+
+set(TB_CPP
+  "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc")
+
+build_test_cfg(cfg_0 ${TB_CPP})

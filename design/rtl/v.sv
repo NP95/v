@@ -191,9 +191,9 @@ v_pipe_query u_v_pipe_query (
   , .o_lut_error                        (o_lut_error)
   , .o_lut_listsize                     (o_lut_listsize)
   //
-  , .i_state_rdata                      (update_rdata)
-  , .o_state_ren                        (update_ren)
-  , .o_state_raddr                      (update_raddr)
+  , .i_state_rdata                      (query_rdata)
+  , .o_state_ren                        (query_ren)
+  , .o_state_raddr                      (query_raddr)
   //
   , .i_s1_upd_vld_r                     (s1_upd_vld_r)
   , .i_s1_upd_prod_id_r                 (s1_upd_prod_id_r)
@@ -231,7 +231,7 @@ v_init #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
   , .o_init_waddr_r                     (init_waddr_r)
   , .o_init_wdata_r                     (init_wdata_r)
   //
-  , .i_init                             (1'b0)
+  , .i_init                             (init_r)
   //
   , .o_busy_r                           (o_busy_r)
   //

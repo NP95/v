@@ -248,15 +248,15 @@ assign s2_upd_state_sel_early = (|s2_upd_state_fwd);
 // Early state forwarding; the state that is expected to arrival
 // relatively early into the current cycle.
 assign s2_upd_state_early =
-   {v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & wrbk_state_r |
-   {v_pkg::STATE_BITS{s2_upd_state_fwd[0]}} & s2_upd_wrbk_r;
+   ({v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & wrbk_state_r) |
+   ({v_pkg::STATE_BITS{s2_upd_state_fwd[0]}} & s2_upd_wrbk_r);
 
 // Final State forwarding injecting those signals (from RAM) that is expected to
 // arrive relatively late into the cycle. To this so that such state is injected
 // late into the overall combinatorial logic cone.
 assign s3_upd_state_w =
-   {v_pkg::STATE_BITS{ s2_upd_state_sel_early}} & s2_upd_state_early |
-   {v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata;
+   ({v_pkg::STATE_BITS{ s2_upd_state_sel_early}} & s2_upd_state_early) |
+   ({v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata);
 
 assign s3_upd_prod_id_w = s2_upd_prod_id_r;
 assign s3_upd_cmd_w = s2_upd_cmd_r;
@@ -378,7 +378,7 @@ always_ff @(posedge clk)
   if (lv0_en) begin
     lv0_prod_id_r <= lv0_prod_id_w;
     lv0_key_r     <= lv0_key_w;
-    lv0_size_r      <= lv0_size_w;
+    lv0_size_r    <= lv0_size_w;
   end
 
 // ========================================================================== //

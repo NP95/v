@@ -64,7 +64,7 @@ always_comb begin : pri_PROC
 
     for (int j = 0; j < W; j++) begin
 
-      prior_bits[i][j] = (j < i) ? i_x [j] : 1'b0;
+      prior_bits[i][j] = (j > i) ? i_x [j] : 1'b0;
 
     end // for (int j = 0; j < W; j++)
 

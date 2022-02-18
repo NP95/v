@@ -87,7 +87,6 @@ fsm_state_t                             fsm_state_done_next;
 logic                                   st_idle;
 logic                                   st_busy;
 logic                                   st_done;
-logic                                   st_exit;
 logic                                   busy_r;
 logic                                   busy_w;
 
@@ -111,7 +110,6 @@ logic                                   init_wen_r;
 assign st_idle = (fsm_state_r == FSM_STATE_IDLE);
 assign st_busy = (fsm_state_r == FSM_STATE_BUSY);
 assign st_done = (fsm_state_r == FSM_STATE_DONE);
-assign st_exit = (fsm_state_r == FSM_STATE_EXIT);
 
 // -------------------------------------------------------------------------- //
 // Status:

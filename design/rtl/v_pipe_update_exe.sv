@@ -84,7 +84,6 @@ logic [v_pkg::ENTRIES_N - 1:0]          add_mask_right;
 logic [v_pkg::ENTRIES_N - 1:0]          add_mask_insert;
 
 // Delete:
-logic [v_pkg::ENTRIES_N - 1:0]          del_mask;
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld_shift;
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld;
 logic [v_pkg::ENTRIES_N - 1:0]          del_mask_left;
@@ -196,8 +195,8 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 //
 // Valid (next)  1           1           1          1          0
 //
-assign add_mask_cmp = i_stcur_vld_r &
-                      (cmp_eq | (v_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
+assign add_mask_cmp =
+   i_stcur_vld_r & (cmp_eq | (v_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
 
 // Use Leading-Zero Detect (LZD) to compute insertion position.
 //
@@ -246,8 +245,8 @@ assign add_vld_shift = i_stcur_vld_r & (add_mask_right >> 1);
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
 //
-assign add_vld = i_stcur_vld_r |
-                 ({v_pkg::ENTRIES_N{match_hit}} & add_vld_shift);
+assign add_vld =
+   i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & add_vld_shift);
 
 // -------------------------------------------------------------------------- //
 // Delete
@@ -294,8 +293,8 @@ assign del_vld_shift = i_stcur_vld_r & (del_mask_left << 1);
 
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
-assign del_vld = i_stcur_vld_r |
-                 ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
+assign del_vld =
+   i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
 
 // -------------------------------------------------------------------------- //
 // Replace
@@ -318,7 +317,7 @@ assign vld_nxt = ({v_pkg::ENTRIES_N{op_add}} & add_vld) |
 
 // Compute final validity vector. On a CLEAR op., all bits are cleared
 // regardless of prior state.
-assign o_stnxt_vld = {v_pkg::ENTRIES_N{~op_clr}} & vld_nxt;
+assign o_stnxt_vld = ({v_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
 
 // -------------------------------------------------------------------------- //
 // Next Keys/Volumes:
@@ -445,11 +444,12 @@ assign notify_cleared_list = op_clr & i_stcur_vld_r [v_pkg::ENTRIES_N - 1];
 assign notify_did_add = op_add & add_mask_insert [v_pkg::ENTRIES_N - 1];
 
 // Replace or Delete operations took place into the N'th entry.
-assign notify_did_rep_or_del = (op_rep | op_del) &
-                               match_sel [v_pkg::ENTRIES_N - 1];
+assign notify_did_rep_or_del =
+   (op_rep | op_del) & match_sel [v_pkg::ENTRIES_N - 1];
 
-assign notify_vld =
-   (notify_cleared_list | notify_did_add | notify_did_rep_or_del);
+assign notify_vld = notify_cleared_list |
+                    notify_did_add |
+                    notify_did_rep_or_del;
 
 // ========================================================================== //
 //                                                                            //
