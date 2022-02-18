@@ -156,12 +156,12 @@ v_pkg::size_t                                     s3_upd_size_r;
 logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stcur_vld_r;
 v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stcur_keys_r;
 v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stcur_volumes_r;
-v_pkg::level_t                                    s3_exe_stcur_count_r;
+v_pkg::listsize_t                                 s3_exe_stcur_listsize_r;
 //
 logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stnxt_vld;
 v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stnxt_keys;
 v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stnxt_volumes;
-v_pkg::level_t                                    s3_exe_stnxt_count;
+v_pkg::listsize_t                                 s3_exe_stnxt_listsize;
 //
 logic                                             s4_upd_en;
 logic                                             s4_upd_vld_w;
@@ -205,8 +205,9 @@ v_pkg::volume_t                                   lv0_size_r;
 
 // Pipeline controls:
 //
-assign s1_upd_en = i_upd_vld;
+assign s1_upd_vld_w = i_upd_vld;
 
+assign s1_upd_en = s1_upd_vld_w;
 assign s1_upd_prod_id_w = i_upd_prod_id;
 assign s1_upd_cmd_w = i_upd_cmd;
 assign s1_upd_key_w = i_upd_key;
@@ -221,14 +222,15 @@ assign s1_upd_size_w = i_upd_size;
 assign s2_upd_wrbk_vld_w = wrbk_vld_r & (wrbk_prod_id_r == s1_upd_prod_id_r);
 assign s2_upd_wrbk_w = wrbk_state_r;
 
-  //
+//
 assign s1_state_ren = s1_upd_vld_r & (~s2_upd_wrbk_vld_w);
 assign s1_state_raddr = s1_upd_prod_id_r;
 
-  // Pipeline controls:
-  //
-assign s2_upd_en = s1_upd_vld_r;
+// Pipeline controls:
+//
+assign s2_upd_vld_w = s1_upd_vld_r;
 
+assign s2_upd_en = s2_upd_vld_w;
 assign s2_upd_prod_id_w = s1_upd_prod_id_r;
 assign s2_upd_cmd_w = s1_upd_cmd_r;
 assign s2_upd_key_w = s1_upd_key_r;
@@ -258,6 +260,10 @@ assign s3_upd_state_w =
    ({v_pkg::STATE_BITS{ s2_upd_state_sel_early}} & s2_upd_state_early) |
    ({v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata);
 
+
+assign s3_upd_vld_w = s2_upd_vld_r;
+
+assign s3_upd_en =  s3_upd_vld_w;
 assign s3_upd_prod_id_w = s2_upd_prod_id_r;
 assign s3_upd_cmd_w = s2_upd_cmd_r;
 assign s3_upd_key_w = s2_upd_key_r;
@@ -274,7 +280,10 @@ assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
 assign wrbk_vld_w = s3_upd_vld_r;
 assign wrbk_en = wrbk_vld_w;
 assign wrbk_prod_id_w = s3_upd_prod_id_r;
-assign wrbk_state_w = '0;
+assign wrbk_state_w.vld = s3_exe_stnxt_vld;
+assign wrbk_state_w.listsize = s3_exe_stnxt_listsize;
+assign wrbk_state_w.key = s3_exe_stnxt_keys;
+assign wrbk_state_w.volume = s3_exe_stnxt_volumes;
 
 // Notify bus:
 assign lv0_vld_w = s3_upd_vld_r & exe_notify_vld;
@@ -407,12 +416,12 @@ v_pipe_update_exe u_v_pipe_update_exe (
   , .i_stcur_vld_r                      (s3_exe_stcur_vld_r)
   , .i_stcur_keys_r                     (s3_exe_stcur_keys_r)
   , .i_stcur_volumes_r                  (s3_exe_stcur_volumes_r)
-  , .i_stcur_count_r                    (s3_exe_stcur_count_r)
+  , .i_stcur_listsize_r                 (s3_exe_stcur_listsize_r)
   //
   , .o_stnxt_vld                        (s3_exe_stnxt_vld)
   , .o_stnxt_keys                       (s3_exe_stnxt_keys)
   , .o_stnxt_volumes                    (s3_exe_stnxt_volumes)
-  , .o_stnxt_count                      (s3_exe_stnxt_count)
+  , .o_stnxt_listsize                   (s3_exe_stnxt_listsize)
   //
   , .o_notify_vld                       (exe_notify_vld)
   , .o_notify_key                       (exe_notify_key)

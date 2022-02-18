@@ -198,21 +198,26 @@ private:
 };
 
 TEST(Directed, CheckAddItem) {
-  verif::Options opts;
+  using namespace verif;
+
+  Options opts;
   opts.enable_vcd = true;
-  verif::TB tb{opts};
+  TB tb{opts};
   DirectedTestDriver test{tb.get_harness()};
 
-  verif::UpdateCommand up;
-  up.vld = true;
-  test.push_back(up);
-
-
+  test.push_back(UpdateCommand{0, Cmd::Add, 1, 1});
+  test.wait_cycles(1);
+  test.push_back(UpdateCommand{0, Cmd::Add, 2, 2});
+  test.wait_cycles(1);
+  test.push_back(UpdateCommand{0, Cmd::Add, 3, 3});
+  test.wait_cycles(1);
+  test.push_back(UpdateCommand{0, Cmd::Add, 4, 4});
   test.wait_cycles(10);
 
-  verif::QueryCommand qp;
-  qp.vld = true;
-  test.push_back(qp);
+  test.push_back(QueryCommand{0, 0});
+  test.push_back(QueryCommand{0, 1});
+  test.push_back(QueryCommand{0, 2});
+  test.push_back(QueryCommand{0, 3});
 
   // Run test
   tb.run(&test);

@@ -62,7 +62,7 @@ typedef logic [31:0] size_t;
 
 typedef logic [$clog2(ENTRIES_N) - 1:0]  level_t;
 
-typedef logic [7:0]  listsize_t;
+typedef logic [$clog2(ENTRIES_N + 1) - 1:0]  listsize_t;
 
 
 typedef struct packed {

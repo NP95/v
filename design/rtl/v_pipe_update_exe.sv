@@ -42,7 +42,7 @@ module v_pipe_update_exe (
 , input v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
 , input v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
 //
-, input v_pkg::level_t                            i_stcur_count_r
+, input v_pkg::listsize_t                         i_stcur_listsize_r
 
 // -------------------------------------------------------------------------- //
 // State Next
@@ -50,7 +50,7 @@ module v_pipe_update_exe (
 , output v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
 , output v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
 //
-, output v_pkg::level_t                           o_stnxt_count
+, output v_pkg::listsize_t                        o_stnxt_listsize
 
 // -------------------------------------------------------------------------- //
 // Notify Interrace
@@ -121,6 +121,8 @@ logic                                   notify_cleared_list;
 logic                                   notify_did_add;
 logic                                   notify_did_rep_or_del;
 logic                                   notify_vld;
+v_pkg::key_t                            notify_key;
+v_pkg::volume_t                         notify_volume;
 
 // ========================================================================== //
 //                                                                            //
@@ -424,14 +426,14 @@ assign cnt_do_add = op_add;
 
 assign cnt_do_del = op_del;
 
-assign o_stnxt_count = // List has been cleared, count becomes zero
+assign o_stnxt_listsize = // List has been cleared, count becomes zero
                        op_clr ? '0 :
                        // Entry added to list, count is incremented
-                       cnt_do_add ? (i_stcur_count_r + 'b1) :
+                       cnt_do_add ? (i_stcur_listsize_r + 'b1) :
                        // Entry removed from list, count is decremented
-                       cnt_do_del ? (i_stcur_count_r - 'b1) :
+                       cnt_do_del ? (i_stcur_listsize_r - 'b1) :
                        // Otherwise, count remains unchanged.
-                       i_stcur_count_r;
+                       i_stcur_listsize_r;
 
 // -------------------------------------------------------------------------- //
 // Notify
@@ -451,6 +453,11 @@ assign notify_vld = notify_cleared_list |
                     notify_did_add |
                     notify_did_rep_or_del;
 
+
+assign notify_key = ({v_pkg::KEY_BITS{notify_did_add}} & i_pipe_key_r);
+
+assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r);
+
 // ========================================================================== //
 //                                                                            //
 //  Outputs                                                                   //
@@ -461,7 +468,7 @@ assign o_stnxt_keys = stnxt_keys;
 assign o_stnxt_volumes = stnxt_volumes;
 
 assign o_notify_vld =  notify_vld;
-assign o_notify_key = i_stcur_keys_r [v_pkg::ENTRIES_N - 1];
-assign o_notify_volume = i_stcur_volumes_r [v_pkg::ENTRIES_N - 1];
+assign o_notify_key = notify_key;
+assign o_notify_volume = notify_volume;
 
 endmodule // v_pipe_update_exe

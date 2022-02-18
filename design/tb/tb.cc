@@ -38,48 +38,44 @@
 
 namespace verif {
 
-UpdateCommand::UpdateCommand() {
-  reset();
-  prod_id = 0;
-  cmd = Cmd::Clr;
-  key = 0;
-  volume = 0;
-}
+namespace utilities {
 
-void UpdateCommand::reset() {
-  vld = false;
-}
+bool to_bool(vluint8_t v) { return v != 0; }
 
-QueryCommand::QueryCommand() {
-  reset();
-}
+} // namespace utilities
 
-void QueryCommand::reset() {
-  vld = false;
-}
+UpdateCommand::UpdateCommand()
+    : vld_(false) {}
 
-QueryResponse::QueryResponse() {
-  vld = false;
-}
+UpdateCommand::UpdateCommand(id_t id, Cmd cmd, key_t key, volume_t volume)
+    : vld_(true), prod_id_(id), cmd_(cmd), key_(key), volume_(volume) {}
+
+QueryCommand::QueryCommand()
+    : vld_(false) {}
+
+QueryCommand::QueryCommand(id_t id, level_t level)
+    : vld_(true), prod_id_(id), level_(level) {}
+
+QueryResponse::QueryResponse()
+    : vld_(false) {}
 
 QueryResponse::QueryResponse(
     key_t key, volume_t volume, bool error, listsize_t listsize) {
-  vld = true;
-  key = key;
-  volume = volume;
-  error = error;
-  listsize = listsize;
+  vld_ = true;
+  key_ = key;
+  volume_ = volume;
+  error_ = error;
+  listsize_ = listsize;
 }
 
-NotifyResponse::NotifyResponse() {
-  vld = false;
-}
+NotifyResponse::NotifyResponse()
+    : vld_(false) {}
 
 NotifyResponse::NotifyResponse(id_t id, key_t key, volume_t volume) {
-  vld = true;
-  prod_id = id;
-  key = key;
-  volume = volume;
+  vld_ = true;
+  prod_id_ = id;
+  key_ = key;
+  volume_ = volume;
 }
 
 UUTHarness::UUTHarness(Vtb* tb) : tb_(tb) {}
@@ -94,10 +90,10 @@ struct VDriver {
 
   // Drive Update Command Interface
   static void Drive(Vtb* tb, const UpdateCommand& up) {
-    tb->i_upd_vld = up.vld;
-    if (up.vld) {
-      tb->i_upd_prod_id = up.prod_id;
-      switch (up.cmd) {
+    tb->i_upd_vld = up.vld();
+    if (up.vld()) {
+      tb->i_upd_prod_id = up.id();
+      switch (up.cmd()) {
         case Cmd::Clr:
           tb->i_upd_cmd = 0;
           break;
@@ -111,26 +107,34 @@ struct VDriver {
           tb->i_upd_cmd = 3;
           break;
       }
-      tb->i_upd_key = up.key;
-      tb->i_upd_size = up.volume;
+      tb->i_upd_key = up.key();
+      tb->i_upd_size = up.volume();
     }
   }
 
   // Drive Query Command Interface
-  static void Drive(Vtb* tb, const QueryCommand& qp) {
-    tb->i_lut_vld = qp.vld;
-    if (qp.vld) {
-      tb->i_lut_prod_id = qp.prod_id;
-      tb->i_lut_level = qp.level;
+  static void Drive(Vtb* tb, const QueryCommand& qc) {
+    tb->i_lut_vld = qc.vld();
+    if (qc.vld()) {
+      tb->i_lut_prod_id = qc.id();
+      tb->i_lut_level = qc.level();
     }
   }
 
   // Sample Notify Reponse Interface:
   static void Sample(Vtb* tb, NotifyResponse& nr) {
+    if (tb->o_lv0_vld_r) {
+      nr = NotifyResponse{
+        tb->o_lv0_prod_id_r, tb->o_lv0_key_r, tb->o_lv0_size_r};
+    } else {
+      nr = NotifyResponse{};
+    }
   }
 
   // Sample Query Response Interface:
   static void Sample(Vtb* tb, QueryResponse& qr) {
+    qr = QueryResponse{tb->o_lut_key, tb->o_lut_size,
+      utilities::to_bool(tb->o_lut_error), tb->o_lut_listsize};
   }
 
 };
@@ -164,7 +168,7 @@ class DelayPipe {
 };
 
 class ValidationModel {
-  static constexpr const std::size_t QUERY_PIPE_DELAY = 2;
+  static constexpr const std::size_t QUERY_PIPE_DELAY = 1;
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 4;
 
   struct Entry {
@@ -176,8 +180,14 @@ class ValidationModel {
     volume_t volume;
   };
 
+  struct PipeId {
+    bool vld{false};
+    id_t id;
+  };
+
  public:
-  ValidationModel() {
+  ValidationModel(UUTHarness harness)
+      : harness_(harness) {
     reset();
   }
 
@@ -188,8 +198,8 @@ class ValidationModel {
   }
 
   void step() {
-    notify_.step();
-    queries_.step();
+    notify_pipe_.step();
+    queries_pipe_.step();
 
     handle_uc();
     handle_qc();
@@ -204,24 +214,35 @@ class ValidationModel {
 
  private:
   void handle_uc() {
-    if (!uc_.vld) {
+    if (!uc_.vld()) {
       // No command is present at the interface on this cycle, we do not
       // therefore expect a notification.
-      notify_.push_back(NotifyResponse{});
+      notify_pipe_.push_back(NotifyResponse{});
+      return;
     };
 
     // Validate that ID provided by stimulus is within [0, cfg::CONTEXT_N).
-    ASSERT_LT(uc_.prod_id, cfg::CONTEXT_N);
+    ASSERT_LT(uc_.id(), cfg::CONTEXT_N);
 
-    bool raise_notify = false;
-    std::vector<Entry>& ctxt{tbl_[uc_.prod_id]};
-    switch (uc_.cmd) {
+    NotifyResponse nr{};
+    std::vector<Entry>& ctxt{tbl_[uc_.id()]};
+    switch (uc_.cmd()) {
       case Cmd::Clr: {
-        raise_notify = !ctxt.empty();
+        if (!ctxt.empty()) {
+          // Context was not empty, therefore the head item in the list will be
+          // modified.
+          nr = NotifyResponse{uc_.id(), ctxt[0].key, ctxt[0].volume};
+        }
         ctxt.clear();
       } break;
       case Cmd::Add: {
-        ctxt.push_back(Entry{uc_.key, uc_.volume});
+        if (ctxt.empty()) {
+          // Current context is empty. Emit new notify indicating that the head
+          // will be modified by the current command. By convention, emit the
+          // key/value pair associated with the current command.
+          nr = NotifyResponse{uc_.id(), uc_.key(), uc_.volume()};
+        }
+        ctxt.push_back(Entry{uc_.key(), uc_.volume()});
         std::stable_sort(ctxt.begin(), ctxt.end());
         if (ctxt.size() > cfg::ENTRIES_N) {
           // Entry has been spilled on this Add.
@@ -234,19 +255,22 @@ class ValidationModel {
       } break;
       case Cmd::Rep:
       case Cmd::Del: {
-        auto find_key = [&](const Entry& e) { return (e.key == uc_.key); };
+        auto find_key = [&](const Entry& e) { return (e.key == uc_.key()); };
         auto it = std::find_if(ctxt.begin(), ctxt.end(), find_key);
 
         // The context was either empty or the key was not found. The current
         // command becomes a NOP.
         if (it == ctxt.end()) return;
 
-        const bool is_first_entry = (it == ctxt.begin());
-        raise_notify = is_first_entry;
+        if (it == ctxt.begin()) {
+          // Item to be replaced is first, therefore raise notification of
+          // current first item in context.
+          nr = NotifyResponse{uc_.id(), it->key, it->volume};
+        }
 
-        if (uc_.cmd == Cmd::Rep) {
-          // Replace: Update volume for current entry.
-          it->volume = uc_.volume;
+        if (uc_.cmd() == Cmd::Rep) {
+          // Perform final replacement of 'volume'.
+          it->volume = uc_.volume();
         } else {
           // Delete: Remove entry from context.
           ctxt.erase(it);
@@ -255,51 +279,58 @@ class ValidationModel {
       } break;
     }
 
-    if (raise_notify) {
-      // Notification expected as a consequence of current command.
-      notify_.push_back(NotifyResponse{uc_.prod_id, uc_.key, uc_.volume});
-    } else {
-      // Otherwise, no notification resonse expected for this command.
-      notify_.push_back(NotifyResponse{});
-    }
+    // Update predicted notify responses based upon outcome of prior command.
+    notify_pipe_.push_back(nr);
   }
 
   void handle_qc() {
     QueryResponse qr;
-    if (qc_.vld) {
+    if (qc_.vld()) {
 
-      ASSERT_LT(qc_.prod_id, cfg::CONTEXT_N);
-      const std::vector<Entry>& ctxt{tbl_[qc_.prod_id]};
+      ASSERT_LT(qc_.id(), cfg::CONTEXT_N);
+      const std::vector<Entry>& ctxt{tbl_[qc_.id()]};
 
-      bool error = (qc_.level >= ctxt.size()); // TODO: in-flight transactions.
+      bool error = (qc_.level() >= ctxt.size()); // TODO: in-flight transactions.
       if (error) {
         // Query is errored, other fields are invalid.
         qr = QueryResponse{0, 0, true, 0};
       } else {
         // Query is valid, populate as necessary.
-        const Entry& e{ctxt[qc_.level]};
+        const Entry& e{ctxt[qc_.level()]};
         const listsize_t listsize = static_cast<listsize_t>(ctxt.size());
         qr = QueryResponse{e.key, e.volume, false, listsize};
       }
     }
-    queries_.push_back(qr);
+    queries_pipe_.push_back(qr);
   }
 
   void handle_qr() {
   }
 
   void handle_nr() {
+    const NotifyResponse& predicted = notify_pipe_.head();
+    const NotifyResponse& actual = nr_;
+    EXPECT_EQ(predicted.vld(), actual.vld()) << harness_.tb_cycle();
+    if (predicted.vld()) {
+      EXPECT_EQ(predicted.id(), actual.id());
+      EXPECT_EQ(predicted.key(), actual.key());
+      EXPECT_EQ(predicted.volume(), actual.volume());
+    }
   }
 
-  UpdateCommand uc_;
-  QueryCommand qc_;
-  QueryResponse qr_;
-  NotifyResponse nr_;
+  UpdateCommand uc_{};
+  QueryCommand qc_{};
+  QueryResponse qr_{};
+  NotifyResponse nr_{};
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
 
-  DelayPipe<NotifyResponse, QUERY_PIPE_DELAY> notify_;
-  DelayPipe<QueryResponse, UPDATE_PIPE_DELAY> queries_;
+  DelayPipe<NotifyResponse, UPDATE_PIPE_DELAY> notify_pipe_;
+  DelayPipe<PipeId, UPDATE_PIPE_DELAY> id_pipe_;
+  DelayPipe<QueryResponse, QUERY_PIPE_DELAY> queries_pipe_;
+
+  // UUT harness
+  UUTHarness harness_;
 };
 
 
@@ -342,11 +373,11 @@ void TB::run(Test* t) {
 
   tb_time_ = 0;
 
-  ValidationModel mdl_;
+  ValidationModel mdl_{get_harness()};
 
   UpdateCommand up;
   NotifyResponse nr;
-  QueryCommand qp;
+  QueryCommand qc;
   QueryResponse qr;
 
   uut_->clk = 0;
@@ -361,18 +392,18 @@ void TB::run(Test* t) {
         // Immediately before negative clock edge.
 
         // Clear stimulus
-        up.reset();
-        qp.reset();
+        up = UpdateCommand{};
+        qc = QueryCommand{};
 
-        const Test::Status status = t->on_negedge_clk(up, qp);
+        const Test::Status status = t->on_negedge_clk(up, qc);
 
         VDriver::Drive(uut_, up);
-        VDriver::Drive(uut_, qp);
+        VDriver::Drive(uut_, qc);
         VDriver::Sample(uut_, nr);
         VDriver::Sample(uut_, qr);
 
         mdl_.apply(up);
-        mdl_.apply(qp);
+        mdl_.apply(qc);
         mdl_.apply(nr);
         mdl_.apply(qr);
         mdl_.step();

@@ -114,13 +114,14 @@ assign st_done = (fsm_state_r == FSM_STATE_DONE);
 // -------------------------------------------------------------------------- //
 // Status:
 assign busy_w = (fsm_state_w == FSM_STATE_IDLE) ||
-                (fsm_state_w == FSM_STATE_BUSY);
+                (fsm_state_w == FSM_STATE_BUSY) ||
+                (fsm_state_w == FSM_STATE_DONE);
 
 // -------------------------------------------------------------------------- //
 // Address:
 
 // Initialize address at start or throughout operation.
-assign init_waddr_en = (st_busy | i_init);
+assign init_waddr_en = (st_busy | st_idle);
 
 // Address update; zero in IDLE state, otherwise always increment.
 assign init_waddr_w  = st_idle ? '0 : (init_waddr_r + 'b1);
