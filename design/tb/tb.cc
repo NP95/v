@@ -47,14 +47,14 @@ bool to_bool(vluint8_t v) { return v != 0; }
 UpdateCommand::UpdateCommand()
     : vld_(false) {}
 
-UpdateCommand::UpdateCommand(id_t id, Cmd cmd, key_t key, volume_t volume)
-    : vld_(true), prod_id_(id), cmd_(cmd), key_(key), volume_(volume) {}
+UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume)
+    : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
 
 QueryCommand::QueryCommand()
     : vld_(false) {}
 
-QueryCommand::QueryCommand(id_t id, level_t level)
-    : vld_(true), prod_id_(id), level_(level) {}
+QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
+    : vld_(true), prod_id_(prod_id), level_(level) {}
 
 QueryResponse::QueryResponse()
     : vld_(false) {}
@@ -71,9 +71,9 @@ QueryResponse::QueryResponse(
 NotifyResponse::NotifyResponse()
     : vld_(false) {}
 
-NotifyResponse::NotifyResponse(id_t id, key_t key, volume_t volume) {
+NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
   vld_ = true;
-  prod_id_ = id;
+  prod_id_ = prod_id;
   key_ = key;
   volume_ = volume;
 }
@@ -92,7 +92,7 @@ struct VDriver {
   static void Drive(Vtb* tb, const UpdateCommand& up) {
     tb->i_upd_vld = up.vld();
     if (up.vld()) {
-      tb->i_upd_prod_id = up.id();
+      tb->i_upd_prod_id = up.prod_id();
       switch (up.cmd()) {
         case Cmd::Clr:
           tb->i_upd_cmd = 0;
@@ -116,7 +116,7 @@ struct VDriver {
   static void Drive(Vtb* tb, const QueryCommand& qc) {
     tb->i_lut_vld = qc.vld();
     if (qc.vld()) {
-      tb->i_lut_prod_id = qc.id();
+      tb->i_lut_prod_id = qc.prod_id();
       tb->i_lut_level = qc.level();
     }
   }
@@ -180,9 +180,9 @@ class ValidationModel {
     volume_t volume;
   };
 
-  struct PipeId {
+  struct PipeProdId {
     bool vld{false};
-    id_t id;
+    prod_id_t prod_id;
   };
 
  public:
@@ -222,16 +222,16 @@ class ValidationModel {
     };
 
     // Validate that ID provided by stimulus is within [0, cfg::CONTEXT_N).
-    ASSERT_LT(uc_.id(), cfg::CONTEXT_N);
+    ASSERT_LT(uc_.prod_id(), cfg::CONTEXT_N);
 
     NotifyResponse nr{};
-    std::vector<Entry>& ctxt{tbl_[uc_.id()]};
+    std::vector<Entry>& ctxt{tbl_[uc_.prod_id()]};
     switch (uc_.cmd()) {
       case Cmd::Clr: {
         if (!ctxt.empty()) {
           // Context was not empty, therefore the head item in the list will be
           // modified.
-          nr = NotifyResponse{uc_.id(), ctxt[0].key, ctxt[0].volume};
+          nr = NotifyResponse{uc_.prod_id(), ctxt[0].key, ctxt[0].volume};
         }
         ctxt.clear();
       } break;
@@ -240,7 +240,7 @@ class ValidationModel {
           // Current context is empty. Emit new notify indicating that the head
           // will be modified by the current command. By convention, emit the
           // key/value pair associated with the current command.
-          nr = NotifyResponse{uc_.id(), uc_.key(), uc_.volume()};
+          nr = NotifyResponse{uc_.prod_id(), uc_.key(), uc_.volume()};
         }
         ctxt.push_back(Entry{uc_.key(), uc_.volume()});
         std::stable_sort(ctxt.begin(), ctxt.end());
@@ -265,7 +265,7 @@ class ValidationModel {
         if (it == ctxt.begin()) {
           // Item to be replaced is first, therefore raise notification of
           // current first item in context.
-          nr = NotifyResponse{uc_.id(), it->key, it->volume};
+          nr = NotifyResponse{uc_.prod_id(), it->key, it->volume};
         }
 
         if (uc_.cmd() == Cmd::Rep) {
@@ -275,7 +275,6 @@ class ValidationModel {
           // Delete: Remove entry from context.
           ctxt.erase(it);
         }
-
       } break;
     }
 
@@ -287,8 +286,8 @@ class ValidationModel {
     QueryResponse qr;
     if (qc_.vld()) {
 
-      ASSERT_LT(qc_.id(), cfg::CONTEXT_N);
-      const std::vector<Entry>& ctxt{tbl_[qc_.id()]};
+      ASSERT_LT(qc_.prod_id(), cfg::CONTEXT_N);
+      const std::vector<Entry>& ctxt{tbl_[qc_.prod_id()]};
 
       bool error = (qc_.level() >= ctxt.size()); // TODO: in-flight transactions.
       if (error) {
@@ -312,21 +311,21 @@ class ValidationModel {
     const NotifyResponse& actual = nr_;
     EXPECT_EQ(predicted.vld(), actual.vld()) << harness_.tb_cycle();
     if (predicted.vld()) {
-      EXPECT_EQ(predicted.id(), actual.id());
+      EXPECT_EQ(predicted.prod_id(), actual.prod_id());
       EXPECT_EQ(predicted.key(), actual.key());
       EXPECT_EQ(predicted.volume(), actual.volume());
     }
   }
 
-  UpdateCommand uc_{};
-  QueryCommand qc_{};
-  QueryResponse qr_{};
-  NotifyResponse nr_{};
+  UpdateCommand uc_;
+  QueryCommand qc_;
+  QueryResponse qr_;
+  NotifyResponse nr_;
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
 
   DelayPipe<NotifyResponse, UPDATE_PIPE_DELAY> notify_pipe_;
-  DelayPipe<PipeId, UPDATE_PIPE_DELAY> id_pipe_;
+  DelayPipe<PipeProdId, UPDATE_PIPE_DELAY> prod_id_pipe_;
   DelayPipe<QueryResponse, QUERY_PIPE_DELAY> queries_pipe_;
 
   // UUT harness

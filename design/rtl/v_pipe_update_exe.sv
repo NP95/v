@@ -99,9 +99,14 @@ logic [v_pkg::ENTRIES_N - 1:0]          mask_right;
 logic [v_pkg::ENTRIES_N - 1:0]          mask_left;
 logic [v_pkg::ENTRIES_N - 1:0]          mask_insert_key;
 logic [v_pkg::ENTRIES_N - 1:0]          mask_insert_vol;
+
 //
-logic                                   cnt_do_add;
-logic                                   cnt_do_del;
+v_pkg::listsize_t                       stnxt_listsize_nxt;
+v_pkg::listsize_t                       stnxt_listsize;
+v_pkg::listsize_t                       stnxt_listsize;
+logic                                   stnxt_listsize_inc;
+logic                                   stnxt_listsize_dec;
+logic                                   stnxt_listsize_sel;
 
 logic [v_pkg::ENTRIES_N - 1:0]          cmp_eq;
 logic [v_pkg::ENTRIES_N - 1:0]          cmp_gt;
@@ -296,7 +301,7 @@ assign del_vld_shift = i_stcur_vld_r & (del_mask_left << 1);
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
 assign del_vld =
-   i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
+    i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
 
 // -------------------------------------------------------------------------- //
 // Replace
@@ -313,13 +318,15 @@ assign rep_mask_insert = match_sel;
 // of the vector remains unchanged regardless of whether a replacement has taken
 // place.
 //
-assign vld_nxt = ({v_pkg::ENTRIES_N{op_add}} & add_vld) |
-                 ({v_pkg::ENTRIES_N{op_del}} & del_vld) |
-                 ({v_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
+assign vld_nxt =
+      ({v_pkg::ENTRIES_N{op_add}} & add_vld)
+    | ({v_pkg::ENTRIES_N{op_del}} & del_vld)
+    | ({v_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
 
 // Compute final validity vector. On a CLEAR op., all bits are cleared
 // regardless of prior state.
-assign o_stnxt_vld = ({v_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
+assign o_stnxt_vld =
+    ({v_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
 
 // -------------------------------------------------------------------------- //
 // Next Keys/Volumes:
@@ -334,8 +341,10 @@ assign mask_left = ({v_pkg::ENTRIES_N{op_del}} & del_mask_left);
 // TODO: replace
 assign mask_insert_key = ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert);
 
-assign mask_insert_vol = ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert) |
-                         ({v_pkg::ENTRIES_N{op_rep}} & match_sel);
+assign mask_insert_vol =
+      ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert)
+    | ({v_pkg::ENTRIES_N{op_rep}} & match_sel)
+    ;
 
 for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 
@@ -419,25 +428,48 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
 
 // -------------------------------------------------------------------------- //
-// Next Count:
+//                                                                            //
+// Next Count:                                                                //
+//                                                                            //
+// -------------------------------------------------------------------------- //
+
 //
+//
+assign stnxt_listsize_inc =
+      op_add
+    ;
 
-assign cnt_do_add = op_add;
+//
+//
+assign stnxt_listsize_dec =
+      op_del
+    ;
 
-assign cnt_do_del = op_del;
+//
+//
+assign stnxt_listsize_sel =
+      (stnxt_listsize_inc | stnxt_listsize_dec)
+    ;
 
-assign o_stnxt_listsize = // List has been cleared, count becomes zero
-                       op_clr ? '0 :
-                       // Entry added to list, count is incremented
-                       cnt_do_add ? (i_stcur_listsize_r + 'b1) :
-                       // Entry removed from list, count is decremented
-                       cnt_do_del ? (i_stcur_listsize_r - 'b1) :
-                       // Otherwise, count remains unchanged.
-                       i_stcur_listsize_r;
+//
+//
+assign stnxt_listsize_nxt =
+      ({v_pkg::LISTSIZE_W{ stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
+    | ({v_pkg::LISTSIZE_W{ stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
+    | ({v_pkg::LISTSIZE_W{~stnxt_listsize_sel}} &  i_stcur_listsize_r)
+    ;
+
+//
+//
+assign stnxt_listsize =
+      ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt)
+    ;
 
 // -------------------------------------------------------------------------- //
-// Notify
-//
+//                                                                            //
+// Notify:                                                                    //
+//                                                                            //
+// -------------------------------------------------------------------------- //
 
 // Clear operation and N'th entry was valid.
 assign notify_cleared_list = op_clr & i_stcur_vld_r [v_pkg::ENTRIES_N - 1];
@@ -466,6 +498,7 @@ assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r);
 
 assign o_stnxt_keys = stnxt_keys;
 assign o_stnxt_volumes = stnxt_volumes;
+assign o_stnxt_listsize = stnxt_listsize;
 
 assign o_notify_vld =  notify_vld;
 assign o_notify_key = notify_key;

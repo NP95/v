@@ -44,7 +44,7 @@ class VerilatedVcdC;
 
 namespace verif {
 
-using id_t = vluint8_t;
+using prod_id_t = vluint8_t;
 enum class Cmd : vluint8_t { Clr = 0, Add = 1, Del = 2, Rep = 3 };
 using key_t = vluint64_t;
 using volume_t = vluint32_t;
@@ -55,17 +55,17 @@ class UpdateCommand {
  public:
   UpdateCommand();
 
-  UpdateCommand(id_t id, Cmd cmd, key_t key, volume_t volume);
+  UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
 
   bool vld() const { return vld_; }
-  id_t id() const { return prod_id_; }
+  prod_id_t prod_id() const { return prod_id_; }
   Cmd cmd() const { return cmd_; }
   key_t key() const { return key_; }
   volume_t volume() const { return volume_; }
 
  private:
   bool vld_;
-  id_t prod_id_;
+  prod_id_t prod_id_;
   Cmd cmd_;
   key_t key_;
   volume_t volume_;
@@ -75,15 +75,15 @@ class QueryCommand {
  public:
   QueryCommand();
 
-  QueryCommand(id_t id, level_t level);
+  QueryCommand(prod_id_t prod_id, level_t level);
 
   bool vld() const { return vld_; }
-  id_t id() const { return prod_id_; }
+  prod_id_t prod_id() const { return prod_id_; }
   level_t level() const { return level_; }
 
  private:
   bool vld_;
-  id_t prod_id_;
+  prod_id_t prod_id_;
   level_t level_;
 };
 
@@ -111,16 +111,16 @@ class NotifyResponse {
  public:
   NotifyResponse();
 
-  NotifyResponse(id_t id, key_t key, volume_t volume);
+  NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
 
   bool vld() const { return vld_; }
-  id_t id() const { return prod_id_; }
+  prod_id_t prod_id() const { return prod_id_; }
   key_t key() const { return key_; }
   volume_t volume() const { return volume_; }
 
  private:
   bool vld_;
-  id_t prod_id_;
+  prod_id_t prod_id_;
   key_t key_;
   volume_t volume_;
 };
