@@ -25,27 +25,16 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-cmake_minimum_required(VERSION 3.20)
+set(LIB_ROOT "${CMAKE_SOURCE_DIR}/lib")
 
-project(v)
+set(TARGET "sim")
 
-option(ENABLE_VCD "Enable waveform tracing." ON)
-
-option(VERILATOR_ROOT "Verilator installation root")
-
-set(CMAKE_CXX_STANDARD 17)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH
-  "${CMAKE_SOURCE_DIR}/rtl"
-  "${CMAKE_SOURCE_DIR}/lib"
+set(LIB_SOURCES
+  "${LIB_ROOT}/dff.sv"
+  "${LIB_ROOT}/dffen.sv"
+  "${LIB_ROOT}/pd/${TARGET}/sram1r1w.sv"
   )
 
-include(FetchContent)
-include(FindVerilator)
-
-enable_testing()
-
-if (Verilator_EXE)
-  add_subdirectory(tb)
-endif ()
+set(LIB_INCLUDE_PATHS
+  "${LIB_ROOT}"
+  )

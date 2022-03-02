@@ -26,6 +26,7 @@
 ##========================================================================== //
 
 include(rtl)
+include(lib)
 
 set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
 
@@ -58,9 +59,7 @@ endif ()
 set(TB_SOURCES
   "${RTL_CFG_SOURCES}"
   "${RTL_SOURCES}"
-  "${TB_ROOT}/v/dff.sv"
-  "${TB_ROOT}/v/dffen.sv"
-  "${TB_ROOT}/v/pd/sram1r1w.sv"
+  "${LIB_SOURCES}"
   "${TB_ROOT}/tb.sv")
 
 macro (set_tb_param k v)
@@ -69,9 +68,11 @@ endmacro ()
 
 macro (verilate_tb cfg)
   set(VERILATOR_INCLUDES
-    "-I${CMAKE_CURRENT_BUILD_DIR}"
-    "-I${TB_ROOT}/v")
+    "-I${CMAKE_CURRENT_BUILD_DIR}")
   foreach (inc_fn ${RTL_INCLUDE_PATHS})
+    list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
+  endforeach ()
+  foreach (inc_fn ${LIB_INCLUDE_PATHS})
     list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
   endforeach ()
 
