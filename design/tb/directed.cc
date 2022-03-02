@@ -197,7 +197,7 @@ private:
   // Unit under test
   verif::UUTHarness uut_;
 };
-/*
+
 TEST(Directed, CheckAddItem) {
   using namespace verif;
 
@@ -353,7 +353,7 @@ TEST(Directed, CheckClear) {
   tb.run(&test);
   EXPECT_TRUE(test.is_passed());
 }
-*/
+
 TEST(Directed, CheckReplace) {
   using namespace verif;
 

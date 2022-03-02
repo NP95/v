@@ -213,7 +213,6 @@ class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
   using base_class_type::wr_ptr_;
  public:
   bool has_prod_id(prod_id_t prod_id) const {
-    std::cout << this->to_string() << "\n";
     for (std::size_t i = 0; i < N; i++) {
       const UpdateResponse& ur{p_[(wr_ptr_ + i) % p_.size()]};
       if (ur.vld() && (ur.prod_id() == prod_id))
@@ -269,6 +268,7 @@ class ValidationModel {
 
   void step() {
     nr_pipe_.step();
+    ur_pipe_.step();
     qr_pipe_.step();
 
     handle_uc();
@@ -325,7 +325,6 @@ class ValidationModel {
       case Cmd::Rep:
       case Cmd::Del: {
         ur = UpdateResponse{uc_.prod_id()};
-        std::cout << harness_.tb_cycle() << " " << ur.to_string() << "\n";
         auto find_key = [&](const Entry& e) { return (e.key == uc_.key()); };
         auto it = std::find_if(ctxt.begin(), ctxt.end(), find_key);
 
@@ -378,7 +377,7 @@ class ValidationModel {
     const QueryResponse& actual = qr_;
     EXPECT_EQ(predicted.vld(), actual.vld());
     if (predicted.vld() && actual.vld()) {
-      EXPECT_EQ(predicted.error(), actual.error()) << harness_.tb_cycle();
+      EXPECT_EQ(predicted.error(), actual.error());
       if (!predicted.error() && !actual.error()) {
         EXPECT_EQ(predicted.key(), actual.key());
         EXPECT_EQ(predicted.volume(), actual.volume());
@@ -390,11 +389,11 @@ class ValidationModel {
   void handle_nr() {
     const NotifyResponse& predicted = nr_pipe_.head();
     const NotifyResponse& actual = nr_;
-    EXPECT_EQ(predicted.vld(), actual.vld()) << harness_.tb_cycle();
+    EXPECT_EQ(predicted.vld(), actual.vld());
     if (predicted.vld()) {
       EXPECT_EQ(predicted.prod_id(), actual.prod_id());
-      EXPECT_EQ(predicted.key(), actual.key()) << harness_.tb_cycle();
-      EXPECT_EQ(predicted.volume(), actual.volume()) << harness_.tb_cycle() << harness_.tb_cycle();
+      EXPECT_EQ(predicted.key(), actual.key());
+      EXPECT_EQ(predicted.volume(), actual.volume());
     }
   }
 
