@@ -30,6 +30,8 @@
 module pri #(
   // Width of vector
   parameter int W
+  // Priority direction (MSB vs. LSB)
+, parameter bit FROM_LSB = 'b0
 ) (
 // -------------------------------------------------------------------------- //
 //
@@ -61,17 +63,19 @@ always_comb begin : pri_PROC
 
   for (int i = 0; i < W; i++) begin
 
-
     for (int j = 0; j < W; j++) begin
 
-      prior_bits[i][j] = (j > i) ? i_x [j] : 1'b0;
+      if (FROM_LSB)
+        prior_bits[i][j] = (j < i) ? i_x [j] : 1'b0;
+      else
+        prior_bits[i][j] = (j > i) ? i_x [j] : 1'b0;
 
     end // for (int j = 0; j < W; j++)
 
     // Output priority selection if current input bit is high and prior bits in
     // word are 'b0.
     y [i] = i_x [i] & (prior_bits[i] == '0);
-    
+
   end // for (int i = 0; i < W; i++)
 
 end // block: pri_PROC

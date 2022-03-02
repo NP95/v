@@ -71,6 +71,19 @@ class UpdateCommand {
   volume_t volume_;
 };
 
+class UpdateResponse {
+ public:
+  UpdateResponse();
+  UpdateResponse(prod_id_t prod_id);
+
+  bool vld() const { return vld_; }
+  prod_id_t prod_id() const { return prod_id_; }
+
+ private:
+  bool vld_;
+  prod_id_t prod_id_;
+};
+
 class QueryCommand {
  public:
   QueryCommand();
@@ -90,7 +103,6 @@ class QueryCommand {
 class QueryResponse {
  public:
   QueryResponse();
-
   QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
 
   bool vld() const { return vld_; }
@@ -110,8 +122,9 @@ class QueryResponse {
 class NotifyResponse {
  public:
   NotifyResponse();
-
   NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
+
+  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }

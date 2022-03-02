@@ -250,8 +250,8 @@ assign s2_upd_state_sel_early = (|s2_upd_state_fwd);
 // Early state forwarding; the state that is expected to arrival
 // relatively early into the current cycle.
 assign s2_upd_state_early =
-   ({v_pkg::STATE_BITS{s2_upd_state_fwd[1]}} & wrbk_state_r) |
-   ({v_pkg::STATE_BITS{s2_upd_state_fwd[0]}} & s2_upd_wrbk_r);
+   ({v_pkg::STATE_BITS{s2_upd_state_sel[1]}} & wrbk_state_r) |
+   ({v_pkg::STATE_BITS{s2_upd_state_sel[0]}} & s2_upd_wrbk_r);
 
 // Final State forwarding injecting those signals (from RAM) that is expected to
 // arrive relatively late into the cycle. To this so that such state is injected
@@ -275,6 +275,7 @@ assign s3_upd_size_w = s2_upd_size_r;
 assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
 assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
 assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
+assign s3_exe_stcur_listsize_r = s3_upd_state_r.listsize;
 
 // Writeback:
 assign wrbk_vld_w = s3_upd_vld_r;
@@ -355,6 +356,8 @@ always_ff @(posedge clk)
     s3_upd_cmd_r     <= s3_upd_cmd_w;
     s3_upd_key_r     <= s3_upd_key_w;
     s3_upd_size_r    <= s3_upd_size_w;
+
+    s3_upd_state_r   <= s3_upd_state_w;
   end
 
 // -------------------------------------------------------------------------- //
@@ -447,5 +450,15 @@ assign o_lv0_vld_r = lv0_vld_r;
 assign o_lv0_prod_id_r = lv0_prod_id_r;
 assign o_lv0_key_r = lv0_key_r;
 assign o_lv0_size_r = lv0_size_r;
+
+// Update pipeline status.
+assign o_s1_upd_vld_r = s1_upd_vld_r;
+assign o_s1_upd_prod_id_r = s1_upd_prod_id_r;
+assign o_s2_upd_vld_r = s2_upd_vld_r;
+assign o_s2_upd_prod_id_r = s2_upd_prod_id_r;
+assign o_s3_upd_vld_r = s3_upd_vld_r;
+assign o_s3_upd_prod_id_r = s3_upd_prod_id_r;
+assign o_s4_upd_vld_r = wrbk_vld_r;
+assign o_s4_upd_prod_id_r = wrbk_prod_id_r;
 
 endmodule // v_pipe_update

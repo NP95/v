@@ -69,6 +69,9 @@ always_comb begin : mux_PROC
       mux_bit [i][j] = (i_sel[j] & i_x[j][i]);
     end
 
+  end
+
+  for (int i = 0; i < W; i++) begin
     // OR-reduction to form final result for bit 'i'.
     y [i] = (|mux_bit[i]);
   end

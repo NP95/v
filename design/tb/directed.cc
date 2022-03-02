@@ -26,6 +26,7 @@
 //========================================================================== //
 
 #include "tb.h"
+#include "cfg.h"
 #include <tuple>
 #include <deque>
 
@@ -205,19 +206,102 @@ TEST(Directed, CheckAddItem) {
   TB tb{opts};
   DirectedTestDriver test{tb.get_harness()};
 
-  test.push_back(UpdateCommand{0, Cmd::Add, 1, 1});
-  test.wait_cycles(1);
-  test.push_back(UpdateCommand{0, Cmd::Add, 2, 2});
-  test.wait_cycles(1);
-  test.push_back(UpdateCommand{0, Cmd::Add, 3, 3});
-  test.wait_cycles(1);
-  test.push_back(UpdateCommand{0, Cmd::Add, 4, 4});
+  // Issue some excess commands in to the context that will be removed once
+  // capacity has been reached.
+  const int excess = 10;
+
+  // Issue simulus; populate prod_id/context in the table a validate correct
+  // ordering.
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N + 10; key++) {
+    const verif::volume_t volume = key;
+    test.push_back(UpdateCommand{0, Cmd::Add, key, volume});
+    // Insert wait cycle to account for incomplete forwarding around
+    // state-table.
+    test.wait_cycles(1);
+  }
+
+  // Verify value written is present in the machine and in the expected
+  // order. No wait cycle here as this interface can sink a query command each
+  // cycle.
+  for (verif::level_t level = 0; level < cfg::ENTRIES_N; level++) {
+    test.push_back(QueryCommand{0, level});
+  }
+
+  // Run test
+  //  tb.run(&test);
+  //  EXPECT_TRUE(test.is_passed());
+}
+
+TEST(Directed, SimpleCheckDelItem) {
+  using namespace verif;
+
+  Options opts;
+  opts.enable_vcd = true;
+  TB tb{opts};
+  DirectedTestDriver test{tb.get_harness()};
+
+  // Issue simulus; populate prod_id/context in the table a validate correct
+  // ordering.
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N; key++) {
+    const verif::volume_t volume = key;
+    test.push_back(UpdateCommand{0, Cmd::Add, key, volume});
+    // Insert wait cycle to account for incomplete forwarding around
+    // state-table.
+    test.wait_cycles(1);
+  }
+
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N; key++) {
+    test.push_back(UpdateCommand{0, Cmd::Del, key, 0});
+    test.wait_cycles(1);
+  }
+
+  // Run test
+  //  tb.run(&test);
+  //  EXPECT_TRUE(test.is_passed());
+}
+
+TEST(Directed, SimpleCheckListSize) {
+  using namespace verif;
+
+  Options opts;
+  opts.enable_vcd = true;
+  TB tb{opts};
+  DirectedTestDriver test{tb.get_harness()};
+  /*
+  // Check empty status;
+  //
+  // Expect to return invalid/error status when attempting to query the a
+  // context/prod_id with no entries.
+  test.push_back(QueryCommand{0, 0});
   test.wait_cycles(10);
 
+  // Check that invalid entries will raise an error message.
+  //
+  // Add one item, check that entry is present and that it is at the correct
+  // location.
+  test.push_back(UpdateCommand{0, Cmd::Add, 0, 0});
+  test.wait_cycles(10);
   test.push_back(QueryCommand{0, 0});
-  test.push_back(QueryCommand{0, 1});
-  test.push_back(QueryCommand{0, 2});
-  test.push_back(QueryCommand{0, 3});
+  // Expect error on next commands
+  for (int i = 0; i < cfg::ENTRIES_N + 10; i++) {
+    const verif::level_t level = i;
+    test.push_back(QueryCommand{0, level});
+  }
+  test.wait_cycles(10);
+  */
+  // Check that an error message will be raised whenever a query is made to an
+  // entry for which there is a pending update operation.
+
+  // Ensure that entry contains valid item so that we're hitting the pipeline is
+  // busy error conditino.
+  test.push_back(UpdateCommand{0, Cmd::Add, 0, 0});
+  test.wait_cycles(10);
+  test.push_back(UpdateCommand{0, Cmd::Add, 0, 0}, QueryCommand{0, 0});
+  test.wait_cycles(10);
+
+  // Check that an error message will be raised whenever a query is made to an
+  // entry which is not present in the table (i.e bad-ID).
+
 
   // Run test
   tb.run(&test);

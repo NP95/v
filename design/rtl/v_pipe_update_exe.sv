@@ -74,19 +74,24 @@ logic                                   op_rep;
 // Match:
 logic [v_pkg::ENTRIES_N - 1:0]          match_sel;
 logic                                   match_hit;
+logic                                   match_full;
+v_pkg::volume_t                         match_volume;
 
 // Add:
 logic [v_pkg::ENTRIES_N - 1:0]          add_mask_cmp;
 logic [v_pkg::ENTRIES_N - 1:0]          add_vld_shift;
+logic [v_pkg::ENTRIES_N - 1:0]          add_vld_sel;
 logic [v_pkg::ENTRIES_N - 1:0]          add_vld;
+logic                                   add_listsize_inc;
 
-logic [v_pkg::ENTRIES_N - 1:0]          add_mask_right;
+logic [v_pkg::ENTRIES_N - 1:0]          add_mask_left;
 logic [v_pkg::ENTRIES_N - 1:0]          add_mask_insert;
 
 // Delete:
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld_shift;
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld;
 logic [v_pkg::ENTRIES_N - 1:0]          del_mask_left;
+logic                                   del_listsize_dec;
 
 // Replace:
 logic [v_pkg::ENTRIES_N - 1:0]          rep_mask_insert;
@@ -103,10 +108,9 @@ logic [v_pkg::ENTRIES_N - 1:0]          mask_insert_vol;
 //
 v_pkg::listsize_t                       stnxt_listsize_nxt;
 v_pkg::listsize_t                       stnxt_listsize;
-v_pkg::listsize_t                       stnxt_listsize;
 logic                                   stnxt_listsize_inc;
 logic                                   stnxt_listsize_dec;
-logic                                   stnxt_listsize_sel;
+logic                                   stnxt_listsize_def;
 
 logic [v_pkg::ENTRIES_N - 1:0]          cmp_eq;
 logic [v_pkg::ENTRIES_N - 1:0]          cmp_gt;
@@ -124,6 +128,7 @@ v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]stnxt_volumes;
 // Notify:
 logic                                   notify_cleared_list;
 logic                                   notify_did_add;
+logic                                   notify_did_del;
 logic                                   notify_did_rep_or_del;
 logic                                   notify_vld;
 v_pkg::key_t                            notify_key;
@@ -154,6 +159,17 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
 // Flag denoting that a matching key was found in the current state.
 assign match_hit = (match_sel != '0);
+
+// TODO: rename
+assign match_full = (i_stcur_vld_r == '1);
+
+mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
+  //
+    .i_x                      (i_stcur_volumes_r)
+  , .i_sel                    (match_sel)
+  //
+  , .o_y                      (match_volume)
+);
 
 // -------------------------------------------------------------------------- //
 // Add:
@@ -211,33 +227,35 @@ assign add_mask_cmp =
 //                     |
 //   0  0  0  0  0  0  1  0  0  0  0  0  0
 //
-lzd #(.W(v_pkg::ENTRIES_N)) u_lzd (
+lzd #(.W(v_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
   //
     .i_x                                (add_mask_cmp)
   //
   , .o_y                                (add_mask_insert)
 );
 
-// Compute mask inclusive of the current selected insertion
-// point and oriented towards the LSB to denote the set of positions/indices to
-// be shifted-right for the insertion sort position.
+// Compute mask inclusive of the current selected insertion point and oriented
+// towards the LSB to denote the set of positions/indices to be shifted-right
+// for the insertion sort position.
 //
 //                     +-- Insertion position
 //                     |
-//   0  0  0  0  0  0  1  1  1  1  1  1  1
+//   1  1  1  1  1  1  1  0  0  0  0  0  0
 //
-mask #(.W(v_pkg::ENTRIES_N)) u_mask_add (
+mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
   //
     .i_x                                (add_mask_insert)
   //
-  , .o_y                                (add_mask_right)
+  , .o_y                                (add_mask_left)
 );
+
+assign add_vld_sel = i_stcur_vld_r & add_mask_left;
 
 // Compute update to valid vector,
 //
 // Prior validity vector (vld):
 //
-//   1  1  1  1  1  1  1  1  1  0  0  0  0
+//   0  0  0  1  1  1  1  1  1  1  1  1  1
 //
 // Entry to be inserted (pivot):
 //
@@ -245,15 +263,20 @@ mask #(.W(v_pkg::ENTRIES_N)) u_mask_add (
 //
 // Next validity vector (vld_nxt):
 //
-//   1  1  1  1  1  1  1  1  1  1  0  0  0
+//   0  0  1  1  1  1  1  1  1  1  1  1  1
 //
-assign add_vld_shift = i_stcur_vld_r & (add_mask_right >> 1);
+assign add_vld_shift = add_vld_sel << 1;
 
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
 //
-assign add_vld =
-   i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & add_vld_shift);
+assign add_vld = (i_stcur_vld_r | add_vld_shift | add_mask_insert);
+
+// On an ADD, the list size is always incremented unless the context/prod_id is
+// full (i.e. there are no free entries available). In this case, we simply
+// saturate the count.
+//
+assign add_listsize_inc = (~match_full);
 
 // -------------------------------------------------------------------------- //
 // Delete
@@ -270,9 +293,9 @@ assign add_vld =
 //
 // compute the mask denoting the set of positions to be shifted left.
 //
-//   0  0  0  0  1  1  1  1  1  1  1  1  1
+//   1  1  1  1  1  0  0  0  0  0  0  0  0
 //
-mask #(.W(v_pkg::ENTRIES_N)) u_mask_del (
+mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
   //
     .i_x                                (match_sel)
   //
@@ -302,6 +325,11 @@ assign del_vld_shift = i_stcur_vld_r & (del_mask_left << 1);
 // positions.
 assign del_vld =
     i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
+
+// On delete, the listsize is decremented whenever a hit takes place (i.e. a
+// matching entry has been found in the context, which will now be removed).
+//
+assign del_listsize_dec = match_hit;
 
 // -------------------------------------------------------------------------- //
 // Replace
@@ -333,7 +361,7 @@ assign o_stnxt_vld =
 //
 
 // Shift Right only on ADD operation
-assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_mask_right);
+assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_vld_sel);
 
 // Shift Left only on LEFT operation.
 assign mask_left = ({v_pkg::ENTRIES_N{op_del}} & del_mask_left);
@@ -434,36 +462,25 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 // -------------------------------------------------------------------------- //
 
 //
-//
-assign stnxt_listsize_inc =
-      op_add
-    ;
+assign stnxt_listsize_inc = (op_add & add_listsize_inc);
 
 //
-//
-assign stnxt_listsize_dec =
-      op_del
-    ;
+assign stnxt_listsize_dec = (op_del & del_listsize_dec);
 
 //
-//
-assign stnxt_listsize_sel =
-      (stnxt_listsize_inc | stnxt_listsize_dec)
-    ;
+assign stnxt_listsize_def = ~(stnxt_listsize_inc | stnxt_listsize_dec);
 
 //
 //
 assign stnxt_listsize_nxt =
-      ({v_pkg::LISTSIZE_W{ stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
-    | ({v_pkg::LISTSIZE_W{ stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
-    | ({v_pkg::LISTSIZE_W{~stnxt_listsize_sel}} &  i_stcur_listsize_r)
+      ({v_pkg::LISTSIZE_W{stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
+    | ({v_pkg::LISTSIZE_W{stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
+    | ({v_pkg::LISTSIZE_W{stnxt_listsize_def}} &  i_stcur_listsize_r)
     ;
 
 //
 //
-assign stnxt_listsize =
-      ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt)
-    ;
+assign stnxt_listsize = ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt);
 
 // -------------------------------------------------------------------------- //
 //                                                                            //
@@ -472,23 +489,26 @@ assign stnxt_listsize =
 // -------------------------------------------------------------------------- //
 
 // Clear operation and N'th entry was valid.
-assign notify_cleared_list = op_clr & i_stcur_vld_r [v_pkg::ENTRIES_N - 1];
+assign notify_cleared_list = op_clr & i_stcur_vld_r [0];
 
 // Add operation. inserted into the N'th entry.
-assign notify_did_add = op_add & add_mask_insert [v_pkg::ENTRIES_N - 1];
+assign notify_did_add = op_add & add_mask_insert [0];
+
+assign notify_did_del = op_del & match_sel [0];
 
 // Replace or Delete operations took place into the N'th entry.
 assign notify_did_rep_or_del =
-   (op_rep | op_del) & match_sel [v_pkg::ENTRIES_N - 1];
+   (op_rep | op_del) & match_sel [0];
 
 assign notify_vld = notify_cleared_list |
                     notify_did_add |
                     notify_did_rep_or_del;
 
 
-assign notify_key = ({v_pkg::KEY_BITS{notify_did_add}} & i_pipe_key_r);
+assign notify_key = i_pipe_key_r;
 
-assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r);
+assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r) |
+		       ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);
 
 // ========================================================================== //
 //                                                                            //

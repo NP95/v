@@ -37,6 +37,7 @@ module v_pipe_query (
 , input v_pkg::id_t                               i_lut_prod_id
 , input v_pkg::level_t                            i_lut_level
 //
+, output logic                                    o_lut_vld_r
 , output v_pkg::key_t                             o_lut_key
 , output v_pkg::volume_t                          o_lut_size
 , output logic                                    o_lut_error
@@ -84,10 +85,12 @@ logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_w;
 logic                                   s1_lut_en;
 v_pkg::id_t                             s1_lut_prod_id_w;
 v_pkg::level_t                          s1_lut_level_w;
-logic                                   s1_lut_error_is_busy;
+logic                                   s0_lut_error_is_busy;
 logic                                   s1_lut_error_w;
+logic                                   s1_lut_vld_w;
 
 // S1
+logic                                   s1_lut_vld_r;
 v_pkg::id_t                             s1_lut_prod_id_r;
 v_pkg::level_t                          s1_lut_level_r;
 logic                                   s1_lut_error_r;
@@ -100,6 +103,7 @@ logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec;
 v_pkg::key_t                            s1_lut_key;
 v_pkg::volume_t                         s1_lut_volume;
 logic                                   s1_lut_error_invalid_entry;
+logic                                   s1_lut_error_was_busy;
 logic                                   s1_lut_error;
 
 // ========================================================================== //
@@ -115,7 +119,8 @@ logic                                   s1_lut_error;
 assign s0_state_ren     = i_lut_vld;
 assign s0_state_raddr   = i_lut_prod_id;
 
-assign s1_lut_en        = i_lut_vld;
+assign s1_lut_vld_w     = i_lut_vld;
+assign s1_lut_en        = s1_lut_vld_w;
 assign s1_lut_prod_id_w = i_lut_prod_id;
 assign s1_lut_level_w   = i_lut_level;
 
@@ -127,13 +132,13 @@ assign s1_lut_level_w   = i_lut_level;
 // more sophisticated forwarding, but this is probably overkill in this
 // context and is not required by the specification.
 //
-assign s1_lut_error_is_busy   =
+assign s0_lut_error_is_busy   =
     (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == i_lut_prod_id)) |
     (i_s2_upd_vld_r & (i_s2_upd_prod_id_r == i_lut_prod_id)) |
     (i_s3_upd_vld_r & (i_s3_upd_prod_id_r == i_lut_prod_id)) |
     (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id));
 
-assign s1_lut_error = s1_lut_error_is_busy;
+assign s1_lut_error_w = s0_lut_error_is_busy;
 
 // -------------------------------------------------------------------------- //
 // S1
@@ -160,8 +165,17 @@ assign s1_lut_listsize = i_state_rdata.listsize;
 assign s1_lut_error_invalid_entry =
     ((s1_lut_level_dec_r & i_state_rdata.vld) == '0);
 
+// Update and Query commands which are co-incident must be checked at the input
+// to the machine. In S0, for this to happen, we would need to consider the
+// input to the update pipeline. For reasons of timing, we've simply pushed to
+// the next stage so we can get this state from flops.
+//
+assign s1_lut_error_was_busy =
+    (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == s1_lut_prod_id_r));
+
 // Form final error state
-assign s1_lut_error = (s1_lut_error_r | s1_lut_error_invalid_entry);
+assign s1_lut_error =
+    (s1_lut_error_r | s1_lut_error_invalid_entry | s1_lut_error_was_busy);
 
 // ========================================================================== //
 //                                                                            //
@@ -171,6 +185,9 @@ assign s1_lut_error = (s1_lut_error_r | s1_lut_error_invalid_entry);
 
 // -------------------------------------------------------------------------- //
 //
+always_ff @(posedge clk)
+  s1_lut_vld_r <= s1_lut_vld_w;
+
 always_ff @(posedge clk)
   if (s1_lut_en) begin : s1_ucode_reg_PROC
     s1_lut_prod_id_r   <= s1_lut_prod_id_w;
@@ -221,6 +238,7 @@ mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
 //                                                                            //
 // ========================================================================== //
 
+assign o_lut_vld_r = s1_lut_vld_r;
 assign o_lut_key = s1_lut_key;
 assign o_lut_size = s1_lut_volume;
 assign o_lut_error = s1_lut_error;

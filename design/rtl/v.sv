@@ -45,6 +45,7 @@ module v (
 , input v_pkg::id_t                               i_lut_prod_id
 , input v_pkg::level_t                            i_lut_level
 //
+, output logic                                    o_lut_vld_r
 , output v_pkg::key_t                             o_lut_key
 , output v_pkg::size_t                            o_lut_size
 , output logic                                    o_lut_error
@@ -186,6 +187,7 @@ v_pipe_query u_v_pipe_query (
   , .i_lut_prod_id                      (i_lut_prod_id)
   , .i_lut_level                        (i_lut_level)
   //
+  , .o_lut_vld_r                        (o_lut_vld_r)
   , .o_lut_key                          (o_lut_key)
   , .o_lut_size                         (o_lut_size)
   , .o_lut_error                        (o_lut_error)

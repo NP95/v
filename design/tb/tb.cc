@@ -35,6 +35,8 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <ostream>
+#include <sstream>
 
 namespace verif {
 
@@ -44,11 +46,18 @@ bool to_bool(vluint8_t v) { return v != 0; }
 
 } // namespace utilities
 
+
 UpdateCommand::UpdateCommand()
     : vld_(false) {}
 
 UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume)
     : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
+
+UpdateResponse::UpdateResponse()
+    : vld_(false) {}
+
+UpdateResponse::UpdateResponse(prod_id_t prod_id)
+    : vld_(true), prod_id_(prod_id) {}
 
 QueryCommand::QueryCommand()
     : vld_(false) {}
@@ -56,8 +65,7 @@ QueryCommand::QueryCommand()
 QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
     : vld_(true), prod_id_(prod_id), level_(level) {}
 
-QueryResponse::QueryResponse()
-    : vld_(false) {}
+QueryResponse::QueryResponse() : vld_(false) {}
 
 QueryResponse::QueryResponse(
     key_t key, volume_t volume, bool error, listsize_t listsize) {
@@ -76,6 +84,12 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
   prod_id_ = prod_id;
   key_ = key;
   volume_ = volume;
+}
+
+std::string NotifyResponse::to_string() const {
+  std::stringstream ss;
+  ss << vld_ << " " << (int)prod_id_ << " " << key_ << " " << volume_;
+  return ss.str();
 }
 
 UUTHarness::UUTHarness(Vtb* tb) : tb_(tb) {}
@@ -133,16 +147,20 @@ struct VDriver {
 
   // Sample Query Response Interface:
   static void Sample(Vtb* tb, QueryResponse& qr) {
-    qr = QueryResponse{tb->o_lut_key, tb->o_lut_size,
-      utilities::to_bool(tb->o_lut_error), tb->o_lut_listsize};
+    if (tb->o_lut_vld_r) {
+      qr = QueryResponse{tb->o_lut_key, tb->o_lut_size,
+        utilities::to_bool(tb->o_lut_error), tb->o_lut_listsize};
+    } else {
+      qr = QueryResponse{};
+    }
   }
 
 };
 
 template<typename T, std::size_t N>
-class DelayPipe {
+class DelayPipeBase {
  public:
-  DelayPipe() {
+  DelayPipeBase() {
     clear();
   }
 
@@ -151,8 +169,8 @@ class DelayPipe {
   const T& head() const { return p_[rd_ptr_]; }
 
   void step() {
-    wr_ptr_ = (wr_ptr_ + 1) % (N + 1);
-    rd_ptr_ = (rd_ptr_ + 1) % (N + 1);
+    wr_ptr_ = (wr_ptr_ + 1) % p_.size();
+    rd_ptr_ = (rd_ptr_ + 1) % p_.size();
   }
 
   void clear() {
@@ -162,23 +180,57 @@ class DelayPipe {
     rd_ptr_ = 0;
   }
 
- private:
+ protected:
   std::size_t wr_ptr_, rd_ptr_;
   std::array<T, N + 1> p_;
 };
 
+template<typename T, std::size_t N>
+class DelayPipe : public DelayPipeBase<T, N> {
+  using base_class_type = DelayPipeBase<T, N>;
+};
+
+template<std::size_t N>
+class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
+  using base_class_type = DelayPipeBase<UpdateResponse, N>;
+
+  using base_class_type::p_;
+ public:
+  bool has_prod_id(prod_id_t prod_id) const {
+    for (std::size_t i = 0; i < N; i++) {
+      if (p_[i % p_.size()].prod_id() == prod_id)
+        return true;
+    }
+    return false;
+  }
+};
+
+bool compare_keys(key_t rhs, key_t lhs) {
+  return cfg::is_bid_table ? (rhs < lhs) : (rhs > lhs);
+}
+
+struct Entry {
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << key << ", " << volume;
+    return ss.str();
+  }
+
+  key_t key;
+  volume_t volume;
+};
+
+bool compare_entries(const Entry& lhs, const Entry& rhs) {
+  return compare_keys(lhs.key, rhs.key);
+}
+
+std::ostream& operator<<(std::ostream& os, const Entry& e) {
+  return os << e.to_string();
+}
+
 class ValidationModel {
   static constexpr const std::size_t QUERY_PIPE_DELAY = 1;
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 4;
-
-  struct Entry {
-    bool operator<(const Entry& rhs) const {
-      return (key < rhs.key);
-    }
-
-    key_t key;
-    volume_t volume;
-  };
 
   struct PipeProdId {
     bool vld{false};
@@ -198,8 +250,8 @@ class ValidationModel {
   }
 
   void step() {
-    notify_pipe_.step();
-    queries_pipe_.step();
+    nr_pipe_.step();
+    qr_pipe_.step();
 
     handle_uc();
     handle_qc();
@@ -217,17 +269,20 @@ class ValidationModel {
     if (!uc_.vld()) {
       // No command is present at the interface on this cycle, we do not
       // therefore expect a notification.
-      notify_pipe_.push_back(NotifyResponse{});
+      nr_pipe_.push_back(NotifyResponse{});
+      ur_pipe_.push_back(UpdateResponse{});
       return;
     };
 
     // Validate that ID provided by stimulus is within [0, cfg::CONTEXT_N).
     ASSERT_LT(uc_.prod_id(), cfg::CONTEXT_N);
 
+    UpdateResponse ur{};
     NotifyResponse nr{};
     std::vector<Entry>& ctxt{tbl_[uc_.prod_id()]};
     switch (uc_.cmd()) {
       case Cmd::Clr: {
+        ur = UpdateResponse{uc_.prod_id()};
         if (!ctxt.empty()) {
           // Context was not empty, therefore the head item in the list will be
           // modified.
@@ -236,14 +291,12 @@ class ValidationModel {
         ctxt.clear();
       } break;
       case Cmd::Add: {
-        if (ctxt.empty()) {
-          // Current context is empty. Emit new notify indicating that the head
-          // will be modified by the current command. By convention, emit the
-          // key/value pair associated with the current command.
+        ur = UpdateResponse{uc_.prod_id()};
+        if (ctxt.empty() || compare_keys(uc_.key(), ctxt.begin()->key)) {
           nr = NotifyResponse{uc_.prod_id(), uc_.key(), uc_.volume()};
         }
         ctxt.push_back(Entry{uc_.key(), uc_.volume()});
-        std::stable_sort(ctxt.begin(), ctxt.end());
+        std::stable_sort(ctxt.begin(), ctxt.end(), compare_entries);
         if (ctxt.size() > cfg::ENTRIES_N) {
           // Entry has been spilled on this Add.
           //
@@ -255,12 +308,13 @@ class ValidationModel {
       } break;
       case Cmd::Rep:
       case Cmd::Del: {
+        ur = UpdateResponse{uc_.prod_id()};
         auto find_key = [&](const Entry& e) { return (e.key == uc_.key()); };
         auto it = std::find_if(ctxt.begin(), ctxt.end(), find_key);
 
         // The context was either empty or the key was not found. The current
         // command becomes a NOP.
-        if (it == ctxt.end()) return;
+        if (it == ctxt.end()) break;
 
         if (it == ctxt.begin()) {
           // Item to be replaced is first, therefore raise notification of
@@ -279,18 +333,17 @@ class ValidationModel {
     }
 
     // Update predicted notify responses based upon outcome of prior command.
-    notify_pipe_.push_back(nr);
+    ur_pipe_.push_back(ur);
+    nr_pipe_.push_back(nr);
   }
 
   void handle_qc() {
     QueryResponse qr;
     if (qc_.vld()) {
-
       ASSERT_LT(qc_.prod_id(), cfg::CONTEXT_N);
       const std::vector<Entry>& ctxt{tbl_[qc_.prod_id()]};
 
-      bool error = (qc_.level() >= ctxt.size()); // TODO: in-flight transactions.
-      if (error) {
+      if ((qc_.level() >= ctxt.size()) || ur_pipe_.has_prod_id(qc_.prod_id())) {
         // Query is errored, other fields are invalid.
         qr = QueryResponse{0, 0, true, 0};
       } else {
@@ -300,20 +353,31 @@ class ValidationModel {
         qr = QueryResponse{e.key, e.volume, false, listsize};
       }
     }
-    queries_pipe_.push_back(qr);
+    qr_pipe_.push_back(qr);
   }
 
   void handle_qr() {
+    const QueryResponse& predicted = qr_pipe_.head();
+    const QueryResponse& actual = qr_;
+    EXPECT_EQ(predicted.vld(), actual.vld());
+    if (predicted.vld() && actual.vld()) {
+      EXPECT_EQ(predicted.error(), actual.error());
+      if (!predicted.error() && !actual.error()) {
+        EXPECT_EQ(predicted.key(), actual.key());
+        EXPECT_EQ(predicted.volume(), actual.volume());
+        EXPECT_EQ(predicted.listsize(), actual.listsize());
+      }
+    }
   }
 
   void handle_nr() {
-    const NotifyResponse& predicted = notify_pipe_.head();
+    const NotifyResponse& predicted = nr_pipe_.head();
     const NotifyResponse& actual = nr_;
     EXPECT_EQ(predicted.vld(), actual.vld()) << harness_.tb_cycle();
     if (predicted.vld()) {
       EXPECT_EQ(predicted.prod_id(), actual.prod_id());
-      EXPECT_EQ(predicted.key(), actual.key());
-      EXPECT_EQ(predicted.volume(), actual.volume());
+      EXPECT_EQ(predicted.key(), actual.key()) << harness_.tb_cycle();
+      EXPECT_EQ(predicted.volume(), actual.volume()) << harness_.tb_cycle();
     }
   }
 
@@ -324,9 +388,9 @@ class ValidationModel {
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
 
-  DelayPipe<NotifyResponse, UPDATE_PIPE_DELAY> notify_pipe_;
-  DelayPipe<PipeProdId, UPDATE_PIPE_DELAY> prod_id_pipe_;
-  DelayPipe<QueryResponse, QUERY_PIPE_DELAY> queries_pipe_;
+  DelayPipe<NotifyResponse, UPDATE_PIPE_DELAY> nr_pipe_;
+  DelayPipe<UpdateResponse, UPDATE_PIPE_DELAY> ur_pipe_;
+  DelayPipe<QueryResponse, QUERY_PIPE_DELAY> qr_pipe_;
 
   // UUT harness
   UUTHarness harness_;
@@ -353,13 +417,12 @@ void TB::build_verilated_environment() {
   uut_ = new Vtb(ctxt_);
 #ifdef ENABLE_VCD
   if (opts_.enable_vcd) {
-    Verilated::traceEverOn(true);
+    ctxt_->traceEverOn(true);
     vcd_ = new VerilatedVcdC();
     uut_->trace(vcd_, 99);
     if (!opts_.vcd_filename) {
       auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-      const std::string vcd_name{test_info->name()};
-      opts_.vcd_filename = vcd_name + ".vcd";
+      opts_.vcd_filename = std::string{test_info->name()} + ".vcd";
     }
     vcd_->open(opts_.vcd_filename->c_str());
   }

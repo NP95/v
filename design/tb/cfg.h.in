@@ -34,6 +34,13 @@ namespace cfg {
 
   constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
 
+  // Bid/Ask table:
+  //
+  //  Bid: Head is largest entry
+  //
+  //  Ask: Head is smallest entry
+  constexpr const bool is_bid_table = false;
+
 } // namespace cfg
 
 #endif

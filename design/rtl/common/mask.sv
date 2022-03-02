@@ -40,7 +40,7 @@
 module mask #(
   // Width of vector
   parameter int W
-  
+
   // Operation is rightward (TOWARDS_LSB) or leftward (!TOWARDS_LSB)
 , parameter bit TOWARDS_LSB = 'b1
 
@@ -62,8 +62,10 @@ module mask #(
 //                                                                            //
 // ========================================================================== //
 
-logic [W - 1:0][W - 1:0]                matrix;
-logic [W - 1:0]                         y_right_non_inclusive;
+logic [W - 1:0][W - 1:0]                matrix_lsb;
+logic [W - 1:0][W - 1:0]                matrix_msb;
+logic [W - 1:0]                         y_mask_lsb;
+logic [W - 1:0]                         y_mask_msb;
 logic [W - 1:0]                         y;
 
 // ========================================================================== //
@@ -80,22 +82,38 @@ always_comb begin : mask_PROC
 
     for (int i = 0; i < W; i++) begin
 
-      matrix [j][i] = (i < j) ? i_x [i] : 'b0;
+      matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) ? i_x [i] : 'b0;
+      matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) ? i_x [i] : 'b0;
 
     end // for (int i = 0; i < N; i++)
 
     // OR-reduction across entire vector for each bit, expect the majority of
     // these bits to be 'b0 at elaboration. Additionally, there's a lot of
     // duplication here that synthesis should be able to optimize away.
-    y_right_non_inclusive [j] = (matrix [j] != '0); 
+    //
+    y_mask_lsb [j] = (|matrix_lsb [j]);
+    y_mask_msb [j] = (|matrix_msb [j]);
 
   end // for (int j = 0; j < N; j++)
 
-  // Conditionally invert non-inclusive mask, OR-ing in original 1-hot bit
-  // vector pivot if we're inclusive.
-  y = ({W{~TOWARDS_LSB}} ^ y_right_non_inclusive) | ({W{INCLUSIVE}} & i_x);
-
 end // block: mask_PROC
+
+// TODO: commentary.
+//
+//  y_mask_lsb:                000000000000011111111111111
+//  y_mask_msb:                111111111111000000000000000
+//  i_x:                       000000000000100000000000000
+//
+//  TOWARDS_LSB  INCLUSIVE                          RESULT
+//
+//            0          0     111111111111000000000000000
+//            0          1     111111111111100000000000000
+//            1          0     000000000000011111111111111
+//            1          1     000000000000111111111111111
+//
+assign y =
+       ({W{ TOWARDS_LSB}} & y_mask_lsb)
+     | ({W{~TOWARDS_LSB}} & y_mask_msb);
 
 // ========================================================================== //
 //                                                                            //

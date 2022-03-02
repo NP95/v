@@ -39,8 +39,10 @@
 module lzd #(
   // Width of vector
   parameter int W
+  // Leading from LSB or MSB
+, parameter bit FROM_LSB = 'b0
   // Detect first 'b0 (or 'b1 in !DETECT_ZERO case)
-, parameter bit DETECT_ZERO = 'b1
+, parameter bit DETECT_ZERO = 'b0
 ) (
 // -------------------------------------------------------------------------- //
 //
@@ -85,7 +87,7 @@ end // block: lzd_PROC
 
 // -------------------------------------------------------------------------- //
 //
-pri #(.W(W)) u_pri (
+pri #(.W(W), .FROM_LSB(FROM_LSB)) u_pri (
 //
   .i_x                                  (x_to_first_one)
 //
