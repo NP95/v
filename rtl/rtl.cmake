@@ -25,10 +25,24 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-set_tb_param("CONTEXT_N" 10)
-set_tb_param("ENTRIES_N" 10)
+set(RTL_ROOT "${CMAKE_SOURCE_DIR}/rtl")
 
-configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
-configure_file("${CMAKE_SOURCE_DIR}/design/rtl/v_pkg.vh.in" v_pkg.vh)
-build_test_cfg(cfg_0 cfg_0.cc)
+set(RTL_SOURCES
+  "${RTL_ROOT}/common/mask.sv"
+  "${RTL_ROOT}/common/lzd.sv"
+  "${RTL_ROOT}/common/pri.sv"
+  "${RTL_ROOT}/common/cmp.sv"
+  "${RTL_ROOT}/common/dec.sv"
+  "${RTL_ROOT}/common/mux.sv"
+  "${RTL_ROOT}/v_pipe_update_exe.sv"
+  "${RTL_ROOT}/v_pipe_update.sv"
+  "${RTL_ROOT}/v_pipe_query.sv"
+  "${RTL_ROOT}/v_init.sv"
+  "${RTL_ROOT}/v.sv"
+  )
 
+set(RTL_GENERATED_SOURCES
+  "${RTL_ROOT}/v_pkg.vh.in"
+  )
+
+set(RTL_CFG_SOURCES "${RTL_ROOT}/cfg.vlt")

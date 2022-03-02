@@ -105,7 +105,11 @@ set_tb_param("ENTRIES_N" 10)
 
 configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
 
-configure_file(${RTL_GENERATED_SOURCES} v_pkg.vh)
+foreach (src_fn "${RTL_GENERATED_SOURCES}")
+  cmake_path(GET src_fn STEM LAST_ONLY dst_fn)
+  message(STATUS ${src_fn})
+  configure_file(${src_fn} ${dst_fn})
+endforeach ()
 
 set(TB_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
