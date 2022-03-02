@@ -195,10 +195,12 @@ class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
   using base_class_type = DelayPipeBase<UpdateResponse, N>;
 
   using base_class_type::p_;
+  using base_class_type::wr_ptr_;
  public:
   bool has_prod_id(prod_id_t prod_id) const {
     for (std::size_t i = 0; i < N; i++) {
-      if (p_[i % p_.size()].prod_id() == prod_id)
+      const UpdateResponse& ur{p_[(wr_ptr_ + i) % p_.size()]};
+      if (ur.vld() && (ur.prod_id() == prod_id))
         return true;
     }
     return false;
@@ -361,7 +363,7 @@ class ValidationModel {
     const QueryResponse& actual = qr_;
     EXPECT_EQ(predicted.vld(), actual.vld());
     if (predicted.vld() && actual.vld()) {
-      EXPECT_EQ(predicted.error(), actual.error());
+      EXPECT_EQ(predicted.error(), actual.error()) << harness_.tb_cycle();
       if (!predicted.error() && !actual.error()) {
         EXPECT_EQ(predicted.key(), actual.key());
         EXPECT_EQ(predicted.volume(), actual.volume());

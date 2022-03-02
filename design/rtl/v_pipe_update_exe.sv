@@ -361,7 +361,7 @@ assign o_stnxt_vld =
 //
 
 // Shift Right only on ADD operation
-assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_vld_sel);
+assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_vld_shift);
 
 // Shift Left only on LEFT operation.
 assign mask_left = ({v_pkg::ENTRIES_N{op_del}} & del_mask_left);
@@ -398,7 +398,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
   end else if (i == v_pkg::ENTRIES_N - 1) begin // if (i == 0)
     // Left-most entry:
 
-    assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_insert_vol [i]);
+    assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_right [i]);
 
     assign stnxt_keys_upt [i] =
       // Insertion,

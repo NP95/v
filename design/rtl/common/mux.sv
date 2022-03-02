@@ -65,13 +65,10 @@ always_comb begin : mux_PROC
   for (int i = 0; i < W; i++) begin
 
     // Consolidate mux branches [0, N) for bit 'i'.
-    for (int j = 0; i < N; i++) begin
+    for (int j = 0; j < N; j++) begin
       mux_bit [i][j] = (i_sel[j] & i_x[j][i]);
     end
 
-  end
-
-  for (int i = 0; i < W; i++) begin
     // OR-reduction to form final result for bit 'i'.
     y [i] = (|mux_bit[i]);
   end

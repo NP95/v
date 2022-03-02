@@ -97,8 +97,8 @@ TEST(Directed, CheckMemoryInitializationProcess) {
   WaitForEndOfInitTest test{tb.get_harness(), 1000};
 
   // Run test
-  //  tb.run(&test);
-  //  EXPECT_TRUE(test.is_passed());
+  tb.run(&test);
+  EXPECT_TRUE(test.is_passed());
 }
 
 class DirectedTestDriver : public verif::Test {
@@ -212,13 +212,15 @@ TEST(Directed, CheckAddItem) {
 
   // Issue simulus; populate prod_id/context in the table a validate correct
   // ordering.
-  for (verif::key_t key = 0; key < cfg::ENTRIES_N + 10; key++) {
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N + 1; key++) {
     const verif::volume_t volume = key;
-    test.push_back(UpdateCommand{0, Cmd::Add, key, volume});
+    test.push_back(UpdateCommand{0, Cmd::Add, key + 1, volume});
     // Insert wait cycle to account for incomplete forwarding around
     // state-table.
     test.wait_cycles(1);
   }
+
+  test.wait_cycles(10);
 
   // Verify value written is present in the machine and in the expected
   // order. No wait cycle here as this interface can sink a query command each
@@ -228,8 +230,8 @@ TEST(Directed, CheckAddItem) {
   }
 
   // Run test
-  //  tb.run(&test);
-  //  EXPECT_TRUE(test.is_passed());
+  tb.run(&test);
+  EXPECT_TRUE(test.is_passed());
 }
 
 TEST(Directed, SimpleCheckDelItem) {
@@ -256,8 +258,8 @@ TEST(Directed, SimpleCheckDelItem) {
   }
 
   // Run test
-  //  tb.run(&test);
-  //  EXPECT_TRUE(test.is_passed());
+  tb.run(&test);
+  EXPECT_TRUE(test.is_passed());
 }
 
 TEST(Directed, SimpleCheckListSize) {
@@ -267,7 +269,7 @@ TEST(Directed, SimpleCheckListSize) {
   opts.enable_vcd = true;
   TB tb{opts};
   DirectedTestDriver test{tb.get_harness()};
-  /*
+
   // Check empty status;
   //
   // Expect to return invalid/error status when attempting to query the a
@@ -288,7 +290,7 @@ TEST(Directed, SimpleCheckListSize) {
     test.push_back(QueryCommand{0, level});
   }
   test.wait_cycles(10);
-  */
+
   // Check that an error message will be raised whenever a query is made to an
   // entry for which there is a pending update operation.
 
@@ -301,7 +303,6 @@ TEST(Directed, SimpleCheckListSize) {
 
   // Check that an error message will be raised whenever a query is made to an
   // entry which is not present in the table (i.e bad-ID).
-
 
   // Run test
   tb.run(&test);
