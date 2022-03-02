@@ -197,7 +197,7 @@ private:
   // Unit under test
   verif::UUTHarness uut_;
 };
-
+/*
 TEST(Directed, CheckAddItem) {
   using namespace verif;
 
@@ -303,6 +303,90 @@ TEST(Directed, SimpleCheckListSize) {
 
   // Check that an error message will be raised whenever a query is made to an
   // entry which is not present in the table (i.e bad-ID).
+
+  // Run test
+  tb.run(&test);
+  EXPECT_TRUE(test.is_passed());
+}
+
+TEST(Directed, CheckClear) {
+  using namespace verif;
+
+  Options opts;
+  opts.enable_vcd = true;
+  TB tb{opts};
+  DirectedTestDriver test{tb.get_harness()};
+
+  // Issue simulus; populate prod_id/context in the table a validate correct
+  // ordering.
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N; key++) {
+    const verif::volume_t volume = key;
+    test.push_back(UpdateCommand{0, Cmd::Add, key + 1, volume});
+    // Insert wait cycle to account for incomplete forwarding around
+    // state-table.
+    test.wait_cycles(1);
+  }
+
+  test.push_back(UpdateCommand{0, Cmd::Clr, 0, 0});
+  test.wait_cycles(10);
+
+  // Verify value written is present in the machine and in the expected
+  // order. No wait cycle here as this interface can sink a query command each
+  // cycle.
+  for (verif::level_t level = 0; level < cfg::ENTRIES_N; level++) {
+    test.push_back(QueryCommand{0, level});
+  }
+
+  // Clear again; should already be empty at this point.
+  //
+  test.push_back(UpdateCommand{0, Cmd::Clr, 0, 0});
+  test.wait_cycles(10);
+
+  // Verify value written is present in the machine and in the expected
+  // order. No wait cycle here as this interface can sink a query command each
+  // cycle.
+  for (verif::level_t level = 0; level < cfg::ENTRIES_N; level++) {
+    test.push_back(QueryCommand{0, level});
+  }
+
+  // Run test
+  tb.run(&test);
+  EXPECT_TRUE(test.is_passed());
+}
+*/
+TEST(Directed, CheckReplace) {
+  using namespace verif;
+
+  Options opts;
+  opts.enable_vcd = true;
+  TB tb{opts};
+  DirectedTestDriver test{tb.get_harness()};
+
+  test.push_back(UpdateCommand{0, Cmd::Rep, 0, 0});
+  test.wait_cycles(1);
+
+  // Issue simulus; populate prod_id/context in the table a validate correct
+  // ordering.
+  for (verif::key_t key = 0; key < cfg::ENTRIES_N; key++) {
+    const verif::volume_t volume = key;
+    test.push_back(UpdateCommand{0, Cmd::Add, key, volume});
+    // Insert wait cycle to account for incomplete forwarding around
+    // state-table.
+    test.wait_cycles(1);
+  }
+
+  // Replace key that we don't expect to find (non-empty case).
+  test.push_back(UpdateCommand{0, Cmd::Rep, cfg::ENTRIES_N, 1});
+  test.wait_cycles(1);
+
+  // Replace key that we DO expect to find.
+  test.push_back(UpdateCommand{0, Cmd::Rep, 0, 1});
+  test.wait_cycles(1);
+
+  // Validate final state.
+  for (verif::level_t level = 0; level < cfg::ENTRIES_N; level++) {
+    test.push_back(QueryCommand{0, level});
+  }
 
   // Run test
   tb.run(&test);

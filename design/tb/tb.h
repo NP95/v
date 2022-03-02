@@ -76,6 +76,8 @@ class UpdateResponse {
   UpdateResponse();
   UpdateResponse(prod_id_t prod_id);
 
+  std::string to_string() const;
+
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
 

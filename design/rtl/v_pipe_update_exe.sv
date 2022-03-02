@@ -508,7 +508,7 @@ assign notify_vld = notify_cleared_list |
 assign notify_key = i_pipe_key_r;
 
 assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r) |
-		       ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);
+                       ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);
 
 // ========================================================================== //
 //                                                                            //

@@ -59,6 +59,12 @@ UpdateResponse::UpdateResponse()
 UpdateResponse::UpdateResponse(prod_id_t prod_id)
     : vld_(true), prod_id_(prod_id) {}
 
+std::string UpdateResponse::to_string() const {
+  std::stringstream ss;
+  ss << (int)vld_ << " " << (int)prod_id_;
+  return ss.str();
+}
+
 QueryCommand::QueryCommand()
     : vld_(false) {}
 
@@ -164,6 +170,15 @@ class DelayPipeBase {
     clear();
   }
 
+  std::string to_string() const {
+    std::stringstream ss;
+    for (std::size_t i = 0; i < p_.size(); i++) {
+      const T& t{p_[(rd_ptr_ + i) % p_.size()]};
+      ss << t.to_string() << "\n";
+    }
+    return ss.str();
+  }
+
   void push_back(const T& t) { p_[wr_ptr_] = t; }
 
   const T& head() const { return p_[rd_ptr_]; }
@@ -198,6 +213,7 @@ class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
   using base_class_type::wr_ptr_;
  public:
   bool has_prod_id(prod_id_t prod_id) const {
+    std::cout << this->to_string() << "\n";
     for (std::size_t i = 0; i < N; i++) {
       const UpdateResponse& ur{p_[(wr_ptr_ + i) % p_.size()]};
       if (ur.vld() && (ur.prod_id() == prod_id))
@@ -286,9 +302,7 @@ class ValidationModel {
       case Cmd::Clr: {
         ur = UpdateResponse{uc_.prod_id()};
         if (!ctxt.empty()) {
-          // Context was not empty, therefore the head item in the list will be
-          // modified.
-          nr = NotifyResponse{uc_.prod_id(), ctxt[0].key, ctxt[0].volume};
+          nr = NotifyResponse{uc_.prod_id(), 0, 0};
         }
         ctxt.clear();
       } break;
@@ -311,6 +325,7 @@ class ValidationModel {
       case Cmd::Rep:
       case Cmd::Del: {
         ur = UpdateResponse{uc_.prod_id()};
+        std::cout << harness_.tb_cycle() << " " << ur.to_string() << "\n";
         auto find_key = [&](const Entry& e) { return (e.key == uc_.key()); };
         auto it = std::find_if(ctxt.begin(), ctxt.end(), find_key);
 
@@ -379,7 +394,7 @@ class ValidationModel {
     if (predicted.vld()) {
       EXPECT_EQ(predicted.prod_id(), actual.prod_id());
       EXPECT_EQ(predicted.key(), actual.key()) << harness_.tb_cycle();
-      EXPECT_EQ(predicted.volume(), actual.volume()) << harness_.tb_cycle();
+      EXPECT_EQ(predicted.volume(), actual.volume()) << harness_.tb_cycle() << harness_.tb_cycle();
     }
   }
 
@@ -389,7 +404,6 @@ class ValidationModel {
   NotifyResponse nr_;
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
-
   DelayPipe<NotifyResponse, UPDATE_PIPE_DELAY> nr_pipe_;
   DelayPipe<UpdateResponse, UPDATE_PIPE_DELAY> ur_pipe_;
   DelayPipe<QueryResponse, QUERY_PIPE_DELAY> qr_pipe_;
