@@ -64,12 +64,7 @@ always_comb begin : pri_PROC
   for (int i = 0; i < W; i++) begin
 
     for (int j = 0; j < W; j++) begin
-
-      if (FROM_LSB)
-        prior_bits[i][j] = (j < i) ? i_x [j] : 1'b0;
-      else
-        prior_bits[i][j] = (j > i) ? i_x [j] : 1'b0;
-
+      prior_bits[i][j] = (FROM_LSB ? (j < i) : (j > i)) & i_x [j];
     end // for (int j = 0; j < W; j++)
 
     // Output priority selection if current input bit is high and prior bits in

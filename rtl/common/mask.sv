@@ -82,8 +82,12 @@ always_comb begin : mask_PROC
 
     for (int i = 0; i < W; i++) begin
 
-      matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) ? i_x [i] : 'b0;
-      matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) ? i_x [i] : 'b0;
+      // Admit relevant bits from input vector to decision matrix; note:
+      // although this appears fairly complex at first glance, in actuality the
+      // entirety is computed on elaboration therefore is not present in logic.
+      //
+      matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) & i_x [i];
+      matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) & i_x [i];
 
     end // for (int i = 0; i < N; i++)
 

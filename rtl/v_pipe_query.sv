@@ -106,13 +106,11 @@ logic                                   s1_lut_error;
 
 // ========================================================================== //
 //                                                                            //
-//  Combinatorial Logic                                                       //
+//  Stage 0                                                                   //
 //                                                                            //
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
-// S0:
-//
 // State table lookup
 assign s0_state_ren     = i_lut_vld;
 assign s0_state_raddr   = i_lut_prod_id;
@@ -121,6 +119,7 @@ assign s1_lut_vld_w     = i_lut_vld;
 assign s1_lut_en        = s1_lut_vld_w;
 assign s1_lut_prod_id_w = i_lut_prod_id;
 
+// -------------------------------------------------------------------------- //
 // Flag indicating "list busy or not valid entry".
 //
 // We consider the "list busy" whenever there is a in-flight operation to the
@@ -138,8 +137,24 @@ assign s0_lut_error_is_busy   =
 assign s1_lut_error_w = s0_lut_error_is_busy;
 
 // -------------------------------------------------------------------------- //
+//
+dec #(.N(v_pkg::ENTRIES_N)) u_s0_id_dec (
+//
+  .i_x                                  (i_lut_level)
+//
+, .o_y                                  (s1_lut_level_dec_w)
+);
+
+// ========================================================================== //
+//                                                                            //
+//  Stage 1                                                                   //
+//                                                                            //
+// ========================================================================== //
+
+// -------------------------------------------------------------------------- //
 // S1
 
+// -------------------------------------------------------------------------- //
 // The validity of each entry in the state table is retained as a bit-vector. To
 // compute the list occupancy (size) from this require would require a
 // population count operation. Although not too difficult to implement using a
@@ -152,6 +167,7 @@ assign s1_lut_error_w = s0_lut_error_is_busy;
 //
 assign s1_lut_listsize = i_state_rdata.listsize;
 
+// -------------------------------------------------------------------------- //
 // A 'level' is invalid if its associated valid bit is 'b0. As above, we retain
 // a bit-vector containing the valid entries within the state. To compute
 // whether we are querying a valid entry, we simply consider the valid bit
@@ -162,6 +178,7 @@ assign s1_lut_listsize = i_state_rdata.listsize;
 assign s1_lut_error_invalid_entry =
     ((s1_lut_level_dec_r & i_state_rdata.vld) == '0);
 
+// -------------------------------------------------------------------------- //
 // Update and Query commands which are co-incident must be checked at the input
 // to the machine. In S0, for this to happen, we would need to consider the
 // input to the update pipeline. For reasons of timing, we've simply pushed to
@@ -170,24 +187,10 @@ assign s1_lut_error_invalid_entry =
 assign s1_lut_error_was_busy =
     (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == s1_lut_prod_id_r));
 
+// -------------------------------------------------------------------------- //
 // Form final error state
 assign s1_lut_error =
     (s1_lut_error_r | s1_lut_error_invalid_entry | s1_lut_error_was_busy);
-
-// ========================================================================== //
-//                                                                            //
-//  Instances                                                                 //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-dec #(.N(v_pkg::ENTRIES_N)) u_s0_id_dec (
-//
-  .i_x                                  (i_lut_level)
-//
-, .o_y                                  (s1_lut_level_dec_w)
-);
 
 // -------------------------------------------------------------------------- //
 //

@@ -446,38 +446,36 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
 
-// -------------------------------------------------------------------------- //
+// ========================================================================== //
 //                                                                            //
-// Next Count:                                                                //
+//  List Size                                                                 //
 //                                                                            //
-// -------------------------------------------------------------------------- //
+// ========================================================================== //
 
+// -------------------------------------------------------------------------- //
 //
 assign stnxt_listsize_inc = (op_add & add_listsize_inc);
-
-//
 assign stnxt_listsize_dec = (op_del & del_listsize_dec);
-
-//
 assign stnxt_listsize_def = ~(stnxt_listsize_inc | stnxt_listsize_dec);
 
+// -------------------------------------------------------------------------- //
 //
 //
 assign stnxt_listsize_nxt =
       ({v_pkg::LISTSIZE_W{stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
     | ({v_pkg::LISTSIZE_W{stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
-    | ({v_pkg::LISTSIZE_W{stnxt_listsize_def}} &  i_stcur_listsize_r)
-    ;
+    | ({v_pkg::LISTSIZE_W{stnxt_listsize_def}} &  i_stcur_listsize_r);
 
+// -------------------------------------------------------------------------- //
 //
 //
 assign stnxt_listsize = ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt);
 
-// -------------------------------------------------------------------------- //
+// ========================================================================== //
 //                                                                            //
-// Notify:                                                                    //
+//  Notify                                                                    //
 //                                                                            //
-// -------------------------------------------------------------------------- //
+// ========================================================================== //
 
 // Clear operation and N'th entry was valid.
 assign notify_cleared_list = op_clr & i_stcur_vld_r [0];
