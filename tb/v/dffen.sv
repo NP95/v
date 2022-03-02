@@ -25,13 +25,23 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef TB_V_COMMON_DEFS_VH
-`define TB_V_COMMON_DEFS_VH
+`include "common_defs.vh"
 
-// Disable implicit nets
-`default_nettype none
+module dffen #(parameter int W) (
+// -------------------------------------------------------------------------- //
+// Register Interface
+  input [W - 1:0]                     d
+, input                               en
+//
+, output logic [W - 1:0]              q
 
-// Common timing
-`timescale 1ns/1ps
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+, input                               clk
+);
 
-`endif
+always_ff @(posedge clk)
+  if (en)
+    q <= d;
+
+endmodule // dffen

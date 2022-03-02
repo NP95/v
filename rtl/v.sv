@@ -162,7 +162,6 @@ v_pipe_update u_v_pipe_update (
   , .o_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
   //
   , .clk                                (clk)
-  , .rst                                (rst)
 );
 
 // -------------------------------------------------------------------------- //
@@ -237,7 +236,6 @@ v_init #(.N(v_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
   , .o_busy_r                           (o_busy_r)
   //
   , .clk                                (clk)
-  , .rst                                (rst)
 );
 
 // ========================================================================== //

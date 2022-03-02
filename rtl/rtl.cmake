@@ -45,4 +45,8 @@ set(RTL_GENERATED_SOURCES
   "${RTL_ROOT}/v_pkg.vh.in"
   )
 
+set(RTL_INCLUDE_PATHS
+  "${RTL_ROOT}/common"
+  )
+
 set(RTL_CFG_SOURCES "${RTL_ROOT}/cfg.vlt")

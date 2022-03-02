@@ -26,6 +26,7 @@
 //========================================================================== //
 
 `include "common_defs.vh"
+`include "macros.vh"
 
 module v_init #(
 
@@ -53,7 +54,6 @@ module v_init #(
 // -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
-, input                                           rst
 );
 
 // ========================================================================== //
@@ -77,26 +77,25 @@ typedef enum logic [2:0] {  // Transition state on initialization to perform
 localparam int FSM_STATE_W = $bits(fsm_state_t);
 
 
-logic                                   fsm_state_en;
-fsm_state_t                             fsm_state_r;
 fsm_state_t                             fsm_state_next;
-fsm_state_t                             fsm_state_w;
 fsm_state_t                             fsm_state_idle_next;
 fsm_state_t                             fsm_state_busy_next;
 fsm_state_t                             fsm_state_done_next;
 logic                                   st_idle;
 logic                                   st_busy;
 logic                                   st_done;
-logic                                   busy_r;
-logic                                   busy_w;
-
-logic                                   init_waddr_en;
-logic [$clog2(N) - 1:0]                 init_waddr_r;
-logic [$clog2(N) - 1:0]                 init_waddr_w;
 logic                                   init_waddr_is_final;
 
-logic                                   init_wen_w;
-logic                                   init_wen_r;
+// ========================================================================== //
+//                                                                            //
+//  Flops                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+`V_DFF(logic, busy);
+`V_DFF(logic, init_wen);
+`V_DFFEN(logic[$clog2(N) - 1:0], init_waddr);
+`V_DFFEN(fsm_state_t, fsm_state);
 
 // ========================================================================== //
 //                                                                            //
@@ -154,37 +153,6 @@ assign fsm_state_w = ({FSM_STATE_W{ i_init}} & FSM_STATE_IDLE) |
 
 // ========================================================================== //
 //                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  init_wen_r <= init_wen_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (init_waddr_en)
-    init_waddr_r <= init_waddr_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (fsm_state_en)
-    fsm_state_r <= fsm_state_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    busy_r <= 'b1;
-  else
-    busy_r <= busy_w;
-
-// ========================================================================== //
-//                                                                            //
 //  Outputs                                                                   //
 //                                                                            //
 // ========================================================================== //
@@ -196,3 +164,5 @@ assign o_init_waddr_r = init_waddr_r [$clog2(N) - 1:0];
 assign o_init_wdata_r = '0;
 
 endmodule // v_init
+
+`include "unmacros.vh"

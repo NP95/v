@@ -25,13 +25,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef TB_V_COMMON_DEFS_VH
-`define TB_V_COMMON_DEFS_VH
+`ifndef V_RTL_COMMON_UNMACROS_VH
+`define V_RTL_COMMON_UNMACROS_VH
 
-// Disable implicit nets
-`default_nettype none
+`undef V_DFF
+`undef V_DFFEN
+`undef V_DFFEN_WITH_EN
 
-// Common timing
-`timescale 1ns/1ps
+`undef V_RTL_COMMON_MACROS_VH
 
 `endif

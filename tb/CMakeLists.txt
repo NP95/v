@@ -37,7 +37,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-set(V_TB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+set(TB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Build verilator support library
 verilator_build(vlib)
@@ -58,8 +58,10 @@ endif ()
 set(TB_SOURCES
   "${RTL_CFG_SOURCES}"
   "${RTL_SOURCES}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/v/pd/sram1r1w.sv"
-  "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
+  "${TB_ROOT}/v/dff.sv"
+  "${TB_ROOT}/v/dffen.sv"
+  "${TB_ROOT}/v/pd/sram1r1w.sv"
+  "${TB_ROOT}/tb.sv")
 
 macro (set_tb_param k v)
   set(${k} ${v})
@@ -68,7 +70,10 @@ endmacro ()
 macro (verilate_tb cfg)
   set(VERILATOR_INCLUDES
     "-I${CMAKE_CURRENT_BUILD_DIR}"
-    "-I${V_TB_ROOT}/v")
+    "-I${TB_ROOT}/v")
+  foreach (inc_fn ${RTL_INCLUDE_PATHS})
+    list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
+  endforeach ()
 
   set(VERILATOR_COMMAND_LIST
     "${VERILATOR_ARGS}"
@@ -103,11 +108,10 @@ endmacro ()
 set_tb_param("CONTEXT_N" 10)
 set_tb_param("ENTRIES_N" 10)
 
-configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
+configure_file("${TB_ROOT}/cfg.h.in" cfg.h)
 
 foreach (src_fn "${RTL_GENERATED_SOURCES}")
   cmake_path(GET src_fn STEM LAST_ONLY dst_fn)
-  message(STATUS ${src_fn})
   configure_file(${src_fn} ${dst_fn})
 endforeach ()
 

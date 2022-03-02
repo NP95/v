@@ -26,6 +26,7 @@
 //========================================================================== //
 
 `include "common_defs.vh"
+`include "macros.vh"
 
 `include "v_pkg.vh"
 
@@ -80,18 +81,10 @@ module v_pipe_query (
 // S0
 logic                                   s0_state_ren;
 v_pkg::id_t                             s0_state_raddr;
-logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_w;
 logic                                   s1_lut_en;
-v_pkg::id_t                             s1_lut_prod_id_w;
 logic                                   s0_lut_error_is_busy;
-logic                                   s1_lut_error_w;
-logic                                   s1_lut_vld_w;
 
 // S1
-logic                                   s1_lut_vld_r;
-v_pkg::id_t                             s1_lut_prod_id_r;
-logic                                   s1_lut_error_r;
-logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_r;
 
 v_pkg::listsize_t                       s1_lut_listsize;
 v_pkg::key_t                            s1_lut_key;
@@ -99,6 +92,17 @@ v_pkg::volume_t                         s1_lut_volume;
 logic                                   s1_lut_error_invalid_entry;
 logic                                   s1_lut_error_was_busy;
 logic                                   s1_lut_error;
+
+// ========================================================================== //
+//                                                                            //
+//  Flops                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+`V_DFF(logic, s1_lut_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, s1_lut_prod_id, s1_lut_en);
+`V_DFFEN_WITH_EN(logic, s1_lut_error, s1_lut_en);
+`V_DFFEN_WITH_EN(logic [v_pkg::ENTRIES_N - 1:0], s1_lut_level_dec, s1_lut_en);
 
 // ========================================================================== //
 //                                                                            //
@@ -172,25 +176,6 @@ assign s1_lut_error =
 
 // ========================================================================== //
 //                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  s1_lut_vld_r <= s1_lut_vld_w;
-
-always_ff @(posedge clk)
-  if (s1_lut_en) begin : s1_ucode_reg_PROC
-    s1_lut_prod_id_r   <= s1_lut_prod_id_w;
-    s1_lut_error_r     <= s1_lut_error_w;
-
-    s1_lut_level_dec_r <= s1_lut_level_dec_w;
-  end // block: s1_ucode_reg_PROC
-
-// ========================================================================== //
-//                                                                            //
 //  Instances                                                                 //
 //                                                                            //
 // ========================================================================== //
@@ -240,3 +225,5 @@ assign o_state_ren = s0_state_ren;
 assign o_state_raddr = s0_state_raddr;
 
 endmodule // v_pipe_query
+
+`include "unmacros.vh"

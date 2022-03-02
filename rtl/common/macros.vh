@@ -25,13 +25,26 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef TB_V_COMMON_DEFS_VH
-`define TB_V_COMMON_DEFS_VH
+`ifndef V_RTL_COMMON_MACROS_VH
+`define V_RTL_COMMON_MACROS_VH
 
-// Disable implicit nets
-`default_nettype none
+`define V_DFF(__type, __name) \
+    __type __name``_r; \
+    __type __name``_w; \
+    dff #(.W($bits(__type))) u_``__name``_reg ( \
+      .d(__name``_w), .q(__name``_r), .clk)
 
-// Common timing
-`timescale 1ns/1ps
+`define V_DFFEN(__type, __name) \
+    __type __name``_r; \
+    __type __name``_w; \
+    logic                  __name``_en; \
+    dffen #(.W($bits(__type))) u_``__name``_reg ( \
+      .d(__name``_w), .q(__name``_r), .en(__name``_en), .clk)
+
+`define V_DFFEN_WITH_EN(__type, __name, __en) \
+    __type __name``_r; \
+    __type __name``_w; \
+    dffen #(.W($bits(__type))) u_``__name``_reg ( \
+      .d(__name``_w), .q(__name``_r), .en(__en), .clk)
 
 `endif

@@ -32,6 +32,10 @@ if (DEFINED VERILATOR_ROOT)
 
   # Explicit Verilator installation at VERILATOR_ROOT
 
+  # Expand tilde if present in command line argument. If present, this
+  # can break the verilator scripts.
+  file(REAL_PATH ${VERILATOR_ROOT} VERILATOR_ROOT EXPAND_TILDE)
+
   find_path(Verilator_INCLUDE_DIR verilated.h
     HINTS ${VERILATOR_ROOT}/include
     DOC "Searching for Verilator installation."
@@ -107,7 +111,7 @@ if (Verilator_EXE)
     list(APPEND Verilator_INCLUDE_DIR "${VerilatorDpi_INCLUDE_DIR}")
     target_include_directories(${vlib} PUBLIC "${Verilator_INCLUDE_DIR}")
   endmacro ()
-  
+
 else()
   message(WARNING "Verilator not found! Simulation is not supported")
 endif ()

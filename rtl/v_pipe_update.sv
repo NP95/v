@@ -28,6 +28,7 @@
 `include "common_defs.vh"
 
 `include "v_pkg.vh"
+`include "macros.vh"
 
 module v_pipe_update (
 
@@ -76,7 +77,6 @@ module v_pipe_update (
 // -------------------------------------------------------------------------- //
 // Clk/Reset
 , input                                           clk
-, input                                           rst
 );
 
 // ========================================================================== //
@@ -87,47 +87,15 @@ module v_pipe_update (
 
 // S0:
 logic                                             s1_upd_en;
-logic                                             s1_upd_vld_w;
-//
-v_pkg::id_t                                       s1_upd_prod_id_w;
-v_pkg::cmd_t                                      s1_upd_cmd_w;
-v_pkg::key_t                                      s1_upd_key_w;
-v_pkg::size_t                                     s1_upd_size_w;
 
 // S1:
-//
-logic                                             s1_upd_vld_r;
-//
-v_pkg::id_t                                       s1_upd_prod_id_r;
-v_pkg::cmd_t                                      s1_upd_cmd_r;
-v_pkg::key_t                                      s1_upd_key_r;
-v_pkg::size_t                                     s1_upd_size_r;
 //
 logic                                             s1_state_ren;
 v_pkg::addr_t                                     s1_state_raddr;
 //
 logic                                             s2_upd_en;
-logic                                             s2_upd_vld_w;
-//
-v_pkg::id_t                                       s2_upd_prod_id_w;
-v_pkg::cmd_t                                      s2_upd_cmd_w;
-v_pkg::key_t                                      s2_upd_key_w;
-v_pkg::size_t                                     s2_upd_size_w;
-//
-logic                                             s2_upd_wrbk_vld_w;
-v_pkg::state_t                                    s2_upd_wrbk_w;
 
 // S2:
-//
-logic                                             s2_upd_vld_r;
-//
-logic                                             s2_upd_wrbk_vld_r;
-v_pkg::state_t                                    s2_upd_wrbk_r;
-//
-v_pkg::id_t                                       s2_upd_prod_id_r;
-v_pkg::cmd_t                                      s2_upd_cmd_r;
-v_pkg::key_t                                      s2_upd_key_r;
-v_pkg::size_t                                     s2_upd_size_r;
 //
 logic [1:0]                                       s2_upd_state_fwd;
 logic [1:0]                                       s2_upd_state_sel;
@@ -135,23 +103,8 @@ logic                                             s2_upd_state_sel_early;
 v_pkg::state_t                                    s2_upd_state_early;
 //
 logic                                             s3_upd_en;
-logic                                             s3_upd_vld_w;
-//
-v_pkg::state_t                                    s3_upd_state_w;
-v_pkg::id_t                                       s3_upd_prod_id_w;
-v_pkg::cmd_t                                      s3_upd_cmd_w;
-v_pkg::key_t                                      s3_upd_key_w;
-v_pkg::size_t                                     s3_upd_size_w;
 
 // S3:
-//
-logic                                             s3_upd_vld_r;
-//
-v_pkg::state_t                                    s3_upd_state_r;
-v_pkg::id_t                                       s3_upd_prod_id_r;
-v_pkg::cmd_t                                      s3_upd_cmd_r;
-v_pkg::key_t                                      s3_upd_key_r;
-v_pkg::size_t                                     s3_upd_size_r;
 //
 logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stcur_vld_r;
 v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stcur_keys_r;
@@ -170,24 +123,46 @@ v_pkg::key_t                                      exe_notify_key;
 v_pkg::volume_t                                   exe_notify_volume;
 
 // Writeback
-logic                                             wrbk_vld_w;
-logic                                             wrbk_vld_r;
 logic                                             wrbk_en;
-v_pkg::id_t                                       wrbk_prod_id_w;
-v_pkg::id_t                                       wrbk_prod_id_r;
-v_pkg::state_t                                    wrbk_state_w;
-v_pkg::state_t                                    wrbk_state_r;
 
 // Notify bus:
-logic                                             lv0_vld_w;
-logic                                             lv0_vld_r;
 logic                                             lv0_en;
-v_pkg::id_t                                       lv0_prod_id_w;
-v_pkg::id_t                                       lv0_prod_id_r;
-v_pkg::key_t                                      lv0_key_w;
-v_pkg::key_t                                      lv0_key_r;
-v_pkg::volume_t                                   lv0_size_w;
-v_pkg::volume_t                                   lv0_size_r;
+
+// ========================================================================== //
+//                                                                            //
+//  Flops                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+`V_DFF(logic, s1_upd_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, s1_upd_prod_id, s1_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::cmd_t, s1_upd_cmd, s1_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::key_t, s1_upd_key, s1_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::size_t, s1_upd_size, s1_upd_en);
+
+`V_DFF(logic, s2_upd_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, s2_upd_prod_id, s2_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::cmd_t, s2_upd_cmd, s2_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::key_t, s2_upd_key, s2_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::size_t, s2_upd_size, s2_upd_en);
+`V_DFFEN_WITH_EN(logic, s2_upd_wrbk_vld, s2_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::state_t, s2_upd_wrbk, s2_upd_en);
+
+`V_DFF(logic, s3_upd_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, s3_upd_prod_id, s3_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::cmd_t, s3_upd_cmd, s3_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::key_t, s3_upd_key, s3_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::size_t, s3_upd_size, s3_upd_en);
+`V_DFFEN_WITH_EN(v_pkg::state_t, s3_upd_state, s3_upd_en);
+
+`V_DFF(logic, wrbk_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, wrbk_prod_id, wrbk_en);
+`V_DFFEN_WITH_EN(v_pkg::state_t, wrbk_state, wrbk_en);
+
+`V_DFF(logic, lv0_vld);
+`V_DFFEN_WITH_EN(v_pkg::id_t, lv0_prod_id, lv0_en);
+`V_DFFEN_WITH_EN(v_pkg::key_t, lv0_key, lv0_en);
+`V_DFFEN_WITH_EN(v_pkg::size_t, lv0_size, lv0_en);
 
 // ========================================================================== //
 //                                                                            //
@@ -290,106 +265,6 @@ assign lv0_size_w = exe_notify_volume;
 
 // ========================================================================== //
 //                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    s1_upd_vld_r <= 'b0;
-  else
-    s1_upd_vld_r <= s1_upd_vld_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (s1_upd_en) begin
-    // Pipeline ucode:
-    s1_upd_prod_id_r  <= s1_upd_prod_id_w;
-    s1_upd_cmd_r      <= s1_upd_cmd_w;
-    s1_upd_key_r      <= s1_upd_key_w;
-    s1_upd_size_r     <= s1_upd_size_w;
-  end
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    s2_upd_vld_r <= 'b0;
-  else
-    s2_upd_vld_r <= s2_upd_vld_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (s2_upd_en) begin
-    // Writeback collision ucode:
-    s2_upd_wrbk_vld_r <= s2_upd_wrbk_vld_w;
-    s2_upd_wrbk_r     <= s2_upd_wrbk_w;
-
-    s2_upd_prod_id_r <= s2_upd_prod_id_w;
-    s2_upd_cmd_r     <= s2_upd_cmd_w;
-    s2_upd_key_r     <= s2_upd_key_w;
-    s2_upd_size_r    <= s2_upd_size_w;
-  end
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    s3_upd_vld_r <= 'b0;
-  else
-    s3_upd_vld_r <= s3_upd_vld_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (s3_upd_en) begin
-    s3_upd_prod_id_r <= s3_upd_prod_id_w;
-    s3_upd_cmd_r     <= s3_upd_cmd_w;
-    s3_upd_key_r     <= s3_upd_key_w;
-    s3_upd_size_r    <= s3_upd_size_w;
-
-    s3_upd_state_r   <= s3_upd_state_w;
-  end
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    wrbk_vld_r <= 'b0;
-  else
-    wrbk_vld_r <= wrbk_vld_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (wrbk_en) begin
-    wrbk_prod_id_r <= wrbk_prod_id_w;
-    wrbk_state_r   <= wrbk_state_w;
-  end
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    lv0_vld_r <= 'b0;
-  else
-    lv0_vld_r <= lv0_vld_w;
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (lv0_en) begin
-    lv0_prod_id_r <= lv0_prod_id_w;
-    lv0_key_r     <= lv0_key_w;
-    lv0_size_r    <= lv0_size_w;
-  end
-
-// ========================================================================== //
-//                                                                            //
 //  Instances                                                                 //
 //                                                                            //
 // ========================================================================== //
@@ -457,3 +332,5 @@ assign o_s4_upd_vld_r = wrbk_vld_r;
 assign o_s4_upd_prod_id_r = wrbk_prod_id_r;
 
 endmodule // v_pipe_update
+
+`include "unmacros.vh"
