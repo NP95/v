@@ -207,7 +207,6 @@ v_pipe_query u_v_pipe_query (
   , .i_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
   //
   , .clk                                (clk)
-  , .rst                                (rst)
 );
 
 // -------------------------------------------------------------------------- //

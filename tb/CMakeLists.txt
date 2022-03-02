@@ -25,6 +25,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+include(rtl)
+
 set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
 
 FetchContent_Declare(
@@ -44,7 +46,7 @@ set(VERILATOR_OBJ "Vobj")
 
 set(VERILATOR_ARGS
   "-cc"
-#  "-Wall"
+  "-Wall"
   "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")
@@ -54,6 +56,7 @@ if (ENABLE_VCD)
 endif ()
 
 set(TB_SOURCES
+  "${RTL_CFG_SOURCES}"
   "${RTL_SOURCES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/v/pd/sram1r1w.sv"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
@@ -101,7 +104,8 @@ set_tb_param("CONTEXT_N" 10)
 set_tb_param("ENTRIES_N" 10)
 
 configure_file("${V_TB_ROOT}/cfg.h.in" cfg.h)
-configure_file("${CMAKE_SOURCE_DIR}/design/rtl/v_pkg.vh.in" v_pkg.vh)
+
+configure_file(${RTL_GENERATED_SOURCES} v_pkg.vh)
 
 set(TB_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"

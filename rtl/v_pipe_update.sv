@@ -162,11 +162,6 @@ logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stnxt_vld;
 v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stnxt_keys;
 v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stnxt_volumes;
 v_pkg::listsize_t                                 s3_exe_stnxt_listsize;
-//
-logic                                             s4_upd_en;
-logic                                             s4_upd_vld_w;
-v_pkg::id_t                                       s4_upd_prod_id_w;
-v_pkg::state_t                                    s4_upd_state_w;
 
 
 // EXE

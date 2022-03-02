@@ -67,9 +67,8 @@ module v_pipe_query (
 , input v_pkg::id_t                               i_s4_upd_prod_id_r
 
 // -------------------------------------------------------------------------- //
-// Clk/Reset
+// Clk
 , input                                           clk
-, input                                           rst
 );
 
 // ========================================================================== //
@@ -84,7 +83,6 @@ v_pkg::id_t                             s0_state_raddr;
 logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_w;
 logic                                   s1_lut_en;
 v_pkg::id_t                             s1_lut_prod_id_w;
-v_pkg::level_t                          s1_lut_level_w;
 logic                                   s0_lut_error_is_busy;
 logic                                   s1_lut_error_w;
 logic                                   s1_lut_vld_w;
@@ -92,14 +90,10 @@ logic                                   s1_lut_vld_w;
 // S1
 logic                                   s1_lut_vld_r;
 v_pkg::id_t                             s1_lut_prod_id_r;
-v_pkg::level_t                          s1_lut_level_r;
 logic                                   s1_lut_error_r;
 logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec_r;
-v_pkg::key_t                            s1_lut_key_r;
-v_pkg::volume_t                         s1_lut_volume_r;
 
 v_pkg::listsize_t                       s1_lut_listsize;
-logic [v_pkg::ENTRIES_N - 1:0]          s1_lut_level_dec;
 v_pkg::key_t                            s1_lut_key;
 v_pkg::volume_t                         s1_lut_volume;
 logic                                   s1_lut_error_invalid_entry;
@@ -122,7 +116,6 @@ assign s0_state_raddr   = i_lut_prod_id;
 assign s1_lut_vld_w     = i_lut_vld;
 assign s1_lut_en        = s1_lut_vld_w;
 assign s1_lut_prod_id_w = i_lut_prod_id;
-assign s1_lut_level_w   = i_lut_level;
 
 // Flag indicating "list busy or not valid entry".
 //
@@ -191,7 +184,6 @@ always_ff @(posedge clk)
 always_ff @(posedge clk)
   if (s1_lut_en) begin : s1_ucode_reg_PROC
     s1_lut_prod_id_r   <= s1_lut_prod_id_w;
-    s1_lut_level_r     <= s1_lut_level_w;
     s1_lut_error_r     <= s1_lut_error_w;
 
     s1_lut_level_dec_r <= s1_lut_level_dec_w;

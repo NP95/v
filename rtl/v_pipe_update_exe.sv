@@ -93,9 +93,6 @@ logic [v_pkg::ENTRIES_N - 1:0]          del_vld;
 logic [v_pkg::ENTRIES_N - 1:0]          del_mask_left;
 logic                                   del_listsize_dec;
 
-// Replace:
-logic [v_pkg::ENTRIES_N - 1:0]          rep_mask_insert;
-
 // Validity:
 logic [v_pkg::ENTRIES_N - 1:0]          vld_nxt;
 
@@ -330,12 +327,6 @@ assign del_vld =
 // matching entry has been found in the context, which will now be removed).
 //
 assign del_listsize_dec = match_hit;
-
-// -------------------------------------------------------------------------- //
-// Replace
-//
-//
-assign rep_mask_insert = match_sel;
 
 // TODO: flag indicating that a replacement took place.
 
