@@ -62,18 +62,18 @@ module v_init #(
 //                                                                            //
 // ========================================================================== //
 
-typedef enum logic [2:0] {  // Transition state on initialization to perform
-                            // the necessary reset of FSM state.
-                            FSM_STATE_IDLE = 3'b001,
-                            // Active state where memory is being initialized.
-                            FSM_STATE_BUSY = 3'b010,
-                            // State indicating operation has completed.
-                            FSM_STATE_DONE = 3'b100,
-                            // Fall off the earth into nothingness state
-                            // once operation has been completed.
-                            FSM_STATE_EXIT = 3'b000
-                          } fsm_state_t;
-
+typedef enum logic [2:0] {
+  // Transition state on initialization to perform
+  // the necessary reset of FSM state.
+  FSM_STATE_IDLE = 3'b001,
+  // Active state where memory is being initialized.
+  FSM_STATE_BUSY = 3'b010,
+  // State indicating operation has completed.
+  FSM_STATE_DONE = 3'b100,
+  // Fall off the earth into nothingness state
+  // once operation has been completed.
+  FSM_STATE_EXIT = 3'b000
+ } fsm_state_t;
 localparam int FSM_STATE_W = $bits(fsm_state_t);
 
 
@@ -112,9 +112,10 @@ assign st_done = (fsm_state_r == FSM_STATE_DONE);
 
 // -------------------------------------------------------------------------- //
 // Status:
-assign busy_w = (fsm_state_w == FSM_STATE_IDLE) ||
-                (fsm_state_w == FSM_STATE_BUSY) ||
-                (fsm_state_w == FSM_STATE_DONE);
+assign busy_w =
+    (fsm_state_w == FSM_STATE_IDLE) |
+    (fsm_state_w == FSM_STATE_BUSY) |
+    (fsm_state_w == FSM_STATE_DONE);
 
 // -------------------------------------------------------------------------- //
 // Address:
@@ -139,17 +140,20 @@ assign fsm_state_en = i_init | (fsm_state_r != fsm_state_w);
 assign fsm_state_idle_next = FSM_STATE_BUSY;
 
 // Remain in BUSY state until entire address range has been exhausted.
-assign fsm_state_busy_next = init_waddr_is_final ? FSM_STATE_DONE : FSM_STATE_BUSY;
+assign fsm_state_busy_next =
+    init_waddr_is_final ? FSM_STATE_DONE : FSM_STATE_BUSY;
 
 assign fsm_state_done_next = FSM_STATE_EXIT;
 
 // State update mux.
-assign fsm_state_next = ({FSM_STATE_W{st_idle}} & fsm_state_idle_next) |
-                        ({FSM_STATE_W{st_busy}} & fsm_state_busy_next) |
-                        ({FSM_STATE_W{st_done}} & fsm_state_done_next) ;
+assign fsm_state_next =
+    ({FSM_STATE_W{st_idle}} & fsm_state_idle_next) |
+    ({FSM_STATE_W{st_busy}} & fsm_state_busy_next) |
+    ({FSM_STATE_W{st_done}} & fsm_state_done_next) ;
 
-assign fsm_state_w = ({FSM_STATE_W{ i_init}} & FSM_STATE_IDLE) |
-                     ({FSM_STATE_W{~i_init}} & fsm_state_next);
+assign fsm_state_w =
+    ({FSM_STATE_W{ i_init}} & FSM_STATE_IDLE) |
+    ({FSM_STATE_W{~i_init}} & fsm_state_next);
 
 // ========================================================================== //
 //                                                                            //

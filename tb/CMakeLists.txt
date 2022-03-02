@@ -118,6 +118,7 @@ endforeach ()
 
 set(TB_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/mdl.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc")
 
 build_test_cfg(cfg_0 ${TB_CPP})

@@ -35,8 +35,8 @@ option(VERILATOR_ROOT "Verilator installation root")
 
 set(CMAKE_CXX_STANDARD 17)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH
+  "${CMAKE_SOURCE_DIR}/cmake"
   "${CMAKE_SOURCE_DIR}/rtl"
   "${CMAKE_SOURCE_DIR}/lib"
   )

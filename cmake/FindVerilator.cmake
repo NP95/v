@@ -104,7 +104,7 @@ if (Verilator_EXE)
       "${Verilator_INCLUDE_DIR}/verilated_save.cpp")
     if (ENABLE_VCD)
       list(APPEND Verilator_SRCS
-	"${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
+        "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
     endif ()
 
     add_library(${vlib} SHARED "${Verilator_SRCS}")
