@@ -36,7 +36,6 @@
 #ifdef ENABLE_VCD
 #include "verilated_vcd_c.h"
 #endif
-#include <iostream>
 
 namespace {
 

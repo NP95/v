@@ -49,7 +49,7 @@ class Driver {
     for (int i = 1; i < argc_; ++i) {
       const std::string argstr{argv_[i]};
       if (argstr == "--help" || argstr == "-h") {
-        print_usage_and_quit();
+        print_usage();
         status_ = 1;
         return;
       } else if (argstr == "-v") {
@@ -98,7 +98,7 @@ class Driver {
     return t->run();
   }
 
-  void print_usage_and_quit() {
+  void print_usage() {
     std::cout << " -h|--help         Print help and quit.\n"
               << " -v                Verbose\n"
               << " --list            List testcases\n"
