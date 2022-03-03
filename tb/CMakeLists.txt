@@ -124,7 +124,6 @@ foreach (src_fn "${RTL_GENERATED_SOURCES}")
 endforeach ()
 
 set(TB_CPP
- # "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke_cmds.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/directed.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"

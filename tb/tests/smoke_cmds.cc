@@ -221,11 +221,11 @@ CREATE_TEST_BUILDER(CheckRplCmd);
 namespace tb::tests::smoke_cmds {
 
 void init(tb::TestRegistry* r) {
-  r->add(std::make_unique<CheckAddCmdBuilder>());
-  r->add(std::make_unique<CheckDelCmdBuilder>());
-  r->add(std::make_unique<CheckListSizeBuilder>());
-  r->add(std::make_unique<CheckClrCmdBuilder>());
-  r->add(std::make_unique<CheckRplCmdBuilder>());
+  CheckAddCmdBuilder::init(r);
+  CheckDelCmdBuilder::init(r);
+  CheckListSizeBuilder::init(r);
+  CheckClrCmdBuilder::init(r);
+  CheckRplCmdBuilder::init(r);
 }
 
 }  // namespace tb::tests::smoke_cmds

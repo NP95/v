@@ -41,6 +41,9 @@ class Scope;
 
 #define CREATE_TEST_BUILDER(__name)                       \
   struct __name##Builder : ::tb::TestBuilder {            \
+    static void init(::tb::TestRegistry* tr) {            \
+      tr->add(std::make_unique<__name##Builder>());       \
+    }                                                     \
     std::string name() const override { return #__name; } \
     std::unique_ptr<::tb::Test> construct(                \
         ::tb::log::Scope* log) const override {           \

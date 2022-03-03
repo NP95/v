@@ -101,43 +101,43 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
       }
 
       Instruction* i{d.front().get()};
+      bool consume_instruction = true;
       switch (i->op) {
         case Opcode::WaitUntilNotBusy: {
           const bool is_busy = VDriver::is_busy(tb);
+          consume_instruction = !is_busy;
           if (!is_busy) {
             V_LOG(ls_, Info, "Initialization complete!");
-            d.pop_front();
           }
           return is_busy;
         } break;
         case Opcode::WaitCycles: {
           VDriver::issue(tb, UpdateCommand{});
           VDriver::issue(tb, QueryCommand{});
-          if (--i->n == 0) {
-            d.pop_front();
-          }
+          consume_instruction = (--i->n == 0);
         } break;
         case Opcode::Emit: {
           VDriver::issue(tb, i->uc);
           VDriver::issue(tb, i->qc);
-          d.pop_front();
         } break;
         case Opcode::EndSimulation: {
           V_LOG(ls_, Info, "Simulation complete!");
-          d.pop_front();
           return false;
         } break;
         case Opcode::LogMessage: {
           V_LOG_MSG(ls_, i->msg);
           do_next_command = true;
-          d.pop_front();
         } break;
         default: {
           // Unknown command!
+          V_LOG(ls_, Info, "Unknown command!");
+          return false;
         } break;
       }
+
+      if (consume_instruction) d.pop_front();
     } while (do_next_command);
-    return false;
+    return true;
   }
 
   bool on_posedge_clk(Vtb* tb) {
