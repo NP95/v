@@ -33,6 +33,7 @@
 
 #include "Vobj/Vtb.h"
 #include "cfg.h"
+#include "log.h"
 
 namespace tb {
 
@@ -213,7 +214,7 @@ class Mdl::Impl {
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 4;
 
  public:
-  Impl(Vtb* tb) : tb_(tb) {}
+  Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
 
   void step() {
     handle(VSampler::uc(tb_));
@@ -233,7 +234,7 @@ class Mdl::Impl {
     };
 
     // Validate that ID provided by stimulus is within [0, cfg::CONTEXT_N).
-    //    ASSERT_LT(uc.prod_id(), cfg::CONTEXT_N);
+    V_ASSERT(lg_, uc.prod_id() < cfg::CONTEXT_N);
 
     UpdateResponse ur{};
     NotifyResponse nr{};
@@ -307,7 +308,7 @@ class Mdl::Impl {
   void handle(const QueryCommand& qc) {
     QueryResponse qr;
     if (qc.vld()) {
-      //      ASSERT_LT(qc.prod_id(), cfg::CONTEXT_N);
+      V_ASSERT(lg_, qc.prod_id() < cfg::CONTEXT_N);
       const std::vector<Entry>& ctxt{tbl_[qc.prod_id()]};
 
       if ((qc.level() >= ctxt.size()) || ur_pipe_.has_prod_id(qc.prod_id())) {
@@ -343,9 +344,10 @@ class Mdl::Impl {
   DelayPipe<QueryResponse, QUERY_PIPE_DELAY> qr_pipe_;
 
   Vtb* tb_;
+  log::Scope* lg_;
 };
 
-Mdl::Mdl(Vtb* tb) { impl_ = std::make_unique<Impl>(tb); }
+Mdl::Mdl(Vtb* tb, log::Scope* lg) { impl_ = std::make_unique<Impl>(tb, lg); }
 
 Mdl::~Mdl() {}
 

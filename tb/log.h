@@ -31,6 +31,18 @@
 #include <iostream>
 #include <vector>
 
+#define MACRO_BEGIN do {
+#define MACRO_END \
+  }               \
+  while (false)
+
+#define V_ASSERT(__lg, __cond)                               \
+  MACRO_BEGIN                                                \
+  if (__lg && !(__cond)) {                                   \
+    (__lg)->log(::tb::log::Level::Fatal, "condition fail!"); \
+  }                                                          \
+  MACRO_END
+
 namespace tb::log {
 
 class Log;

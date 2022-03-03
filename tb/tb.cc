@@ -28,6 +28,7 @@
 #include "tb.h"
 
 #include "Vobj/Vtb.h"
+#include "log.h"
 #include "mdl.h"
 #include "test.h"
 #include "tests/regress.h"
@@ -61,7 +62,7 @@ void init(TestRegistry* tr) {
 VKernel::VKernel(const VKernelOptions& opts, log::Scope* l)
     : opts_(opts), tb_time_(0), l_(l) {
   build_verilated_environment();
-  mdl_ = std::make_unique<Mdl>(vtb_.get());
+  mdl_ = std::make_unique<Mdl>(vtb_.get(), l_->create_child("mdl"));
 }
 
 void VKernel::run(VKernelCB* cb) {

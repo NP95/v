@@ -34,6 +34,10 @@ class Vtb;
 
 namespace tb {
 
+namespace log {
+class Scope;
+};
+
 using prod_id_t = vluint8_t;
 enum class Cmd : vluint8_t { Clr = 0, Add = 1, Del = 2, Rep = 3 };
 using key_t = vluint64_t;
@@ -135,7 +139,7 @@ class Mdl {
   std::unique_ptr<Impl> impl_;
 
  public:
-  explicit Mdl(Vtb* tb);
+  explicit Mdl(Vtb* tb, log::Scope* lg);
   ~Mdl();
 
   void step();
