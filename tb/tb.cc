@@ -48,6 +48,8 @@ struct VPorts {
 
   static bool rst(Vtb* tb) { return (tb->rst != 0); }
   static void rst(Vtb* tb, bool v) { set_bool(&tb->rst, v); }
+
+  static std::uint64_t tb_cycle(Vtb* tb) { return tb->o_tb_cycle; }
 };
 
 }  // namespace
@@ -61,6 +63,9 @@ void init(TestRegistry* tr) {
 
 VKernel::VKernel(const VKernelOptions& opts, log::Scope* l)
     : opts_(opts), tb_time_(0), l_(l) {
+  // Fix up, logger with kernel pointer to allow for it to access the current
+  // cycle count.
+  l_->log()->set_kernel(this);
   build_verilated_environment();
   mdl_ = std::make_unique<Mdl>(vtb_.get(), l_->create_child("mdl"));
 }
@@ -95,6 +100,8 @@ void VKernel::run(VKernelCB* cb) {
 #endif
   }
 }
+
+std::uint64_t VKernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
 
 void VKernel::build_verilated_environment() {
   vctxt_ = std::make_unique<VerilatedContext>();

@@ -36,12 +36,52 @@
   }               \
   while (false)
 
-#define V_ASSERT(__lg, __cond)                               \
-  MACRO_BEGIN                                                \
-  if (__lg && !(__cond)) {                                   \
-    (__lg)->log(::tb::log::Level::Fatal, "condition fail!"); \
-  }                                                          \
+#define V_ASSERT(__lg, __cond)                \
+  MACRO_BEGIN                                 \
+  if (__lg && !(__cond)) {                    \
+    using namespace ::tb::log;                \
+    Msg msg(Level::Fatal);                    \
+    msg.set_pp(__FILE__, __LINE__);           \
+    msg.append("Assertion failed: " #__cond); \
+    (__lg)->write(msg);                       \
+  }                                           \
   MACRO_END
+
+#define V_EXPECT_EQ(__lg, __lhs, __rhs) \
+  MACRO_BEGIN                           \
+  if (__lg && !((__lhs) == (__rhs))) {  \
+    using namespace ::tb::log;          \
+    Msg msg(Level::Error);              \
+    msg.set_pp(__FILE__, __LINE__);     \
+    msg.append("Mismatch detected: ");  \
+    msg.append(#__lhs " (");            \
+    msg.append(__lhs);                  \
+    msg.append(") != ");                \
+    msg.append(#__rhs " (");            \
+    msg.append(__rhs);                  \
+    msg.append(")");                    \
+    (__lg)->write(msg);                 \
+  }                                     \
+  MACRO_END
+
+#define V_LOG_MSG(__lg, __level, __msg) \
+  MACRO_BEGIN                           \
+  if (__lg) {                           \
+    using namespace ::tb::log;          \
+    Msg msg(Level::__level);            \
+    msg.append(__msg);                  \
+    (__lg)->write(msg);                 \
+  }                                     \
+  MACRO_END
+
+// Forwards:
+namespace tb {
+class UpdateCommand;
+class QueryCommand;
+class QueryResponse;
+class NotifyResponse;
+class VKernel;
+}  // namespace tb
 
 namespace tb::log {
 
@@ -49,6 +89,35 @@ class Log;
 class Scope;
 
 enum class Level { Debug, Info, Warning, Error, Fatal };
+
+class Msg {
+ public:
+  Msg(Level l) : l_(l) {}
+
+  void set_pp(const std::string& f, unsigned l) {
+    fn(f);
+    ln(l);
+  }
+
+  void fn(const std::string& fn) { fn_ = fn; }
+  std::string fn() const { return fn_; }
+
+  void ln(unsigned ln) { ln_ = ln; }
+  unsigned ln() const { return ln_; }
+
+  void append(const std::string& s);
+  void append(bool b);
+  void append(const UpdateCommand& uc);
+  void append(const QueryCommand& qc);
+  void append(const QueryResponse& qr);
+  void append(const NotifyResponse& nr);
+
+ private:
+  std::string msg_;
+  std::string fn_;
+  unsigned ln_;
+  Level l_;
+};
 
 class Scope {
   friend class Log;
@@ -66,10 +135,11 @@ class Scope {
     return childs_.back().get();
   }
 
-  void log(Level l, const char* msg) {}
+  void write(const Msg& msg);
 
   std::string sn() const { return sn_; }
   void sn(const std::string& sn) { sn_ = sn; }
+  Log* log() const { return log_; }
 
  private:
   std::string sn_;
@@ -84,6 +154,7 @@ class Log {
   Log(std::ostream& os);
 
   void set_os(std::ostream& os) { os_ = std::addressof(os); }
+  void set_kernel(VKernel* k) { k_ = k; }
 
   Scope* create_logger() {
     lgs_.push_back(std::make_unique<Scope>(this));
@@ -92,6 +163,7 @@ class Log {
 
  private:
   std::ostream* os_{nullptr};
+  VKernel* k_{nullptr};
   std::vector<std::unique_ptr<Scope> > lgs_;
 };
 

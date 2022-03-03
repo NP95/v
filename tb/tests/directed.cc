@@ -86,7 +86,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
       case Opcode::WaitUntilNotBusy: {
         const bool is_busy = VDriver::is_busy(tb);
         if (!is_busy) {
-          ls_->log(log::Level::Info, "Initialization complete!");
+          V_LOG_MSG(ls_, Info, "Initialization complete!");
           d.pop_front();
         }
         return is_busy;
@@ -104,7 +104,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
         d.pop_front();
       } break;
       case Opcode::EndSimulation: {
-        ls_->log(log::Level::Info, "Simulation complete!");
+        V_LOG_MSG(ls_, Info, "Simulation complete!");
         d.pop_front();
         return false;
       } break;

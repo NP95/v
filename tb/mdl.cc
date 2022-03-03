@@ -43,6 +43,12 @@ UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key,
                              volume_t volume)
     : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
 
+std::string UpdateCommand::to_string() const { return "TODO"; }
+
+bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs) {
+  return false;
+}
+
 UpdateResponse::UpdateResponse() : vld_(false) {}
 
 UpdateResponse::UpdateResponse(prod_id_t prod_id)
@@ -54,10 +60,20 @@ std::string UpdateResponse::to_string() const {
   return ss.str();
 }
 
+bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs) {
+  return false;
+}
+
 QueryCommand::QueryCommand() : vld_(false) {}
 
 QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
     : vld_(true), prod_id_(prod_id), level_(level) {}
+
+std::string QueryCommand::to_string() const { return "TODO"; }
+
+bool operator==(const QueryCommand& lhs, const QueryCommand& rhs) {
+  return false;
+}
 
 QueryResponse::QueryResponse() : vld_(false) {}
 
@@ -70,6 +86,12 @@ QueryResponse::QueryResponse(key_t key, volume_t volume, bool error,
   listsize_ = listsize;
 }
 
+std::string QueryResponse::to_string() const { return "TODO"; }
+
+bool operator==(const QueryResponse& lhs, const QueryResponse& rhs) {
+  return false;
+}
+
 NotifyResponse::NotifyResponse() : vld_(false) {}
 
 NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
@@ -77,6 +99,10 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
   prod_id_ = prod_id;
   key_ = key;
   volume_ = volume;
+}
+
+bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
+  return false;
 }
 
 std::string NotifyResponse::to_string() const {
@@ -297,11 +323,10 @@ class Mdl::Impl {
   void handle(const NotifyResponse& nr) {
     const NotifyResponse& predicted = nr_pipe_.head();
     const NotifyResponse& actual = nr;
-    //    EXPECT_EQ(predicted.vld(), actual.vld());
-    if (predicted.vld()) {
-      //      EXPECT_EQ(predicted.prod_id(), actual.prod_id());
-      //      EXPECT_EQ(predicted.key(), actual.key());
-      //      EXPECT_EQ(predicted.volume(), actual.volume());
+    V_EXPECT_EQ(lg_, predicted.vld(), actual.vld());
+    const bool consensus = predicted.vld() && actual.vld();
+    if (consensus) {
+      V_EXPECT_EQ(lg_, predicted, actual);
     }
   }
 
@@ -327,13 +352,13 @@ class Mdl::Impl {
   void handle(const QueryResponse& qr) {
     const QueryResponse& predicted = qr_pipe_.head();
     const QueryResponse& actual = qr;
-    //    EXPECT_EQ(predicted.vld(), actual.vld());
-    if (predicted.vld() && actual.vld()) {
-      //      EXPECT_EQ(predicted.error(), actual.error());
-      if (!predicted.error() && !actual.error()) {
-        //        EXPECT_EQ(predicted.key(), actual.key());
-        //        EXPECT_EQ(predicted.volume(), actual.volume());
-        //        EXPECT_EQ(predicted.listsize(), actual.listsize());
+    V_EXPECT_EQ(lg_, predicted.vld(), actual.vld());
+    bool consensus = predicted.vld() && actual.vld();
+    if (consensus) {
+      V_EXPECT_EQ(lg_, predicted.error(), actual.error());
+      consensus = !predicted.error() && !actual.error();
+      if (consensus) {
+        V_EXPECT_EQ(lg_, predicted, actual);
       }
     }
   }

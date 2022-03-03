@@ -27,7 +27,23 @@
 
 #include "log.h"
 
+#include "mdl.h"
+
 namespace tb::log {
+
+void Msg::append(const std::string& s) { msg_ += s; }
+
+void Msg::append(bool b) { msg_ += (b ? "true" : "false"); }
+
+void Msg::append(const UpdateCommand& uc) { msg_ += uc.to_string(); }
+
+void Msg::append(const QueryCommand& qc) { msg_ += qc.to_string(); }
+
+void Msg::append(const QueryResponse& qr) { msg_ += qr.to_string(); }
+
+void Msg::append(const NotifyResponse& nr) { msg_ += nr.to_string(); }
+
+void Scope::write(const Msg& msg) {}
 
 Log::Log(std::ostream& os) : os_(std::addressof(os)) {}
 

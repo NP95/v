@@ -48,8 +48,9 @@ using listsize_t = vluint8_t;
 class UpdateCommand {
  public:
   UpdateCommand();
-
   UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
+
+  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
@@ -64,6 +65,8 @@ class UpdateCommand {
   key_t key_;
   volume_t volume_;
 };
+
+bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs);
 
 class UpdateResponse {
  public:
@@ -80,11 +83,14 @@ class UpdateResponse {
   prod_id_t prod_id_;
 };
 
+bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs);
+
 class QueryCommand {
  public:
   QueryCommand();
-
   QueryCommand(prod_id_t prod_id, level_t level);
+
+  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
@@ -96,10 +102,14 @@ class QueryCommand {
   level_t level_;
 };
 
+bool operator==(const QueryCommand& lhs, const QueryCommand& rhs);
+
 class QueryResponse {
  public:
   QueryResponse();
   QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
+
+  std::string to_string() const;
 
   bool vld() const { return vld_; }
   key_t key() const { return key_; }
@@ -114,6 +124,8 @@ class QueryResponse {
   bool error_;
   listsize_t listsize_;
 };
+
+bool operator==(const QueryResponse& lhs, const QueryResponse& rhs);
 
 class NotifyResponse {
  public:
@@ -133,6 +145,8 @@ class NotifyResponse {
   key_t key_;
   volume_t volume_;
 };
+
+bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs);
 
 class Mdl {
   class Impl;

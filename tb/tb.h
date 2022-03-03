@@ -72,6 +72,7 @@ class VKernel {
   void run(VKernelCB* cb);
 
   std::uint64_t tb_time() const { return tb_time_; }
+  std::uint64_t tb_cycle() const;
 
  private:
   void build_verilated_environment();
