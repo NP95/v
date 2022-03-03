@@ -35,7 +35,7 @@ namespace {
 
 class CheckAddCmd : public tb::tests::Directed {
  public:
-  explicit CheckAddCmd() {
+  void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
 
@@ -59,11 +59,11 @@ class CheckAddCmd : public tb::tests::Directed {
     }
   }
 };
-REGISTER_TESTCASE(CheckAddCmd);
+CREATE_TEST_BUILDER(CheckAddCmd);
 
 class CheckDelCmd : public tb::tests::Directed {
  public:
-  explicit CheckDelCmd() {
+  void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
 
@@ -83,11 +83,11 @@ class CheckDelCmd : public tb::tests::Directed {
     }
   }
 };
-REGISTER_TESTCASE(CheckDelCmd);
+CREATE_TEST_BUILDER(CheckDelCmd);
 
 class CheckListSize : public tb::tests::Directed {
  public:
-  explicit CheckListSize() {
+  void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
 
@@ -123,11 +123,11 @@ class CheckListSize : public tb::tests::Directed {
     wait_cycles(10);
   }
 };
-REGISTER_TESTCASE(CheckListSize);
+CREATE_TEST_BUILDER(CheckListSize);
 
 class CheckClrCmd : public tb::tests::Directed {
  public:
-  explicit CheckClrCmd() {
+  void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
 
@@ -164,11 +164,11 @@ class CheckClrCmd : public tb::tests::Directed {
     }
   }
 };
-REGISTER_TESTCASE(CheckClrCmd);
+CREATE_TEST_BUILDER(CheckClrCmd);
 
 class CheckRplCmd : public tb::tests::Directed {
  public:
-  explicit CheckRplCmd() {
+  void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
 
@@ -199,7 +199,7 @@ class CheckRplCmd : public tb::tests::Directed {
     }
   }
 };
-REGISTER_TESTCASE(CheckRplCmd);
+CREATE_TEST_BUILDER(CheckRplCmd);
 
 }  // namespace
 

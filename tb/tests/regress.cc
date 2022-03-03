@@ -35,7 +35,7 @@ class RegressTest : public tb::Test {
   bool run() override { return true; }
 };
 
-REGISTER_TESTCASE(RegressTest);
+CREATE_TEST_BUILDER(RegressTest);
 
 }  // namespace
 

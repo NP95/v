@@ -39,7 +39,7 @@ namespace log {
 class Scope;
 }
 
-#define REGISTER_TESTCASE(__name)                         \
+#define CREATE_TEST_BUILDER(__name)                       \
   struct __name##Builder : ::tb::TestBuilder {            \
     std::string name() const override { return #__name; } \
     std::unique_ptr<::tb::Test> construct(                \

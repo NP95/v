@@ -52,6 +52,7 @@ class Directed : public Test {
   ~Directed();
 
   bool run() override;
+  virtual void program() = 0;
 
   void wait_until_not_busy();
 

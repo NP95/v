@@ -69,6 +69,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
     k_ = std::make_unique<VKernel>(opts, ls_->create_child("kernel"));
   }
   bool run() {
+    parent_->program();
     k_->run(this);
     return true;
   }
