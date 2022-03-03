@@ -27,6 +27,7 @@
 
 #include "directed.h"
 
+#include "../log.h"
 #include "../mdl.h"
 #include "../tb.h"
 #include "Vobj/Vtb.h"
@@ -64,13 +65,20 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
  public:
   Impl(Directed* parent) : parent_(parent) {
     VKernelOptions opts;
-    k_ = std::make_unique<VKernel>(opts);
+    ls_ = parent->lg();
+    k_ = std::make_unique<VKernel>(opts, ls_->create_child("kernel"));
   }
-  void run() { k_->run(this); }
+  bool run() {
+    k_->run(this);
+    return true;
+  }
 
   bool on_negedge_clk(Vtb* tb) {
     std::deque<std::unique_ptr<Instruction> >& d{parent_->d_};
-    if (d.empty()) return false;
+
+    if (d.empty()) {
+      return false;
+    }
 
     // Process further stimulus:
     Instruction* i{d.front().get()};
@@ -78,6 +86,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
       case Opcode::WaitUntilNotBusy: {
         const bool is_busy = VDriver::is_busy(tb);
         if (!is_busy) {
+          ls_->log(log::Level::Info, "Initialization complete!");
           d.pop_front();
         }
         return is_busy;
@@ -95,6 +104,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
         d.pop_front();
       } break;
       case Opcode::EndSimulation: {
+        ls_->log(log::Level::Info, "Simulation complete!");
         d.pop_front();
         return false;
       } break;
@@ -113,6 +123,7 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
  private:
   std::unique_ptr<VKernel> k_;
   Directed* parent_;
+  log::Scope* ls_;
 };
 
 namespace tb::tests {
@@ -121,7 +132,7 @@ Directed::Directed() { impl_ = std::make_unique<Impl>(this); }
 
 Directed::~Directed() {}
 
-void Directed::run() { impl_->run(); }
+bool Directed::run() { return impl_->run(); }
 
 void Directed::wait_until_not_busy() {}
 

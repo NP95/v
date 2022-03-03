@@ -27,7 +27,14 @@
 
 #include "test.h"
 
+#include "log.h"
+
 namespace tb {
+
+void TestBuilder::build(Test* t, log::Scope* l) const {
+  l->sn(name());
+  t->lg_ = l;
+}
 
 void TestRegistry::add(std::unique_ptr<TestBuilder> br) {
   r_.insert(std::make_pair(br->name(), std::move(br)));

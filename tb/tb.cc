@@ -35,6 +35,7 @@
 #ifdef ENABLE_VCD
 #include "verilated_vcd_c.h"
 #endif
+#include <iostream>
 
 namespace {
 
@@ -57,7 +58,8 @@ void init(TestRegistry* tr) {
   tests::smoke_cmds::init(tr);
 }
 
-VKernel::VKernel(const VKernelOptions& opts) : opts_(opts), tb_time_(0) {
+VKernel::VKernel(const VKernelOptions& opts, log::Scope* l)
+    : opts_(opts), tb_time_(0), l_(l) {
   build_verilated_environment();
   mdl_ = std::make_unique<Mdl>(vtb_.get());
 }

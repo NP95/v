@@ -25,50 +25,64 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_TESTS_DIRECTED_H
-#define V_TB_TESTS_DIRECTED_H
+#ifndef V_TB_LOG_H
+#define V_TB_LOG_H
 
-#include <deque>
-#include <memory>
-#include <tuple>
+#include <iostream>
+#include <vector>
 
-#include "../mdl.h"
-#include "../test.h"
+namespace tb::log {
 
-class Instruction;
+class Log;
+class Scope;
 
-namespace tb::tests {
+enum class Level { Debug, Info, Warning, Error, Fatal };
 
-class Directed : public Test {
-  friend class Impl;
+class Scope {
+  friend class Log;
 
-  class Impl;
-  std::unique_ptr<Impl> impl_;
-
-  using command_pair_type = std::tuple<const UpdateCommand, const QueryCommand>;
+  static constexpr const char SEP = '.';
 
  public:
-  explicit Directed();
-  ~Directed();
-
-  bool run() override;
-
-  void wait_until_not_busy();
-
-  void push_back(const UpdateCommand& uc,
-                 const QueryCommand& qc = QueryCommand{});
-
-  void push_back(const QueryCommand& qc,
-                 const UpdateCommand& uc = UpdateCommand{}) {
-    push_back(uc, qc);
+  Scope(Log* log) : parent_(nullptr), sn_("tb") {}
+  Scope(Scope* parent, const std::string& sn) : parent_(parent), sn_(sn) {
+    sn_ = parent->sn() + SEP + sn;
   }
 
-  void wait_cycles(std::size_t n = 1);
+  Scope* create_child(const std::string& sn) {
+    childs_.push_back(std::make_unique<Scope>(this, sn));
+    return childs_.back().get();
+  }
+
+  void log(Level l, const char* msg) {}
+
+  std::string sn() const { return sn_; }
+  void sn(const std::string& sn) { sn_ = sn; }
 
  private:
-  std::deque<std::unique_ptr<Instruction> > d_;
+  std::string sn_;
+  Log* log_;
+  std::vector<std::unique_ptr<Scope> > childs_;
+  Scope* parent_;
 };
 
-}  // namespace tb::tests
+class Log {
+ public:
+  explicit Log() = default;
+  Log(std::ostream& os);
+
+  void set_os(std::ostream& os) { os_ = std::addressof(os); }
+
+  Scope* create_logger() {
+    lgs_.push_back(std::make_unique<Scope>(this));
+    return lgs_.back().get();
+  }
+
+ private:
+  std::ostream* os_{nullptr};
+  std::vector<std::unique_ptr<Scope> > lgs_;
+};
+
+}  // namespace tb::log
 
 #endif

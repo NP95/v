@@ -35,20 +35,34 @@
 
 namespace tb {
 
-#define REGISTER_TESTCASE(__name)                          \
-  struct __name##Builder : tb::TestBuilder {               \
-    std::string name() const override { return #__name; }  \
-    std::unique_ptr<tb::Test> construct() const override { \
-      return std::make_unique<__name>();                   \
-    }                                                      \
+namespace log {
+class Scope;
+}
+
+#define REGISTER_TESTCASE(__name)                         \
+  struct __name##Builder : ::tb::TestBuilder {            \
+    std::string name() const override { return #__name; } \
+    std::unique_ptr<::tb::Test> construct(                \
+        ::tb::log::Scope* log) const override {           \
+      auto t = std::make_unique<__name>();                \
+      build(t.get(), log);                                \
+      return std::move(t);                                \
+    }                                                     \
   }
 
 class Test {
+  friend class TestBuilder;
+
  public:
   explicit Test() = default;
   virtual ~Test() = default;
 
-  virtual void run() = 0;
+  log::Scope* lg() const { return lg_; }
+
+  virtual bool run() = 0;
+
+ private:
+  log::Scope* lg_ = nullptr;
 };
 
 class TestBuilder {
@@ -57,7 +71,10 @@ class TestBuilder {
   virtual ~TestBuilder() = default;
 
   virtual std::string name() const = 0;
-  virtual std::unique_ptr<Test> construct() const = 0;
+  virtual std::unique_ptr<Test> construct(tb::log::Scope* log) const = 0;
+
+ protected:
+  void build(Test* t, log::Scope* l) const;
 };
 
 class TestRegistry {

@@ -25,8 +25,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_VERIF_TB_H
-#define V_VERIF_TB_H
+#ifndef V_TB_TB_H
+#define V_TB_TB_H
 
 #include <exception>
 #include <memory>
@@ -45,6 +45,9 @@ class TestRegistry;
 class Mdl;
 class UpdateCommand;
 class QueryCommand;
+namespace log {
+class Scope;
+}  // namespace log
 
 void init(TestRegistry* tr);
 
@@ -64,7 +67,7 @@ struct VKernelCB {
 
 class VKernel {
  public:
-  explicit VKernel(const VKernelOptions& opts);
+  explicit VKernel(const VKernelOptions& opts, log::Scope* l = nullptr);
 
   void run(VKernelCB* cb);
 
@@ -81,6 +84,7 @@ class VKernel {
 #endif
   VKernelOptions opts_;
   std::uint64_t tb_time_;
+  log::Scope* l_;
 };
 
 struct VDriver {

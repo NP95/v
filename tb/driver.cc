@@ -28,6 +28,7 @@
 #include <iostream>
 #include <string>
 
+#include "log.h"
 #include "tb.h"
 #include "test.h"
 
@@ -45,12 +46,14 @@ class Driver {
   int status() const { return status_; }
 
   void execute() {
-    for (int i = 1; i < argc_;) {
+    for (int i = 1; i < argc_; ++i) {
       const std::string argstr{argv_[i]};
       if (argstr == "--help" || argstr == "-h") {
         print_usage_and_quit();
         status_ = 1;
         return;
+      } else if (argstr == "-v") {
+        log_.set_os(std::cout);
       } else if (argstr == "--list") {
         for (const tb::TestBuilder* tb : tr_.tests()) {
           std::cout << tb->name() << "\n";
@@ -82,7 +85,7 @@ class Driver {
   }
 
  private:
-  bool run(const std::string& name) {
+  bool run(const std::string& targs) {
     if (const tb::TestBuilder* tb = tr_.get(targs); tb != nullptr) {
       return run(tb);
     } else {
@@ -90,13 +93,14 @@ class Driver {
     }
   }
 
-  void run(const tb::TestBuilder* tb) {
-    std::unique_ptr<tb::Test> t{tb->construct()};
-    t->run();
+  bool run(const tb::TestBuilder* tb) {
+    std::unique_ptr<tb::Test> t{tb->construct(log_.create_logger())};
+    return t->run();
   }
 
   void print_usage_and_quit() {
     std::cout << " -h|--help         Print help and quit.\n"
+              << " -v                Verbose\n"
               << " --list            List testcases\n"
               << " --vcd             Enable waveform tracing (VCD)\n"
               << " --run <args>      Run testcase\n"
@@ -108,6 +112,7 @@ class Driver {
   tb::TestRegistry tr_;
   bool vcd_on_ = false;
   int status_;
+  tb::log::Log log_;
 };
 
 }  // namespace

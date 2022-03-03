@@ -25,50 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_TESTS_DIRECTED_H
-#define V_TB_TESTS_DIRECTED_H
+#include "log.h"
 
-#include <deque>
-#include <memory>
-#include <tuple>
+namespace tb::log {
 
-#include "../mdl.h"
-#include "../test.h"
+Log::Log(std::ostream& os) : os_(std::addressof(os)) {}
 
-class Instruction;
-
-namespace tb::tests {
-
-class Directed : public Test {
-  friend class Impl;
-
-  class Impl;
-  std::unique_ptr<Impl> impl_;
-
-  using command_pair_type = std::tuple<const UpdateCommand, const QueryCommand>;
-
- public:
-  explicit Directed();
-  ~Directed();
-
-  bool run() override;
-
-  void wait_until_not_busy();
-
-  void push_back(const UpdateCommand& uc,
-                 const QueryCommand& qc = QueryCommand{});
-
-  void push_back(const QueryCommand& qc,
-                 const UpdateCommand& uc = UpdateCommand{}) {
-    push_back(uc, qc);
-  }
-
-  void wait_cycles(std::size_t n = 1);
-
- private:
-  std::deque<std::unique_ptr<Instruction> > d_;
-};
-
-}  // namespace tb::tests
-
-#endif
+}  // namespace tb::log

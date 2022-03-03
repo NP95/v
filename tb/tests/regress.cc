@@ -32,7 +32,7 @@ namespace {
 class RegressTest : public tb::Test {
  public:
   explicit RegressTest() {}
-  void run() override {}
+  bool run() override { return true; }
 };
 
 REGISTER_TESTCASE(RegressTest);
