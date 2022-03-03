@@ -32,12 +32,24 @@
 #include <memory>
 #include <tuple>
 
+#include "../common.h"
 #include "../mdl.h"
 #include "../test.h"
 
 class Instruction;
+namespace tb::log {
+class Msg;
+};
 
 namespace tb::tests {
+
+#define V_NOTE(__msg)             \
+  MACRO_BEGIN                     \
+  using namespace ::tb::log;      \
+  Msg msg(Level::Info);           \
+  msg.set_pp(__FILE__, __LINE__); \
+  msg.append(__msg);              \
+  MACRO_END
 
 class Directed : public Test {
   friend class Impl;
@@ -53,6 +65,8 @@ class Directed : public Test {
 
   bool run() override;
   virtual void program() = 0;
+
+  void note(const log::Msg& msg);
 
   void wait_until_not_busy();
 

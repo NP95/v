@@ -31,10 +31,7 @@
 #include <iostream>
 #include <vector>
 
-#define MACRO_BEGIN do {
-#define MACRO_END \
-  }               \
-  while (false)
+#include "common.h"
 
 #define V_ASSERT(__lg, __cond)                \
   MACRO_BEGIN                                 \
@@ -64,14 +61,21 @@
   }                                     \
   MACRO_END
 
-#define V_LOG_MSG(__lg, __level, __msg) \
-  MACRO_BEGIN                           \
-  if (__lg) {                           \
-    using namespace ::tb::log;          \
-    Msg msg(Level::__level);            \
-    msg.append(__msg);                  \
-    (__lg)->write(msg);                 \
-  }                                     \
+#define V_LOG(__lg, __level, __msg) \
+  MACRO_BEGIN                       \
+  if (__lg) {                       \
+    using namespace ::tb::log;      \
+    Msg msg(Level::__level);        \
+    msg.append(__msg);              \
+    (__lg)->write(msg);             \
+  }                                 \
+  MACRO_END
+
+#define V_LOG_MSG(__lg, __msg) \
+  MACRO_BEGIN                  \
+  if (__lg) {                  \
+    (__lg)->write(__msg);      \
+  }                            \
   MACRO_END
 
 // Forwards:
@@ -92,6 +96,7 @@ enum class Level { Debug, Info, Warning, Error, Fatal };
 
 class Msg {
  public:
+  Msg() = default;
   Msg(Level l) : l_(l) {}
 
   void set_pp(const std::string& f, unsigned l) {
@@ -116,7 +121,7 @@ class Msg {
   std::string msg_;
   std::string fn_;
   unsigned ln_;
-  Level l_;
+  Level l_{Level::Fatal};
 };
 
 class Scope {

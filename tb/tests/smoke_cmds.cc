@@ -27,6 +27,7 @@
 
 #include "smoke_cmds.h"
 
+#include "../log.h"
 #include "../test.h"
 #include "cfg.h"
 #include "directed.h"
@@ -38,6 +39,7 @@ class CheckAddCmd : public tb::tests::Directed {
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
+    V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
     // ordering.
@@ -57,6 +59,8 @@ class CheckAddCmd : public tb::tests::Directed {
     for (tb::level_t level = 0; level < cfg::ENTRIES_N; level++) {
       push_back(tb::QueryCommand{0, level});
     }
+
+    V_NOTE("Test ends...");
   }
 };
 CREATE_TEST_BUILDER(CheckAddCmd);
@@ -66,6 +70,7 @@ class CheckDelCmd : public tb::tests::Directed {
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
+    V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
     // ordering.
@@ -81,6 +86,7 @@ class CheckDelCmd : public tb::tests::Directed {
       push_back(tb::UpdateCommand{0, tb::Cmd::Del, key, 0});
       wait_cycles(1);
     }
+    V_NOTE("Test ends...");
   }
 };
 CREATE_TEST_BUILDER(CheckDelCmd);
@@ -90,6 +96,7 @@ class CheckListSize : public tb::tests::Directed {
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
+    V_NOTE("Test begins...");
 
     // Check empty status;
     //
@@ -121,6 +128,8 @@ class CheckListSize : public tb::tests::Directed {
     wait_cycles(10);
     push_back(tb::UpdateCommand{0, tb::Cmd::Add, 0, 0}, tb::QueryCommand{0, 0});
     wait_cycles(10);
+
+    V_NOTE("Test ends...");
   }
 };
 CREATE_TEST_BUILDER(CheckListSize);
@@ -130,6 +139,7 @@ class CheckClrCmd : public tb::tests::Directed {
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
+    V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
     // ordering.
@@ -162,6 +172,8 @@ class CheckClrCmd : public tb::tests::Directed {
     for (tb::level_t level = 0; level < cfg::ENTRIES_N; level++) {
       push_back(tb::QueryCommand{0, level});
     }
+
+    V_NOTE("Test ends...");
   }
 };
 CREATE_TEST_BUILDER(CheckClrCmd);
@@ -171,6 +183,7 @@ class CheckRplCmd : public tb::tests::Directed {
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
+    V_NOTE("Test begins...");
 
     push_back(tb::UpdateCommand{0, tb::Cmd::Rep, 0, 0});
     wait_cycles(1);
@@ -197,6 +210,8 @@ class CheckRplCmd : public tb::tests::Directed {
     for (tb::level_t level = 0; level < cfg::ENTRIES_N; level++) {
       push_back(tb::QueryCommand{0, level});
     }
+
+    V_NOTE("Test ends...");
   }
 };
 CREATE_TEST_BUILDER(CheckRplCmd);
