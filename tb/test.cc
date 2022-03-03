@@ -25,24 +25,27 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_CFG_H
-#define V_TB_CFG_H
+#include "test.h"
 
-namespace cfg {
+namespace tb {
 
-  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+void TestRegistry::add(std::unique_ptr<TestBuilder> br) {
+  r_.insert(std::make_pair(br->name(), std::move(br)));
+}
 
-  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+std::vector<const TestBuilder*> TestRegistry::tests() const {
+  std::vector<const TestBuilder*> tbrs;
+  for (const auto& [name, tbr] : r_) {
+    tbrs.push_back(tbr.get());
+  }
+  return tbrs;
+}
 
-  // Bid/Ask table:
-  //
-  //  Bid: Head is largest entry
-  //
-  //  Ask: Head is smallest entry
-  constexpr const bool is_bid_table = false;
+const TestBuilder* TestRegistry::get(const std::string& name) const {
+  if (auto it = r_.find(name); it != r_.end()) {
+    return it->second.get();
+  }
+  return nullptr;
+}
 
-  constexpr const bool has_vcd = @has_vcd@;
-
-} // namespace cfg
-
-#endif
+}  // namespace tb

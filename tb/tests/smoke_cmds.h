@@ -25,24 +25,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_CFG_H
-#define V_TB_CFG_H
+#ifndef V_TB_TESTS_SMOKE_CMDS_H
+#define V_TB_TESTS_SMOKE_CMDS_H
 
-namespace cfg {
+namespace tb {
 
-  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+class TestRegistry;
 
-  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+namespace tests::smoke_cmds {
 
-  // Bid/Ask table:
-  //
-  //  Bid: Head is largest entry
-  //
-  //  Ask: Head is smallest entry
-  constexpr const bool is_bid_table = false;
+void init(TestRegistry* r);
 
-  constexpr const bool has_vcd = @has_vcd@;
+}  // namespace tests::smoke_cmds
 
-} // namespace cfg
+}  // namespace tb
 
 #endif

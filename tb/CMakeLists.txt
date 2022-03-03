@@ -25,8 +25,14 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+# ---------------------------------------------------------------------------- #
+# Environment:
 include(rtl)
 include(lib)
+
+# ---------------------------------------------------------------------------- #
+# TB flags:
+set(has_vcd false)
 
 set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
 
@@ -53,6 +59,7 @@ set(VERILATOR_ARGS
   "--top tb")
 
 if (ENABLE_VCD)
+  set(has_vcd true)
   list(APPEND VERILATOR_ARGS "--trace")
 endif ()
 
@@ -117,8 +124,14 @@ foreach (src_fn "${RTL_GENERATED_SOURCES}")
 endforeach ()
 
 set(TB_CPP
-  "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
+ # "${CMAKE_CURRENT_SOURCE_DIR}/directed.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke_cmds.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/directed.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/mdl.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc")
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/driver.cc"
+  )
 
 build_test_cfg(cfg_0 ${TB_CPP})

@@ -25,13 +25,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "tb.h"
-#include "cfg.h"
-#include <tuple>
 #include <deque>
+#include <tuple>
+
+#include "cfg.h"
+#include "tb.h"
 
 TEST(Directed, CheckMemoryInitializationProcess) {
-
   class WaitForEndOfInitTest : public verif::Test {
     enum class State {
       PreReset,
@@ -41,49 +41,50 @@ TEST(Directed, CheckMemoryInitializationProcess) {
       Timeout,
       Okay
     };
-  public:
+
+   public:
     WaitForEndOfInitTest(verif::UUTHarness uut, std::uint64_t timeout = 1000)
-      : uut_(uut), timeout_(timeout), state_(State::PreReset) {
-    }
+        : uut_(uut), timeout_(timeout), state_(State::PreReset) {}
 
     Status on_negedge_clk(verif::UpdateCommand& up,
                           verif::QueryCommand& qp) override {
       switch (state_) {
-      case State::PreReset:
-        cnt_ = 0;
-        state_ = State::InReset;
-        return Status::ApplyReset;
-        break;
-      case State::InReset:
-        if (++cnt_ > 10) {
-          state_ = State::PostReset;
-          return Status::RescindReset;
-        }
-        break;
-      case State::PostReset:
-        state_ = State::InInitialization;
-        cnt_ = 0;
-        break;
-      case State::InInitialization:
-        if (++cnt_ > timeout_) {
-          state_ = State::Timeout;
+        case State::PreReset:
+          cnt_ = 0;
+          state_ = State::InReset;
+          return Status::ApplyReset;
+          break;
+        case State::InReset:
+          if (++cnt_ > 10) {
+            state_ = State::PostReset;
+            return Status::RescindReset;
+          }
+          break;
+        case State::PostReset:
+          state_ = State::InInitialization;
+          cnt_ = 0;
+          break;
+        case State::InInitialization:
+          if (++cnt_ > timeout_) {
+            state_ = State::Timeout;
+            return Status::Terminate;
+          } else if (!uut_.busy()) {
+            state_ = State::Okay;
+          }
+          break;
+        case State::Timeout:
+        case State::Okay:
+        default:
           return Status::Terminate;
-        } else if (!uut_.busy()) {
-          state_ = State::Okay;
-        }
-        break;
-      case State::Timeout:
-      case State::Okay:
-      default:
-        return Status::Terminate;
-        break;
+          break;
       }
 
       return Status::Continue;
     }
 
     bool is_passed() const override { return state_ == State::Okay; }
-  private:
+
+   private:
     State state_;
     std::uint64_t cnt_ = 0;
     std::uint64_t timeout_ = 0;
@@ -110,13 +111,12 @@ class DirectedTestDriver : public verif::Test {
     DriveStimulus,
     WindDown
   };
-public:
 
+ public:
   using input_t = std::tuple<verif::UpdateCommand, verif::QueryCommand>;
 
   DirectedTestDriver(verif::UUTHarness uut)
-    : uut_(uut), state_(State::ApplyReset)
-  {}
+      : uut_(uut), state_(State::ApplyReset) {}
 
   void push_back(const verif::UpdateCommand& up,
                  const verif::QueryCommand& qp = verif::QueryCommand{}) {
@@ -135,53 +135,51 @@ public:
     }
   }
 
-private:
-
+ private:
   Status on_negedge_clk(verif::UpdateCommand& up,
                         verif::QueryCommand& qp) override {
     switch (state_) {
-    default: {
-      // Invalid state;
-      return Status::Terminate;
-    } break;
-    case State::ApplyReset: {
-      state_ = State::RescindReset;
-      return Status::ApplyReset;
-    } break;
-    case State::RescindReset: {
-      state_ = State::AwaitInitializationStart;
-      return Status::RescindReset;
-    } break;
-    case State::AwaitInitializationStart: {
-      if (uut_.busy()) {
-        state_ = State::Initializing;
-      }
-    } break;
-    case State::Initializing: {
-      if (!uut_.busy()) {
-        if  (!inputs_.empty()) {
-          state_ = State::DriveStimulus;
-        } else {
-          // No stimulus provided.
+      default: {
+        // Invalid state;
+        return Status::Terminate;
+      } break;
+      case State::ApplyReset: {
+        state_ = State::RescindReset;
+        return Status::ApplyReset;
+      } break;
+      case State::RescindReset: {
+        state_ = State::AwaitInitializationStart;
+        return Status::RescindReset;
+      } break;
+      case State::AwaitInitializationStart: {
+        if (uut_.busy()) {
+          state_ = State::Initializing;
+        }
+      } break;
+      case State::Initializing: {
+        if (!uut_.busy()) {
+          if (!inputs_.empty()) {
+            state_ = State::DriveStimulus;
+          } else {
+            // No stimulus provided.
+            state_ = State::WindDown;
+          }
+        }
+      } break;
+      case State::DriveStimulus: {
+        std::tie(up, qp) = inputs_.front();
+        inputs_.pop_front();
+        if (inputs_.empty()) {
+          // Stimulus Exhausted
+          cnt_ = 0;
           state_ = State::WindDown;
         }
-      }
-    } break;
-    case State::DriveStimulus: {
-      std::tie(up, qp) = inputs_.front();
-      inputs_.pop_front();
-      if (inputs_.empty()) {
-        // Stimulus Exhausted
-        cnt_ = 0;
-        state_ = State::WindDown;
-      }
-    } break;
-    case State::WindDown: {
-      if (++cnt_ > 10) {
-        return Status::Terminate;
-      }
-    } break;
-
+      } break;
+      case State::WindDown: {
+        if (++cnt_ > 10) {
+          return Status::Terminate;
+        }
+      } break;
     }
     return Status::Continue;
   }
@@ -362,7 +360,7 @@ TEST(Directed, CheckReplace) {
   TB tb{opts};
   DirectedTestDriver test{tb.get_harness()};
 
-  test.push_back(UpdateCommand{0, Cmd::Rep, 0, 0});
+  test.push_back(tbUpdateCommand{0, Cmd::Rep, 0, 0});
   test.wait_cycles(1);
 
   // Issue simulus; populate prod_id/context in the table a validate correct

@@ -26,17 +26,133 @@
 //========================================================================== //
 
 #include "tb.h"
-#include "cfg.h"
+
 #include "Vobj/Vtb.h"
+#include "mdl.h"
+#include "test.h"
+#include "tests/regress.h"
+#include "tests/smoke_cmds.h"
 #ifdef ENABLE_VCD
-#  include "verilated_vcd_c.h"
+#include "verilated_vcd_c.h"
 #endif
-#include <string>
-#include <array>
-#include <vector>
+
+namespace {
+
+void set_bool(vluint8_t* v, bool b) { *v = b ? 1 : 0; }
+
+struct VPorts {
+  static bool clk(Vtb* tb) { return (tb->clk != 0); }
+  static void clk(Vtb* tb, bool v) { set_bool(&tb->clk, v); }
+
+  static bool rst(Vtb* tb) { return (tb->rst != 0); }
+  static void rst(Vtb* tb, bool v) { set_bool(&tb->rst, v); }
+};
+
+}  // namespace
+
+namespace tb {
+
+void init(TestRegistry* tr) {
+  tests::regress::init(tr);
+  tests::smoke_cmds::init(tr);
+}
+
+VKernel::VKernel(const VKernelOptions& opts) : opts_(opts), tb_time_(0) {
+  build_verilated_environment();
+  mdl_ = std::make_unique<Mdl>(vtb_.get());
+}
+
+void VKernel::run(VKernelCB* cb) {
+  if (!cb) return;
+
+  tb_time_ = 0;
+
+  Vtb* vtb = vtb_.get();
+  VPorts::clk(vtb, false);
+  VPorts::rst(vtb, false);
+
+  bool do_stepping = true;
+  while (do_stepping) {
+    tb_time_++;
+
+    if (tb_time_ % 5 == 0) {
+      if (VPorts::clk(vtb)) {
+        do_stepping = cb->on_negedge_clk(vtb);
+        mdl_->step();
+        VPorts::clk(vtb, false);
+      } else {
+        do_stepping = cb->on_posedge_clk(vtb);
+        VPorts::clk(vtb, true);
+      }
+    }
+
+    vtb_->eval();
+#ifdef ENABLE_VCD
+    if (vcd_) vcd_->dump(tb_time_);
+#endif
+  }
+}
+
+void VKernel::build_verilated_environment() {
+  vctxt_ = std::make_unique<VerilatedContext>();
+  vtb_ = std::make_unique<Vtb>(vctxt_.get());
+#ifdef ENABLE_VCD
+  if (opts_.vcd_on) {
+    vctxt_->traceEverOn(true);
+    vcd_ = std::make_unique<VerilatedVcdC>();
+    vtb_->trace(vcd_.get(), 99);
+    vcd_->open(opts_.vcd_fn.c_str());
+  }
+#endif
+}
+
+// Drive Update Command Interface
+void VDriver::issue(Vtb* tb, const UpdateCommand& up) {
+  tb->i_upd_vld = up.vld();
+  if (up.vld()) {
+    tb->i_upd_prod_id = up.prod_id();
+    switch (up.cmd()) {
+      case Cmd::Clr:
+        tb->i_upd_cmd = 0;
+        break;
+      case Cmd::Add:
+        tb->i_upd_cmd = 1;
+        break;
+      case Cmd::Del:
+        tb->i_upd_cmd = 2;
+        break;
+      case Cmd::Rep:
+        tb->i_upd_cmd = 3;
+        break;
+    }
+    tb->i_upd_key = up.key();
+    tb->i_upd_size = up.volume();
+  }
+}
+
+// Drive Query Command Interface
+void VDriver::issue(Vtb* tb, const QueryCommand& qc) {
+  tb->i_lut_vld = qc.vld();
+  if (qc.vld()) {
+    tb->i_lut_prod_id = qc.prod_id();
+    tb->i_lut_level = qc.level();
+  }
+}
+
+bool VDriver::is_busy(Vtb* tb) { return (tb->o_busy_r != 0); }
+
+}  // namespace tb
+
+/*
 #include <algorithm>
+#include <array>
 #include <ostream>
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include "cfg.h"
+#include "tb.h"
 
 namespace verif {
 
@@ -46,57 +162,6 @@ bool to_bool(vluint8_t v) { return v != 0; }
 
 } // namespace utilities
 
-
-UpdateCommand::UpdateCommand()
-    : vld_(false) {}
-
-UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume)
-    : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
-
-UpdateResponse::UpdateResponse()
-    : vld_(false) {}
-
-UpdateResponse::UpdateResponse(prod_id_t prod_id)
-    : vld_(true), prod_id_(prod_id) {}
-
-std::string UpdateResponse::to_string() const {
-  std::stringstream ss;
-  ss << (int)vld_ << " " << (int)prod_id_;
-  return ss.str();
-}
-
-QueryCommand::QueryCommand()
-    : vld_(false) {}
-
-QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
-    : vld_(true), prod_id_(prod_id), level_(level) {}
-
-QueryResponse::QueryResponse() : vld_(false) {}
-
-QueryResponse::QueryResponse(
-    key_t key, volume_t volume, bool error, listsize_t listsize) {
-  vld_ = true;
-  key_ = key;
-  volume_ = volume;
-  error_ = error;
-  listsize_ = listsize;
-}
-
-NotifyResponse::NotifyResponse()
-    : vld_(false) {}
-
-NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
-  vld_ = true;
-  prod_id_ = prod_id;
-  key_ = key;
-  volume_ = volume;
-}
-
-std::string NotifyResponse::to_string() const {
-  std::stringstream ss;
-  ss << vld_ << " " << (int)prod_id_ << " " << key_ << " " << volume_;
-  return ss.str();
-}
 
 UUTHarness::UUTHarness(Vtb* tb) : tb_(tb) {}
 
@@ -427,24 +492,6 @@ TB::~TB() {
   delete ctxt_;
 }
 
-void TB::build_verilated_environment() {
-  ctxt_ = new VerilatedContext();
-  uut_ = new Vtb(ctxt_);
-#ifdef ENABLE_VCD
-  if (opts_.enable_vcd) {
-    ctxt_->traceEverOn(true);
-    vcd_ = new VerilatedVcdC();
-    uut_->trace(vcd_, 99);
-    if (!opts_.vcd_filename) {
-      auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-      opts_.vcd_filename = std::string{test_info->name()} + ".vcd";
-    }
-    vcd_->open(opts_.vcd_filename->c_str());
-  }
-#endif
-
-}
-
 void TB::run(Test* t) {
   if (!t) return;
 
@@ -520,5 +567,5 @@ void TB::run(Test* t) {
   }
 
 }
-
-} // namespace verif
+*/
+//} // namespace verif

@@ -25,13 +25,83 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_DESIGN_VERIF_TB_H
-#define V_DESIGN_VERIF_TB_H
+#ifndef V_VERIF_TB_H
+#define V_VERIF_TB_H
+
+#include <exception>
+#include <memory>
+#include <string>
+
+// Verilator artifacts
+class Vtb;
+#ifdef ENABLE_VCD
+class VerilatedVcdC;
+#endif
+class VerilatedContext;
+
+namespace tb {
+
+class TestRegistry;
+class Mdl;
+class UpdateCommand;
+class QueryCommand;
+
+void init(TestRegistry* tr);
+
+struct VKernelOptions {
+  bool vcd_on = false;
+
+  std::string vcd_fn = "sim.vcd";
+};
+
+struct VKernelCB {
+  virtual ~VKernelCB() = default;
+
+  virtual bool on_negedge_clk(Vtb* tb) { return false; }
+
+  virtual bool on_posedge_clk(Vtb* tb) { return false; }
+};
+
+class VKernel {
+ public:
+  explicit VKernel(const VKernelOptions& opts);
+
+  void run(VKernelCB* cb);
+
+  std::uint64_t tb_time() const { return tb_time_; }
+
+ private:
+  void build_verilated_environment();
+
+  std::unique_ptr<Mdl> mdl_;
+  std::unique_ptr<VerilatedContext> vctxt_;
+  std::unique_ptr<Vtb> vtb_;
+#ifdef ENABLE_VCD
+  std::unique_ptr<VerilatedVcd> vcd_;
+#endif
+  VKernelOptions opts_;
+  std::uint64_t tb_time_;
+};
+
+struct VDriver {
+  //
+  static void issue(Vtb* tb, const UpdateCommand& uc);
+
+  //
+  static void issue(Vtb* tb, const QueryCommand& qc);
+
+  //
+  static bool is_busy(Vtb* tb);
+};
+
+}  // namespace tb
+
+/*
+#include <optional>
+#include <string>
 
 #include "gtest/gtest.h"
 #include "verilated.h"
-#include <optional>
-#include <string>
 
 #define ENABLE_VCD
 
@@ -43,102 +113,6 @@ class VerilatedVcdC;
 #endif
 
 namespace verif {
-
-using prod_id_t = vluint8_t;
-enum class Cmd : vluint8_t { Clr = 0, Add = 1, Del = 2, Rep = 3 };
-using key_t = vluint64_t;
-using volume_t = vluint32_t;
-using level_t = vluint8_t;
-using listsize_t = vluint8_t;
-
-class UpdateCommand {
- public:
-  UpdateCommand();
-
-  UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
-
-  bool vld() const { return vld_; }
-  prod_id_t prod_id() const { return prod_id_; }
-  Cmd cmd() const { return cmd_; }
-  key_t key() const { return key_; }
-  volume_t volume() const { return volume_; }
-
- private:
-  bool vld_;
-  prod_id_t prod_id_;
-  Cmd cmd_;
-  key_t key_;
-  volume_t volume_;
-};
-
-class UpdateResponse {
- public:
-  UpdateResponse();
-  UpdateResponse(prod_id_t prod_id);
-
-  std::string to_string() const;
-
-  bool vld() const { return vld_; }
-  prod_id_t prod_id() const { return prod_id_; }
-
- private:
-  bool vld_;
-  prod_id_t prod_id_;
-};
-
-class QueryCommand {
- public:
-  QueryCommand();
-
-  QueryCommand(prod_id_t prod_id, level_t level);
-
-  bool vld() const { return vld_; }
-  prod_id_t prod_id() const { return prod_id_; }
-  level_t level() const { return level_; }
-
- private:
-  bool vld_;
-  prod_id_t prod_id_;
-  level_t level_;
-};
-
-class QueryResponse {
- public:
-  QueryResponse();
-  QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
-
-  bool vld() const { return vld_; }
-  key_t key() const { return key_; }
-  volume_t volume() const { return volume_; }
-  bool error() const { return error_; }
-  listsize_t listsize() const { return listsize_; }
-
- private:
-  bool vld_;
-  key_t key_;
-  volume_t volume_;
-  bool error_;
-  listsize_t listsize_;
-};
-
-class NotifyResponse {
- public:
-  NotifyResponse();
-  NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
-
-  std::string to_string() const;
-
-  bool vld() const { return vld_; }
-  prod_id_t prod_id() const { return prod_id_; }
-  key_t key() const { return key_; }
-  volume_t volume() const { return volume_; }
-
- private:
-  bool vld_;
-  prod_id_t prod_id_;
-  key_t key_;
-  volume_t volume_;
-};
 
 struct Options {
 #ifdef ENABLE_VCD
@@ -214,5 +188,5 @@ class TB {
 };
 
 } // namespace verif
-
+*/
 #endif

@@ -25,24 +25,50 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_CFG_H
-#define V_TB_CFG_H
+#ifndef V_TB_TESTS_DIRECTED_H
+#define V_TB_TESTS_DIRECTED_H
 
-namespace cfg {
+#include <deque>
+#include <memory>
+#include <tuple>
 
-  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+#include "../mdl.h"
+#include "../test.h"
 
-  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+class Instruction;
 
-  // Bid/Ask table:
-  //
-  //  Bid: Head is largest entry
-  //
-  //  Ask: Head is smallest entry
-  constexpr const bool is_bid_table = false;
+namespace tb::tests {
 
-  constexpr const bool has_vcd = @has_vcd@;
+class Directed : public Test {
+  friend class Impl;
 
-} // namespace cfg
+  class Impl;
+  std::unique_ptr<Impl> impl_;
+
+  using command_pair_type = std::tuple<const UpdateCommand, const QueryCommand>;
+
+ public:
+  explicit Directed();
+  ~Directed();
+
+  void run() override;
+
+  void wait_until_not_busy();
+
+  void push_back(const UpdateCommand& uc,
+                 const QueryCommand& qc = QueryCommand{});
+
+  void push_back(const QueryCommand& qc,
+                 const UpdateCommand& uc = UpdateCommand{}) {
+    push_back(uc, qc);
+  }
+
+  void wait_cycles(std::size_t n = 1);
+
+ private:
+  std::deque<std::unique_ptr<Instruction> > d_;
+};
+
+}  // namespace tb::tests
 
 #endif

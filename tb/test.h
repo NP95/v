@@ -25,24 +25,54 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_CFG_H
-#define V_TB_CFG_H
+#ifndef V_VERIF_TEST_H
+#define V_VERIF_TEST_H
 
-namespace cfg {
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
-  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+namespace tb {
 
-  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+#define REGISTER_TESTCASE(__name)                          \
+  struct __name##Builder : tb::TestBuilder {               \
+    std::string name() const override { return #__name; }  \
+    std::unique_ptr<tb::Test> construct() const override { \
+      return std::make_unique<__name>();                   \
+    }                                                      \
+  }
 
-  // Bid/Ask table:
-  //
-  //  Bid: Head is largest entry
-  //
-  //  Ask: Head is smallest entry
-  constexpr const bool is_bid_table = false;
+class Test {
+ public:
+  explicit Test() = default;
+  virtual ~Test() = default;
 
-  constexpr const bool has_vcd = @has_vcd@;
+  virtual void run() = 0;
+};
 
-} // namespace cfg
+class TestBuilder {
+ public:
+  explicit TestBuilder() = default;
+  virtual ~TestBuilder() = default;
+
+  virtual std::string name() const = 0;
+  virtual std::unique_ptr<Test> construct() const = 0;
+};
+
+class TestRegistry {
+  std::map<std::string, std::unique_ptr<TestBuilder>> r_;
+
+ public:
+  explicit TestRegistry() = default;
+
+  void add(std::unique_ptr<TestBuilder> br);
+
+  std::vector<const TestBuilder*> tests() const;
+
+  const TestBuilder* get(const std::string& name) const;
+};
+
+}  // namespace tb
 
 #endif

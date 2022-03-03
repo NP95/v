@@ -25,24 +25,24 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_CFG_H
-#define V_TB_CFG_H
+#include "../test.h"
 
-namespace cfg {
+namespace {
 
-  constexpr const std::uint64_t CONTEXT_N = @CONTEXT_N@;
+class RegressTest : public tb::Test {
+ public:
+  explicit RegressTest() {}
+  void run() override {}
+};
 
-  constexpr const std::uint64_t ENTRIES_N = @ENTRIES_N@;
+REGISTER_TESTCASE(RegressTest);
 
-  // Bid/Ask table:
-  //
-  //  Bid: Head is largest entry
-  //
-  //  Ask: Head is smallest entry
-  constexpr const bool is_bid_table = false;
+}  // namespace
 
-  constexpr const bool has_vcd = @has_vcd@;
+namespace tb::tests::regress {
 
-} // namespace cfg
+void init(tb::TestRegistry* r) {
+  r->add(std::make_unique<RegressTestBuilder>());
+}
 
-#endif
+}  // namespace tb::tests::regress
