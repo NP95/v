@@ -44,16 +44,15 @@
   }                                           \
   MACRO_END
 
-#define V_EXPECT_EQ(__lg, __lhs, __rhs)                   \
-  MACRO_BEGIN                                             \
-  if (__lg && !((__lhs) == (__rhs))) {                    \
-    using namespace ::tb::log;                            \
-    Msg msg(Level::Error);                                \
-    msg.pp(__FILE__, __LINE__);                           \
-    msg.append("Mismatch detected: ", #__lhs " (", __lhs, \
-               ") != (" #__rhs " (", __rhs, ")");         \
-    (__lg)->write(msg);                                   \
-  }                                                       \
+#define V_EXPECT_EQ(__lg, __lhs, __rhs)               \
+  MACRO_BEGIN                                         \
+  if (__lg && !((__lhs) == (__rhs))) {                \
+    using namespace ::tb::log;                        \
+    Msg msg(Level::Error);                            \
+    msg.pp(__FILE__, __LINE__);                       \
+    msg.trace_mismatch(#__lhs, __lhs, #__rhs, __rhs); \
+    (__lg)->write(msg);                               \
+  }                                                   \
   MACRO_END
 
 #define V_LOG(__lg, __level, __msg) \
@@ -87,12 +86,16 @@ namespace tb::log {
 class Log;
 class Scope;
 
+const char* to_string(bool b);
+
 enum class Level { Debug, Info, Warning, Error, Fatal };
 
 class Msg {
  public:
   Msg() = default;
   Msg(Level l) : l_(l) {}
+
+  std::string str() const;
 
   void pp(const std::string& f, unsigned l);
   void fn(const std::string& fn) { fn_ = fn; }
@@ -101,18 +104,27 @@ class Msg {
   void ln(unsigned ln) { ln_ = ln; }
   unsigned ln() const { return ln_; }
 
-  template <typename T, typename... Ts>
-  void append(T t, Ts... ts) {
-    append(std::forward<T>(t));
-    if constexpr (sizeof...(ts) > 0) {
-      append(std::forward<Ts>(ts)...);
-    }
+  template <typename T>
+  void trace_mismatch(const char* lhs_s, T lhs, const char* rhs_s, T rhs) {
+    append("Mismatch detected: ");
+    append(lhs_s);
+    append(" (");
+    append(lhs);
+    append(" ) != ");
+    append(rhs_s);
+    append(" (");
+    append(rhs);
+    append(")");
   }
 
- private:
+  template <>
+  void trace_mismatch(const char* lhs_s, bool lhs, const char* rhs_s,
+                      bool rhs) {
+    trace_mismatch(lhs_s, to_string(lhs), rhs_s, to_string(rhs));
+  }
+
   // Specializations:
   void append(const std::string& s);
-  void append(bool b);
   void append(const UpdateCommand& uc);
   void append(const QueryCommand& qc);
   void append(const QueryResponse& qr);
@@ -148,6 +160,8 @@ class Scope {
 };
 
 class Log {
+  friend class Scope;
+
  public:
   explicit Log() = default;
   Log(std::ostream& os);
@@ -161,6 +175,8 @@ class Log {
   }
 
  private:
+  void write(const std::string& s);
+
   std::ostream* os_{nullptr};
   VKernel* k_{nullptr};
   std::vector<std::unique_ptr<Scope> > lgs_;

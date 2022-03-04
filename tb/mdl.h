@@ -40,6 +40,9 @@ class Scope;
 
 using prod_id_t = vluint8_t;
 enum class Cmd : vluint8_t { Clr = 0, Add = 1, Del = 2, Rep = 3 };
+
+const char* to_string(Cmd c);
+
 using key_t = vluint64_t;
 using volume_t = vluint32_t;
 using level_t = vluint8_t;

@@ -27,12 +27,15 @@
 
 #include "directed.h"
 
+#include <deque>
+
 #include "../log.h"
 #include "../mdl.h"
 #include "../tb.h"
 #include "Vobj/Vtb.h"
 
 enum class Opcode {
+  ApplyReset,
   WaitUntilNotBusy,
   WaitCycles,
   Emit,
@@ -45,6 +48,10 @@ struct Instruction {
                                                 const tb::QueryCommand& qc);
   static std::unique_ptr<Instruction> make_wait(std::size_t n);
   static std::unique_ptr<Instruction> make_note(const tb::log::Msg& msg);
+  static std::unique_ptr<Instruction> make_wait_until_not_busy();
+  static std::unique_ptr<Instruction> make_apply_reset();
+  static std::unique_ptr<Instruction> make_end_simulation();
+  static std::unique_ptr<Instruction> make_log_message(const tb::log::Msg& msg);
 
   Opcode op{Opcode::EndSimulation};
   std::size_t n;
@@ -76,40 +83,92 @@ std::unique_ptr<Instruction> Instruction::make_note(const tb::log::Msg& msg) {
   return std::move(i);
 }
 
+std::unique_ptr<Instruction> Instruction::make_wait_until_not_busy() {
+  std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
+  i->op = Opcode::WaitUntilNotBusy;
+  return std::move(i);
+}
+
+std::unique_ptr<Instruction> Instruction::make_apply_reset() {
+  std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
+  i->op = Opcode::ApplyReset;
+  i->n = 0;
+  return std::move(i);
+}
+
+std::unique_ptr<Instruction> Instruction::make_end_simulation() {
+  std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
+  i->op = Opcode::EndSimulation;
+  return std::move(i);
+}
+
+std::unique_ptr<Instruction> Instruction::make_log_message(
+    const tb::log::Msg& msg) {
+  std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
+  i->op = Opcode::LogMessage;
+  i->msg = msg;
+  return std::move(i);
+}
+
 class tb::tests::Directed::Impl : public tb::VKernelCB {
  public:
-  Impl(Directed* parent) : parent_(parent) {
-    VKernelOptions opts;
-    ls_ = parent->lg();
-    k_ = std::make_unique<VKernel>(opts, ls_->create_child("kernel"));
-  }
+  Impl(Directed* parent) : parent_(parent) {}
   bool run() {
+    program_prologue();
+    parent_->prologue();
     parent_->program();
-    k_->run(this);
+    parent_->epilogue();
+    program_epilogue();
+
+    VKernel* k{parent_->k()};
+    k->run(this);
+    k->end();
     return true;
   }
 
-  bool on_negedge_clk(Vtb* tb) {
-    std::deque<std::unique_ptr<Instruction> >& d{parent_->d_};
+  void push_back(std::unique_ptr<Instruction>&& i) {
+    d_.push_back(std::move(i));
+  }
 
+  void program_prologue() {
+    push_back(Instruction::make_apply_reset());
+    push_back(Instruction::make_wait_until_not_busy());
+  }
+
+  void program_epilogue() { push_back(Instruction::make_end_simulation()); }
+
+  bool on_negedge_clk(Vtb* tb) {
     // Process further stimulus:
-    bool do_next_command = false;
+    bool do_next_command;
     do {
-      if (d.empty()) {
+      if (d_.empty()) {
         // No further stimulus
         return false;
       }
 
-      Instruction* i{d.front().get()};
+      Instruction* i{d_.front().get()};
       bool consume_instruction = true;
+      do_next_command = false;
       switch (i->op) {
+        case Opcode::ApplyReset: {
+          VKernel* k{parent_->k()};
+          if (i->n == 0) {
+            V_LOG(parent_->lg(), Info, "Resetting UUT.");
+          }
+          const bool do_apply_reset = (i->n++ < 10);
+          VDriver::reset(tb, do_apply_reset);
+          consume_instruction = !do_apply_reset;
+          if (consume_instruction) {
+            V_LOG(parent_->lg(), Info, "Reset complete!");
+          }
+        } break;
         case Opcode::WaitUntilNotBusy: {
           const bool is_busy = VDriver::is_busy(tb);
           consume_instruction = !is_busy;
-          if (!is_busy) {
-            V_LOG(ls_, Info, "Initialization complete!");
+          ;
+          if (consume_instruction) {
+            V_LOG(parent_->lg(), Info, "Initialization complete!");
           }
-          return is_busy;
         } break;
         case Opcode::WaitCycles: {
           VDriver::issue(tb, UpdateCommand{});
@@ -121,21 +180,21 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
           VDriver::issue(tb, i->qc);
         } break;
         case Opcode::EndSimulation: {
-          V_LOG(ls_, Info, "Simulation complete!");
+          V_LOG(parent_->lg(), Info, "Simulation complete!");
           return false;
         } break;
         case Opcode::LogMessage: {
-          V_LOG_MSG(ls_, i->msg);
+          V_LOG_MSG(parent_->lg(), i->msg);
           do_next_command = true;
         } break;
         default: {
           // Unknown command!
-          V_LOG(ls_, Info, "Unknown command!");
+          V_LOG(parent_->lg(), Info, "Unknown command!");
           return false;
         } break;
       }
 
-      if (consume_instruction) d.pop_front();
+      if (consume_instruction) d_.pop_front();
     } while (do_next_command);
     return true;
   }
@@ -146,9 +205,8 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
   }
 
  private:
-  std::unique_ptr<VKernel> k_;
   Directed* parent_;
-  log::Scope* ls_;
+  std::deque<std::unique_ptr<Instruction> > d_;
 };
 
 namespace tb::tests {
@@ -159,16 +217,24 @@ Directed::~Directed() {}
 
 bool Directed::run() { return impl_->run(); }
 
-void Directed::wait_until_not_busy() {}
+void Directed::wait_until_not_busy() {
+  impl_->push_back(Instruction::make_wait_until_not_busy());
+}
 
 void Directed::push_back(const UpdateCommand& uc, const QueryCommand& qc) {
-  d_.push_back(Instruction::make_emit(uc, qc));
+  impl_->push_back(Instruction::make_emit(uc, qc));
 }
 
 void Directed::wait_cycles(std::size_t n) {
-  d_.push_back(Instruction::make_wait(n));
+  impl_->push_back(Instruction::make_wait(n));
 }
 
-void Directed::note(const log::Msg& msg) {}
+void Directed::apply_reset() {
+  impl_->push_back(Instruction::make_apply_reset());
+}
+
+void Directed::note(const log::Msg& msg) {
+  impl_->push_back(Instruction::make_log_message(msg));
+}
 
 };  // namespace tb::tests

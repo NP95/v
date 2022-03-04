@@ -28,9 +28,31 @@
 #ifndef V_TB_COMMON_H
 #define V_TB_COMMON_H
 
+#include <string>
+
+// Macro helpers:
 #define MACRO_BEGIN do {
 #define MACRO_END \
   }               \
   while (false)
+
+struct RecordBuilder {
+  static constexpr const char LPAREN = '{';
+  static constexpr const char RPAREN = '}';
+
+  RecordBuilder(std::string& s) : s_(s) { s_ += LPAREN; }
+
+  ~RecordBuilder() { s_ += RPAREN; }
+
+  template <typename T>
+  void append(const char* k, T&& v) {
+    s_ += k;
+    s_ += ':';
+    s_ += to_string(v);
+  }
+
+ private:
+  std::string& s_;
+};
 
 #endif

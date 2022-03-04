@@ -27,13 +27,21 @@
 
 #include "test.h"
 
+#include "Vobj/Vtb.h"
 #include "log.h"
+#include "mdl.h"
+#include "opts.h"
+#include "tb.h"
 
 namespace tb {
 
-void TestBuilder::build(Test* t, log::Scope* l) const {
-  l->sn(name());
-  t->lg_ = l;
+void TestBuilder::build(Test* t, const TestOptions& opts) const {
+  t->opts_ = opts;
+  VKernelOptions vopts;
+  vopts.vcd_on = opts.vcd_on;
+  vopts.vcd_fn = opts.vcd_fn;
+  vopts.l = opts.l->create_child("kernel");
+  t->k_ = std::make_unique<VKernel>(vopts);
 }
 
 void TestRegistry::add(std::unique_ptr<TestBuilder> br) {

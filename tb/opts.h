@@ -25,64 +25,31 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_TESTS_DIRECTED_H
-#define V_TB_TESTS_DIRECTED_H
+#ifndef V_TB_OPTS_H
+#define V_TB_OPTS_H
 
-#include <memory>
+#include <string>
 
-#include "../common.h"
-#include "../mdl.h"
-#include "../test.h"
-
-class Instruction;
+// Forwards
 namespace tb::log {
-class Msg;
+class Scope;
+}
+
+namespace tb {
+
+struct VKernelOptions {
+  // Flag indicating that tracing is enabled.
+  bool vcd_on = false;
+
+  // Destination waveform.
+  std::string vcd_fn{"sim.vcd"};
+
+  // Simulation logger (if enabled)
+  tb::log::Scope* l{nullptr};
 };
 
-namespace tb::tests {
+struct TestOptions : tb::VKernelOptions {};
 
-#define V_NOTE(__msg)         \
-  MACRO_BEGIN                 \
-  using namespace ::tb::log;  \
-  Msg msg(Level::Info);       \
-  msg.pp(__FILE__, __LINE__); \
-  msg.append(__msg);          \
-  note(msg);                  \
-  MACRO_END
-
-class Directed : public Test {
-  friend class Impl;
-
-  class Impl;
-  std::unique_ptr<Impl> impl_;
-
- public:
-  explicit Directed();
-  ~Directed();
-
-  bool run() override;
-
-  virtual void prologue() {}
-  virtual void program() = 0;
-  virtual void epilogue() {}
-
-  void apply_reset();
-
-  void note(const log::Msg& msg);
-
-  void wait_until_not_busy();
-
-  void push_back(const UpdateCommand& uc,
-                 const QueryCommand& qc = QueryCommand{});
-
-  void push_back(const QueryCommand& qc,
-                 const UpdateCommand& uc = UpdateCommand{}) {
-    push_back(uc, qc);
-  }
-
-  void wait_cycles(std::size_t n = 1);
-};
-
-}  // namespace tb::tests
+}  // namespace tb
 
 #endif

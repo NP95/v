@@ -25,7 +25,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+#include "../mdl.h"
+#include "../tb.h"
 #include "../test.h"
+#include "Vobj/Vtb.h"
 
 namespace {
 

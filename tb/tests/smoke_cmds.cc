@@ -38,12 +38,11 @@ struct CheckAddCmd : public tb::tests::Directed {
   CREATE_TEST_BUILDER(CheckAddCmd);
 
   void program() override {
-    // Wait until initialization sequence has completed.
-    wait_until_not_busy();
     V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
     // ordering.
+    V_NOTE("Issuing updates...");
     for (tb::key_t key = 0; key < cfg::ENTRIES_N + 1; key++) {
       const tb::volume_t volume = key;
       push_back(tb::UpdateCommand{0, tb::Cmd::Add, key + 1, volume});
@@ -51,15 +50,18 @@ struct CheckAddCmd : public tb::tests::Directed {
       // state-table.
       wait_cycles(1);
     }
+    V_NOTE("Updates complete!");
 
     wait_cycles(10);
 
     // Verify value written is present in the machine and in the expected
     // order. No wait cycle here as this interface can sink a query command each
     // cycle.
+    V_NOTE("Issuing queries...");
     for (tb::level_t level = 0; level < cfg::ENTRIES_N; level++) {
       push_back(tb::QueryCommand{0, level});
     }
+    V_NOTE("Queries complete!");
 
     V_NOTE("Test ends...");
   }
@@ -69,8 +71,6 @@ struct CheckDelCmd : public tb::tests::Directed {
   CREATE_TEST_BUILDER(CheckDelCmd);
 
   void program() override {
-    // Wait until initialization sequence has completed.
-    wait_until_not_busy();
     V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
@@ -95,8 +95,6 @@ struct CheckListSize : public tb::tests::Directed {
   CREATE_TEST_BUILDER(CheckListSize);
 
   void program() override {
-    // Wait until initialization sequence has completed.
-    wait_until_not_busy();
     V_NOTE("Test begins...");
 
     // Check empty status;
@@ -138,8 +136,6 @@ struct CheckClrCmd : public tb::tests::Directed {
   CREATE_TEST_BUILDER(CheckClrCmd);
 
   void program() override {
-    // Wait until initialization sequence has completed.
-    wait_until_not_busy();
     V_NOTE("Test begins...");
 
     // Issue simulus; populate prod_id/context in the table a validate correct
@@ -182,8 +178,6 @@ struct CheckRplCmd : public tb::tests::Directed {
   CREATE_TEST_BUILDER(CheckRplCmd);
 
   void program() override {
-    // Wait until initialization sequence has completed.
-    wait_until_not_busy();
     V_NOTE("Test begins...");
 
     push_back(tb::UpdateCommand{0, tb::Cmd::Rep, 0, 0});

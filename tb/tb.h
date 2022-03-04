@@ -32,11 +32,15 @@
 #include <memory>
 #include <string>
 
+#include "cfg.h"
+#include "opts.h"
+#ifdef ENABLE_VCD
+#include "verilated_vcd_c.h"
+#endif
+
 // Verilator artifacts
 class Vtb;
-#ifdef ENABLE_VCD
 class VerilatedVcdC;
-#endif
 class VerilatedContext;
 
 namespace tb {
@@ -51,12 +55,6 @@ class Scope;
 
 void init(TestRegistry* tr);
 
-struct VKernelOptions {
-  bool vcd_on = false;
-
-  std::string vcd_fn = "sim.vcd";
-};
-
 struct VKernelCB {
   virtual ~VKernelCB() = default;
 
@@ -67,9 +65,10 @@ struct VKernelCB {
 
 class VKernel {
  public:
-  explicit VKernel(const VKernelOptions& opts, log::Scope* l = nullptr);
+  explicit VKernel(const VKernelOptions& opts);
 
-  void run(VKernelCB* cb);
+  bool run(VKernelCB* cb);
+  void end();
 
   std::uint64_t tb_time() const { return tb_time_; }
   std::uint64_t tb_cycle() const;
@@ -81,7 +80,7 @@ class VKernel {
   std::unique_ptr<VerilatedContext> vctxt_;
   std::unique_ptr<Vtb> vtb_;
 #ifdef ENABLE_VCD
-  std::unique_ptr<VerilatedVcd> vcd_;
+  std::unique_ptr<VerilatedVcdC> vcd_;
 #endif
   VKernelOptions opts_;
   std::uint64_t tb_time_;
@@ -97,101 +96,10 @@ struct VDriver {
 
   //
   static bool is_busy(Vtb* tb);
+
+  static void reset(Vtb* tb, bool r);
 };
 
 }  // namespace tb
 
-/*
-#include <optional>
-#include <string>
-
-#include "gtest/gtest.h"
-#include "verilated.h"
-
-#define ENABLE_VCD
-
-class Vtb;
-
-class VerilatedContext;
-#ifdef ENABLE_VCD
-class VerilatedVcdC;
-#endif
-
-namespace verif {
-
-struct Options {
-#ifdef ENABLE_VCD
-  std::optional<std::string> vcd_filename;
-
-  bool enable_vcd = false;
-#endif
-};
-
-class UUTHarness {
- public:
-  explicit UUTHarness(Vtb* tb);
-
-  bool busy() const;
-
-  bool in_reset() const;
-
-  std::uint64_t tb_cycle() const;
-
- private:
-  Vtb* tb_ = nullptr;
-};
-
-class Test {
- public:
-  enum class Status {
-    ApplyReset,
-    RescindReset,
-    Continue,
-    Terminate
-  };
-
-  Test() {}
-
-  virtual ~Test() {}
-
-  // Called before the negative clock edge
-  virtual Status on_negedge_clk(UpdateCommand& up, QueryCommand& qp) = 0;
-
-  virtual bool is_passed() const { return true; }
-};
-
-class TB {
- public:
-  explicit TB(const Options& opts);
-
-  virtual ~TB();
-
-  // Accessors:
-  std::uint64_t tb_time() const { return tb_time_; }
-
-  UUTHarness get_harness() const { return UUTHarness{uut_}; }
-
-  void run(Test* s);
-
- private:
-
-  void build_verilated_environment();
-
-  // Current runtime options.
-  Options opts_;
-
-  // Unit Under Test
-  Vtb* uut_ = nullptr;
-
-  VerilatedContext* ctxt_ = nullptr;
-#ifdef ENABLE_VCD
-  VerilatedVcdC* vcd_ = nullptr;
-#endif
-
-  // Current Testbench simulation time.
-  std::uint64_t tb_time_ = 0;
-};
-
-} // namespace verif
-*/
 #endif

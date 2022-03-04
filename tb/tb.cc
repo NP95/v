@@ -28,6 +28,7 @@
 #include "tb.h"
 
 #include "Vobj/Vtb.h"
+#include "cfg.h"
 #include "log.h"
 #include "mdl.h"
 #include "test.h"
@@ -60,23 +61,26 @@ void init(TestRegistry* tr) {
   tests::smoke_cmds::init(tr);
 }
 
-VKernel::VKernel(const VKernelOptions& opts, log::Scope* l)
-    : opts_(opts), tb_time_(0), l_(l) {
+VKernel::VKernel(const VKernelOptions& opts) : opts_(opts), tb_time_(0) {
   // Fix up, logger with kernel pointer to allow for it to access the current
   // cycle count.
-  l_->log()->set_kernel(this);
+  opts_.l->log()->set_kernel(this);
   build_verilated_environment();
-  mdl_ = std::make_unique<Mdl>(vtb_.get(), l_->create_child("mdl"));
+  mdl_ = std::make_unique<Mdl>(vtb_.get(), opts_.l->create_child("mdl"));
 }
 
-void VKernel::run(VKernelCB* cb) {
-  if (!cb) return;
+bool VKernel::run(VKernelCB* cb) {
+  if (!cb) return false;
 
   tb_time_ = 0;
 
   Vtb* vtb = vtb_.get();
+
+  // Drive all interfaces to a quiescent state.
   VPorts::clk(vtb, false);
   VPorts::rst(vtb, false);
+  VDriver::issue(vtb, UpdateCommand{});
+  VDriver::issue(vtb, QueryCommand{});
 
   bool do_stepping = true;
   while (do_stepping) {
@@ -98,6 +102,16 @@ void VKernel::run(VKernelCB* cb) {
     if (vcd_) vcd_->dump(tb_time_);
 #endif
   }
+  return true;
+}
+
+void VKernel::end() {
+#ifdef ENABLE_VCD
+  if (vcd_) {
+    vcd_->close();
+  }
+  vtb_->final();
+#endif
 }
 
 std::uint64_t VKernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
@@ -149,5 +163,7 @@ void VDriver::issue(Vtb* tb, const QueryCommand& qc) {
 }
 
 bool VDriver::is_busy(Vtb* tb) { return (tb->o_busy_r != 0); }
+
+void VDriver::reset(Vtb* tb, bool r) { tb->rst = r ? 1 : 0; }
 
 }  // namespace tb

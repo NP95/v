@@ -33,9 +33,25 @@
 
 #include "Vobj/Vtb.h"
 #include "cfg.h"
+#include "common.h"
 #include "log.h"
 
 namespace tb {
+
+const char* to_string(Cmd c) {
+  switch (c) {
+    case Cmd::Clr:
+      return "Clr";
+    case Cmd::Add:
+      return "Add";
+    case Cmd::Del:
+      return "Del";
+    case Cmd::Rep:
+      return "Rep";
+    default:
+      return "Invalid";
+  }
+}
 
 UpdateCommand::UpdateCommand() : vld_(false) {}
 
@@ -43,10 +59,30 @@ UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key,
                              volume_t volume)
     : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
 
-std::string UpdateCommand::to_string() const { return "TODO"; }
+std::string UpdateCommand::to_string() const {
+  std::stringstream ss;
+  ss << "{";
+  ss << "vld:" << vld();
+  ss << ", ";
+  ss << "prod_id:" << prod_id();
+  ss << ", ";
+  ss << "cmd:" << tb::to_string(cmd());
+  ss << ", ";
+  ss << "key:" << key();
+  ss << ", ";
+  ss << "volume:" << volume();
+  ss << "}";
+  return ss.str();
+}
 
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs) {
-  return false;
+  if (lhs.vld() != rhs.vld()) return false;
+  if (lhs.prod_id() != rhs.prod_id()) return false;
+  if (lhs.cmd() != rhs.cmd()) return false;
+  if (lhs.key() != rhs.key()) return false;
+  if (lhs.volume() != rhs.volume()) return false;
+
+  return true;
 }
 
 UpdateResponse::UpdateResponse() : vld_(false) {}
@@ -56,12 +92,19 @@ UpdateResponse::UpdateResponse(prod_id_t prod_id)
 
 std::string UpdateResponse::to_string() const {
   std::stringstream ss;
-  ss << (int)vld_ << " " << (int)prod_id_;
+  ss << "{";
+  ss << "vld:" << vld();
+  ss << ", ";
+  ss << "prod_id:" << prod_id();
+  ss << "}";
   return ss.str();
 }
 
 bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs) {
-  return false;
+  if (lhs.vld() != rhs.vld()) return false;
+  if (lhs.prod_id() != rhs.prod_id()) return false;
+
+  return true;
 }
 
 QueryCommand::QueryCommand() : vld_(false) {}
@@ -69,10 +112,24 @@ QueryCommand::QueryCommand() : vld_(false) {}
 QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
     : vld_(true), prod_id_(prod_id), level_(level) {}
 
-std::string QueryCommand::to_string() const { return "TODO"; }
+std::string QueryCommand::to_string() const {
+  std::stringstream ss;
+  ss << "{";
+  ss << "vld:" << vld();
+  ss << ", ";
+  ss << "prod_id:" << prod_id();
+  ss << ", ";
+  ss << "level:" << level();
+  ss << "}";
+  return ss.str();
+}
 
 bool operator==(const QueryCommand& lhs, const QueryCommand& rhs) {
-  return false;
+  if (lhs.vld() != rhs.vld()) return false;
+  if (lhs.prod_id() != rhs.prod_id()) return false;
+  if (lhs.level() != rhs.level()) return false;
+
+  return true;
 }
 
 QueryResponse::QueryResponse() : vld_(false) {}
@@ -86,10 +143,29 @@ QueryResponse::QueryResponse(key_t key, volume_t volume, bool error,
   listsize_ = listsize;
 }
 
-std::string QueryResponse::to_string() const { return "TODO"; }
+std::string QueryResponse::to_string() const {
+  std::stringstream ss;
+  ss << "{";
+  ss << "vld:" << vld();
+  ss << ", ";
+  ss << "key:" << key();
+  ss << ", ";
+  ss << "volume:" << volume();
+  ss << ", ";
+  ss << "error:" << error();
+  ss << ", ";
+  ss << "listsize:" << listsize();
+  return ss.str();
+}
 
 bool operator==(const QueryResponse& lhs, const QueryResponse& rhs) {
-  return false;
+  if (lhs.vld() != rhs.vld()) return false;
+  if (lhs.key() != rhs.key()) return false;
+  if (lhs.volume() != rhs.volume()) return false;
+  if (lhs.error() != rhs.error()) return false;
+  if (lhs.listsize() != rhs.listsize()) return false;
+
+  return true;
 }
 
 NotifyResponse::NotifyResponse() : vld_(false) {}
@@ -101,14 +177,27 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
   volume_ = volume;
 }
 
-bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
-  return false;
-}
-
 std::string NotifyResponse::to_string() const {
   std::stringstream ss;
-  ss << vld_ << " " << (int)prod_id_ << " " << key_ << " " << volume_;
+  ss << "{";
+  ss << "vld:" << vld();
+  ss << ", ";
+  ss << "prod_id:" << prod_id();
+  ss << ", ";
+  ss << "key:" << key();
+  ss << ", ";
+  ss << "volume:" << volume();
+  ss << "}";
   return ss.str();
+}
+
+bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
+  if (lhs.vld() != rhs.vld()) return false;
+  if (lhs.prod_id() != rhs.prod_id()) return false;
+  if (lhs.key() != rhs.key()) return false;
+  if (lhs.volume() != rhs.volume()) return false;
+
+  return true;
 }
 
 struct VSampler {
@@ -247,6 +336,9 @@ class Mdl::Impl {
     handle(VSampler::qc(tb_));
     handle(VSampler::nr(tb_));
     handle(VSampler::qr(tb_));
+    ur_pipe_.step();
+    nr_pipe_.step();
+    qr_pipe_.step();
   }
 
  private:

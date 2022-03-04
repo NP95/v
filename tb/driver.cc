@@ -32,6 +32,11 @@
 #include "tb.h"
 #include "test.h"
 
+// TODO: get rid of these includes
+#include "Vobj/Vtb.h"
+#include "mdl.h"
+// TODO:
+
 namespace {
 
 class Driver {
@@ -46,6 +51,11 @@ class Driver {
   int status() const { return status_; }
 
   void execute() {
+    // TODO for bring-up
+    topts_.vcd_on = true;
+    log_.set_os(std::cout);
+    (void)run("CheckRplCmd");
+
     for (int i = 1; i < argc_; ++i) {
       const std::string argstr{argv_[i]};
       if (argstr == "--help" || argstr == "-h") {
@@ -60,9 +70,11 @@ class Driver {
         }
         status_ = 1;
         return;
+#ifdef ENABLE_VCD
       } else if (argstr == "--vcd") {
-        vcd_on_ = true;
+        topts_.vcd_on = true;
         ++i;
+#endif
       } else if (argstr == "--runall") {
         for (const tb::TestBuilder* tb : tr_.tests()) {
           if (!run(tb)) {
@@ -70,9 +82,9 @@ class Driver {
             return;
           }
         }
-      } else if (argstr == "--run") {
-        const std::string targs{argv_[++i]};
-        if (!run(targs)) {
+      } else if (true || argstr == "--run") {
+        //        const std::string targs{argv_[++i]};
+        if (!run("CheckDelCmd")) {
           status_ = 1;
           return;
         }
@@ -94,7 +106,8 @@ class Driver {
   }
 
   bool run(const tb::TestBuilder* tb) {
-    std::unique_ptr<tb::Test> t{tb->construct(log_.create_logger())};
+    topts_.l = log_.create_logger();
+    std::unique_ptr<tb::Test> t{tb->construct(topts_)};
     return t->run();
   }
 
@@ -102,7 +115,9 @@ class Driver {
     std::cout << " -h|--help         Print help and quit.\n"
               << " -v                Verbose\n"
               << " --list            List testcases\n"
+#ifndef ENABLE_VCD
               << " --vcd             Enable waveform tracing (VCD)\n"
+#endif
               << " --run <args>      Run testcase\n"
               << " --run_all         Run all testcases\n";
   }
@@ -110,9 +125,9 @@ class Driver {
   int argc_;
   char** argv_;
   tb::TestRegistry tr_;
-  bool vcd_on_ = false;
   int status_;
   tb::log::Log log_;
+  tb::TestOptions topts_;
 };
 
 }  // namespace

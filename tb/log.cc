@@ -27,9 +27,15 @@
 
 #include "log.h"
 
+#include "common.h"
 #include "mdl.h"
+#include "tb.h"
 
 namespace tb::log {
+
+const char* to_string(bool b) { return b ? "true" : "false"; }
+
+std::string Msg::str() const { return msg_; }
 
 void Msg::pp(const std::string& f, unsigned l) {
   fn(f);
@@ -37,8 +43,6 @@ void Msg::pp(const std::string& f, unsigned l) {
 }
 
 void Msg::append(const std::string& s) { msg_ += s; }
-
-void Msg::append(bool b) { msg_ += (b ? "true" : "false"); }
 
 void Msg::append(const UpdateCommand& uc) { msg_ += uc.to_string(); }
 
@@ -48,10 +52,11 @@ void Msg::append(const QueryResponse& qr) { msg_ += qr.to_string(); }
 
 void Msg::append(const NotifyResponse& nr) { msg_ += nr.to_string(); }
 
-Scope::Scope(Log* log) : parent_(nullptr), sn_("tb") {}
+Scope::Scope(Log* log) : log_(log), parent_(nullptr), sn_("tb") {}
 
 Scope::Scope(Scope* parent, const std::string& sn) : parent_(parent), sn_(sn) {
   sn_ = parent->sn() + SEP + sn;
+  log_ = parent->log();
 }
 
 Scope* Scope::create_child(const std::string& sn) {
@@ -59,8 +64,16 @@ Scope* Scope::create_child(const std::string& sn) {
   return childs_.back().get();
 }
 
-void Scope::write(const Msg& msg) {}
+void Scope::write(const Msg& msg) {
+  if (log()) {
+    log()->write(msg.str());
+  }
+}
 
 Log::Log(std::ostream& os) : os_(std::addressof(os)) {}
+
+void Log::write(const std::string& s) {
+  if (os_) *os_ << k_->tb_cycle() << ": " << s << "\n";
+}
 
 }  // namespace tb::log
