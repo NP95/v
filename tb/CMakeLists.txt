@@ -125,6 +125,7 @@ endforeach ()
 set(TB_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke_cmds.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/directed.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/reset.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/test.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/mdl.cc"

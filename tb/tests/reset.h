@@ -25,79 +25,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_TB_H
-#define V_TB_TB_H
-
-#include <exception>
-#include <memory>
-#include <string>
-
-#include "cfg.h"
-#include "opts.h"
-#ifdef ENABLE_VCD
-#include "verilated_vcd_c.h"
-#endif
-
-// Verilator artifacts
-class Vtb;
-class VerilatedVcdC;
-class VerilatedContext;
+#ifndef V_TB_TESTS_RESET_H
+#define V_TB_TESTS_RESET_H
 
 namespace tb {
 
 class TestRegistry;
-class Mdl;
-class UpdateCommand;
-class QueryCommand;
-namespace log {
-class Scope;
-}  // namespace log
 
-void init(TestRegistry* tr);
+namespace tests::reset {
 
-struct VKernelCB {
-  virtual ~VKernelCB() = default;
+void init(TestRegistry* r);
 
-  virtual bool on_negedge_clk(Vtb* tb) { return true; }
-
-  virtual bool on_posedge_clk(Vtb* tb) { return true; }
-};
-
-class VKernel {
- public:
-  explicit VKernel(const VKernelOptions& opts);
-
-  bool run(VKernelCB* cb);
-  void end();
-
-  std::uint64_t tb_time() const { return tb_time_; }
-  std::uint64_t tb_cycle() const;
-
- private:
-  void build_verilated_environment();
-
-  std::unique_ptr<Mdl> mdl_;
-  std::unique_ptr<VerilatedContext> vctxt_;
-  std::unique_ptr<Vtb> vtb_;
-#ifdef ENABLE_VCD
-  std::unique_ptr<VerilatedVcdC> vcd_;
-#endif
-  VKernelOptions opts_;
-  std::uint64_t tb_time_;
-  log::Scope* l_;
-};
-
-struct VDriver {
-  //
-  static void issue(Vtb* tb, const UpdateCommand& uc);
-
-  //
-  static void issue(Vtb* tb, const QueryCommand& qc);
-
-  //
-  static bool is_busy(Vtb* tb);
-
-  static void reset(Vtb* tb, bool r);
 };
 
 }  // namespace tb

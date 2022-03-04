@@ -55,6 +55,17 @@
   }                                                   \
   MACRO_END
 
+#define V_EXPECT_TRUE(__lg, __cond)             \
+  MACRO_BEGIN                                   \
+  if (__lg && !(__cond)) {                      \
+    using namespace ::tb::log;                  \
+    Msg msg(Level::Error);                      \
+    msg.pp(__FILE__, __LINE__);                 \
+    msg.append("Condition is false: " #__cond); \
+    (__lg)->write(msg);                         \
+  }                                             \
+  MACRO_END
+
 #define V_LOG(__lg, __level, __msg) \
   MACRO_BEGIN                       \
   if (__lg) {                       \

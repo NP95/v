@@ -54,7 +54,7 @@ class Driver {
     // TODO for bring-up
     topts_.vcd_on = true;
     log_.set_os(std::cout);
-    (void)run("CheckRplCmd");
+    (void)run("CheckReset");
 
     for (int i = 1; i < argc_; ++i) {
       const std::string argstr{argv_[i]};

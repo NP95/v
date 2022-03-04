@@ -33,6 +33,7 @@
 #include "mdl.h"
 #include "test.h"
 #include "tests/regress.h"
+#include "tests/reset.h"
 #include "tests/smoke_cmds.h"
 #ifdef ENABLE_VCD
 #include "verilated_vcd_c.h"
@@ -57,6 +58,7 @@ struct VPorts {
 namespace tb {
 
 void init(TestRegistry* tr) {
+  tests::reset::init(tr);
   tests::regress::init(tr);
   tests::smoke_cmds::init(tr);
 }
