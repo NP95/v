@@ -342,7 +342,7 @@ class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
  public:
   bool has_prod_id(prod_id_t prod_id) const {
     for (std::size_t i = 0; i < N; i++) {
-      const UpdateResponse& ur{p_[(wr_ptr_ + i) % p_.size()]};
+      const UpdateResponse& ur{p_[(wr_ptr_ - i) % p_.size()]};
       if (ur.vld() && (ur.prod_id() == prod_id)) return true;
     }
     return false;

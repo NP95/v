@@ -32,7 +32,6 @@
 #include "../log.h"
 #include "../mdl.h"
 #include "../tb.h"
-#include "Vobj/Vtb.h"
 
 enum class Opcode {
   ApplyReset,

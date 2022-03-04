@@ -71,6 +71,8 @@ VKernel::VKernel(const VKernelOptions& opts) : opts_(opts), tb_time_(0) {
   mdl_ = std::make_unique<Mdl>(vtb_.get(), opts_.l->create_child("mdl"));
 }
 
+VKernel::~VKernel() {}
+
 bool VKernel::run(VKernelCB* cb) {
   if (!cb) return false;
 
@@ -136,20 +138,7 @@ void VDriver::issue(Vtb* tb, const UpdateCommand& up) {
   tb->i_upd_vld = up.vld();
   if (up.vld()) {
     tb->i_upd_prod_id = up.prod_id();
-    switch (up.cmd()) {
-      case Cmd::Clr:
-        tb->i_upd_cmd = 0;
-        break;
-      case Cmd::Add:
-        tb->i_upd_cmd = 1;
-        break;
-      case Cmd::Del:
-        tb->i_upd_cmd = 2;
-        break;
-      case Cmd::Rep:
-        tb->i_upd_cmd = 3;
-        break;
-    }
+    tb->i_upd_cmd = static_cast<std::underlying_type_t<Cmd>>(up.cmd());
     tb->i_upd_key = up.key();
     tb->i_upd_size = up.volume();
   }

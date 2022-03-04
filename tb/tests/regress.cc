@@ -63,7 +63,7 @@ class Stimulus {
     return true;
   }
 
-  int cnt_ = 100;
+  int cnt_ = 5;
   bool b = true;
 };
 

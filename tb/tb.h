@@ -66,6 +66,7 @@ struct VKernelCB {
 class VKernel {
  public:
   explicit VKernel(const VKernelOptions& opts);
+  ~VKernel();
 
   bool run(VKernelCB* cb);
   void end();
