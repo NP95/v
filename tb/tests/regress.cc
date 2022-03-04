@@ -27,6 +27,7 @@
 
 #include "../log.h"
 #include "../mdl.h"
+#include "../rnd.h"
 #include "../tb.h"
 #include "../test.h"
 #include "Vobj/Vtb.h"
@@ -54,7 +55,14 @@ class Stimulus {
   bool handle(tb::UpdateCommand& uc) {
     b = !b;
     if (b) return false;
-    uc = tb::UpdateCommand{0, tb::Cmd::Add, 0, 0};
+
+    tb::Bag<tb::Cmd> b;
+    b.push_back(tb::Cmd::Clr, 1.0f);
+    b.push_back(tb::Cmd::Add, 1.0f);
+    b.push_back(tb::Cmd::Del, 1.0f);
+    b.push_back(tb::Cmd::Rep, 1.0f);
+    const tb::Cmd cmd = b.pick(rnd_);
+    uc = tb::UpdateCommand{0, cmd, 0, 0};
     return true;
   }
 
@@ -63,7 +71,8 @@ class Stimulus {
     return true;
   }
 
-  int cnt_ = 5;
+  tb::Rnd rnd_;
+  int cnt_ = 100;
   bool b = true;
 };
 
