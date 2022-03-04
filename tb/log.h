@@ -38,27 +38,22 @@
   if (__lg && !(__cond)) {                    \
     using namespace ::tb::log;                \
     Msg msg(Level::Fatal);                    \
-    msg.set_pp(__FILE__, __LINE__);           \
+    msg.pp(__FILE__, __LINE__);               \
     msg.append("Assertion failed: " #__cond); \
     (__lg)->write(msg);                       \
   }                                           \
   MACRO_END
 
-#define V_EXPECT_EQ(__lg, __lhs, __rhs) \
-  MACRO_BEGIN                           \
-  if (__lg && !((__lhs) == (__rhs))) {  \
-    using namespace ::tb::log;          \
-    Msg msg(Level::Error);              \
-    msg.set_pp(__FILE__, __LINE__);     \
-    msg.append("Mismatch detected: ");  \
-    msg.append(#__lhs " (");            \
-    msg.append(__lhs);                  \
-    msg.append(") != ");                \
-    msg.append(#__rhs " (");            \
-    msg.append(__rhs);                  \
-    msg.append(")");                    \
-    (__lg)->write(msg);                 \
-  }                                     \
+#define V_EXPECT_EQ(__lg, __lhs, __rhs)                   \
+  MACRO_BEGIN                                             \
+  if (__lg && !((__lhs) == (__rhs))) {                    \
+    using namespace ::tb::log;                            \
+    Msg msg(Level::Error);                                \
+    msg.pp(__FILE__, __LINE__);                           \
+    msg.append("Mismatch detected: ", #__lhs " (", __lhs, \
+               ") != (" #__rhs " (", __rhs, ")");         \
+    (__lg)->write(msg);                                   \
+  }                                                       \
   MACRO_END
 
 #define V_LOG(__lg, __level, __msg) \
@@ -99,17 +94,23 @@ class Msg {
   Msg() = default;
   Msg(Level l) : l_(l) {}
 
-  void set_pp(const std::string& f, unsigned l) {
-    fn(f);
-    ln(l);
-  }
-
+  void pp(const std::string& f, unsigned l);
   void fn(const std::string& fn) { fn_ = fn; }
   std::string fn() const { return fn_; }
 
   void ln(unsigned ln) { ln_ = ln; }
   unsigned ln() const { return ln_; }
 
+  template <typename T, typename... Ts>
+  void append(T t, Ts... ts) {
+    append(std::forward<T>(t));
+    if constexpr (sizeof...(ts) > 0) {
+      append(std::forward<Ts>(ts)...);
+    }
+  }
+
+ private:
+  // Specializations:
   void append(const std::string& s);
   void append(bool b);
   void append(const UpdateCommand& uc);
@@ -117,7 +118,6 @@ class Msg {
   void append(const QueryResponse& qr);
   void append(const NotifyResponse& nr);
 
- private:
   std::string msg_;
   std::string fn_;
   unsigned ln_;
@@ -130,16 +130,10 @@ class Scope {
   static constexpr const char SEP = '.';
 
  public:
-  Scope(Log* log) : parent_(nullptr), sn_("tb") {}
-  Scope(Scope* parent, const std::string& sn) : parent_(parent), sn_(sn) {
-    sn_ = parent->sn() + SEP + sn;
-  }
+  Scope(Log* log);
+  Scope(Scope* parent, const std::string& sn);
 
-  Scope* create_child(const std::string& sn) {
-    childs_.push_back(std::make_unique<Scope>(this, sn));
-    return childs_.back().get();
-  }
-
+  Scope* create_child(const std::string& sn);
   void write(const Msg& msg);
 
   std::string sn() const { return sn_; }

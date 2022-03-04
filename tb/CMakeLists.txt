@@ -74,8 +74,7 @@ macro (set_tb_param k v)
 endmacro ()
 
 macro (verilate_tb cfg)
-  set(VERILATOR_INCLUDES
-    "-I${CMAKE_CURRENT_BUILD_DIR}")
+  set(VERILATOR_INCLUDES "-I${CMAKE_CURRENT_BINARY_DIR}")
   foreach (inc_fn ${RTL_INCLUDE_PATHS})
     list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
   endforeach ()

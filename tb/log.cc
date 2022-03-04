@@ -31,6 +31,11 @@
 
 namespace tb::log {
 
+void Msg::pp(const std::string& f, unsigned l) {
+  fn(f);
+  ln(l);
+}
+
 void Msg::append(const std::string& s) { msg_ += s; }
 
 void Msg::append(bool b) { msg_ += (b ? "true" : "false"); }
@@ -42,6 +47,17 @@ void Msg::append(const QueryCommand& qc) { msg_ += qc.to_string(); }
 void Msg::append(const QueryResponse& qr) { msg_ += qr.to_string(); }
 
 void Msg::append(const NotifyResponse& nr) { msg_ += nr.to_string(); }
+
+Scope::Scope(Log* log) : parent_(nullptr), sn_("tb") {}
+
+Scope::Scope(Scope* parent, const std::string& sn) : parent_(parent), sn_(sn) {
+  sn_ = parent->sn() + SEP + sn;
+}
+
+Scope* Scope::create_child(const std::string& sn) {
+  childs_.push_back(std::make_unique<Scope>(this, sn));
+  return childs_.back().get();
+}
 
 void Scope::write(const Msg& msg) {}
 

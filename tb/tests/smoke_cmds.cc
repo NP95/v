@@ -34,8 +34,9 @@
 
 namespace {
 
-class CheckAddCmd : public tb::tests::Directed {
- public:
+struct CheckAddCmd : public tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckAddCmd);
+
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
@@ -63,10 +64,10 @@ class CheckAddCmd : public tb::tests::Directed {
     V_NOTE("Test ends...");
   }
 };
-CREATE_TEST_BUILDER(CheckAddCmd);
 
-class CheckDelCmd : public tb::tests::Directed {
- public:
+struct CheckDelCmd : public tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckDelCmd);
+
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
@@ -89,10 +90,10 @@ class CheckDelCmd : public tb::tests::Directed {
     V_NOTE("Test ends...");
   }
 };
-CREATE_TEST_BUILDER(CheckDelCmd);
 
-class CheckListSize : public tb::tests::Directed {
- public:
+struct CheckListSize : public tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckListSize);
+
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
@@ -132,10 +133,10 @@ class CheckListSize : public tb::tests::Directed {
     V_NOTE("Test ends...");
   }
 };
-CREATE_TEST_BUILDER(CheckListSize);
 
-class CheckClrCmd : public tb::tests::Directed {
- public:
+struct CheckClrCmd : public tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckClrCmd);
+
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
@@ -176,10 +177,10 @@ class CheckClrCmd : public tb::tests::Directed {
     V_NOTE("Test ends...");
   }
 };
-CREATE_TEST_BUILDER(CheckClrCmd);
 
-class CheckRplCmd : public tb::tests::Directed {
- public:
+struct CheckRplCmd : public tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckRplCmd);
+
   void program() override {
     // Wait until initialization sequence has completed.
     wait_until_not_busy();
@@ -214,18 +215,17 @@ class CheckRplCmd : public tb::tests::Directed {
     V_NOTE("Test ends...");
   }
 };
-CREATE_TEST_BUILDER(CheckRplCmd);
 
 }  // namespace
 
 namespace tb::tests::smoke_cmds {
 
 void init(tb::TestRegistry* r) {
-  CheckAddCmdBuilder::init(r);
-  CheckDelCmdBuilder::init(r);
-  CheckListSizeBuilder::init(r);
-  CheckClrCmdBuilder::init(r);
-  CheckRplCmdBuilder::init(r);
+  CheckAddCmd::Builder::init(r);
+  CheckDelCmd::Builder::init(r);
+  CheckListSize::Builder::init(r);
+  CheckClrCmd::Builder::init(r);
+  CheckRplCmd::Builder::init(r);
 }
 
 }  // namespace tb::tests::smoke_cmds

@@ -43,12 +43,12 @@ class Msg;
 
 namespace tb::tests {
 
-#define V_NOTE(__msg)             \
-  MACRO_BEGIN                     \
-  using namespace ::tb::log;      \
-  Msg msg(Level::Info);           \
-  msg.set_pp(__FILE__, __LINE__); \
-  msg.append(__msg);              \
+#define V_NOTE(__msg)         \
+  MACRO_BEGIN                 \
+  using namespace ::tb::log;  \
+  Msg msg(Level::Info);       \
+  msg.pp(__FILE__, __LINE__); \
+  msg.append(__msg);          \
   MACRO_END
 
 class Directed : public Test {

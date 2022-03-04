@@ -29,20 +29,16 @@
 
 namespace {
 
-class RegressTest : public tb::Test {
- public:
-  explicit RegressTest() {}
+struct RegressTest : public tb::Test {
+  CREATE_TEST_BUILDER(RegressTest);
+
   bool run() override { return true; }
 };
-
-CREATE_TEST_BUILDER(RegressTest);
 
 }  // namespace
 
 namespace tb::tests::regress {
 
-void init(tb::TestRegistry* r) {
-  r->add(std::make_unique<RegressTestBuilder>());
-}
+void init(tb::TestRegistry* r) { RegressTest::Builder::init(r); }
 
 }  // namespace tb::tests::regress
