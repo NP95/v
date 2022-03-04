@@ -39,7 +39,13 @@ class Scope;
 };
 
 using prod_id_t = vluint8_t;
-enum class Cmd : vluint8_t { Clr = 0, Add = 1, Del = 2, Rep = 3 };
+enum class Cmd : vluint8_t {
+  Clr = 0,
+  Add = 1,
+  Del = 2,
+  Rep = 3,
+  Invalid = 0xff
+};
 
 const char* to_string(Cmd c);
 

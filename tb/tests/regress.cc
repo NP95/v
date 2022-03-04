@@ -25,23 +25,93 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+#include "../log.h"
 #include "../mdl.h"
 #include "../tb.h"
 #include "../test.h"
 #include "Vobj/Vtb.h"
+#include "reset.h"
 
 namespace {
 
-struct RegressTest : public tb::Test {
-  CREATE_TEST_BUILDER(RegressTest);
+class Stimulus {
+ public:
+  Stimulus() {}
 
-  bool run() override { return true; }
+  bool get(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
+    if (cnt_ == 0) return false;
+
+    int issue_count = 0;
+    issue_count += handle(uc) ? 1 : 0;
+    if (cnt_ > 0) {
+      issue_count += handle(qc) ? 1 : 0;
+    }
+    cnt_ -= issue_count;
+    return (issue_count > 0);
+  }
+
+ private:
+  bool handle(tb::UpdateCommand& uc) {
+    b = !b;
+    if (b) return false;
+    uc = tb::UpdateCommand{0, tb::Cmd::Add, 0, 0};
+    return true;
+  }
+
+  bool handle(tb::QueryCommand& qc) {
+    qc = tb::QueryCommand{0, 0};
+    return true;
+  }
+
+  int cnt_ = 100;
+  bool b = true;
+};
+
+struct RegressCB : public tb::VKernelCB {
+  RegressCB(tb::Test* parent, Stimulus* s)
+      : parent_(parent), s_(s), rstt_(parent->lg()) {}
+
+  bool on_negedge_clk(Vtb* tb) {
+    // Issue reset process.
+    if (!rstt_.is_done()) {
+      rstt_.check_reset(tb);
+      return !rstt_.is_failed();
+    }
+
+    tb::UpdateCommand uc{};
+    tb::QueryCommand qc{};
+    if (!s_->get(uc, qc)) {
+      // No further stimulus.
+      return false;
+    }
+
+    // Issue commands to UUT
+    tb::VDriver::issue(tb, uc);
+    tb::VDriver::issue(tb, qc);
+
+    return true;
+  }
+
+ private:
+  Stimulus* s_;
+  tb::Test* parent_;
+  tb::ResetTracker rstt_;
+};
+
+struct Regress : public tb::Test {
+  CREATE_TEST_BUILDER(Regress);
+
+  bool run() override {
+    Stimulus s{};
+    RegressCB cb{this, std::addressof(s)};
+    return k()->run(std::addressof(cb));
+  }
 };
 
 }  // namespace
 
 namespace tb::tests::regress {
 
-void init(tb::TestRegistry* r) { RegressTest::Builder::init(r); }
+void init(tb::TestRegistry* r) { Regress::Builder::init(r); }
 
 }  // namespace tb::tests::regress

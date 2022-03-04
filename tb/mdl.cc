@@ -36,6 +36,38 @@
 #include "common.h"
 #include "log.h"
 
+// clang-format off
+#define LOG_ISSUE(__ls, __uc, __qc)             \
+  MACRO_BEGIN                                   \
+  if (__ls) {                                   \
+    using namespace ::tb::log;                  \
+    Msg msg(Level::Info);                       \
+    msg.pp(__FILE__, __LINE__);                 \
+    msg.append("Issue: ");                      \
+    msg.append(__uc);                           \
+    msg.append(" | ");                          \
+    msg.append(__qc);                           \
+    (__ls)->write(msg);                         \
+  }                                             \
+  MACRO_END
+// clang-format on
+
+// clang-format off
+#define LOG_RESPONSE(__ls, __nr, __qr)          \
+  MACRO_BEGIN                                   \
+  if (__ls) {                                   \
+    using namespace ::tb::log;                  \
+    Msg msg(Level::Info);                       \
+    msg.pp(__FILE__, __LINE__);                 \
+    msg.append("Response: ");                   \
+    msg.append(__nr);                           \
+    msg.append(" | ");                          \
+    msg.append(__qr);                           \
+    (__ls)->write(msg);                         \
+  }                                             \
+  MACRO_END
+// clang-format on
+
 namespace tb {
 
 const char* to_string(Cmd c) {
@@ -63,14 +95,17 @@ std::string UpdateCommand::to_string() const {
   std::stringstream ss;
   ss << "{";
   ss << "vld:" << vld();
-  ss << ", ";
-  ss << "prod_id:" << prod_id();
-  ss << ", ";
-  ss << "cmd:" << tb::to_string(cmd());
-  ss << ", ";
-  ss << "key:" << key();
-  ss << ", ";
-  ss << "volume:" << volume();
+  if (vld()) {
+    ss << ", prod_id:" << static_cast<int>(prod_id());
+    ss << ", cmd:" << tb::to_string(cmd());
+    ss << ", key:" << key();
+    ss << ", volume:" << volume();
+  } else {
+    ss << ", prod_id: x";
+    ss << ", cmd:" << tb::to_string(Cmd::Invalid);
+    ss << ", key: x";
+    ss << ", volume: x";
+  }
   ss << "}";
   return ss.str();
 }
@@ -94,8 +129,11 @@ std::string UpdateResponse::to_string() const {
   std::stringstream ss;
   ss << "{";
   ss << "vld:" << vld();
-  ss << ", ";
-  ss << "prod_id:" << prod_id();
+  if (vld()) {
+    ss << ", prod_id:" << static_cast<int>(prod_id());
+  } else {
+    ss << ", prod_id: x";
+  }
   ss << "}";
   return ss.str();
 }
@@ -116,10 +154,13 @@ std::string QueryCommand::to_string() const {
   std::stringstream ss;
   ss << "{";
   ss << "vld:" << vld();
-  ss << ", ";
-  ss << "prod_id:" << prod_id();
-  ss << ", ";
-  ss << "level:" << level();
+  if (vld()) {
+    ss << ", prod_id:" << static_cast<int>(prod_id());
+    ss << ", level:" << static_cast<int>(level());
+  } else {
+    ss << ", prod_id: x";
+    ss << ", level: x";
+  }
   ss << "}";
   return ss.str();
 }
@@ -147,14 +188,18 @@ std::string QueryResponse::to_string() const {
   std::stringstream ss;
   ss << "{";
   ss << "vld:" << vld();
-  ss << ", ";
-  ss << "key:" << key();
-  ss << ", ";
-  ss << "volume:" << volume();
-  ss << ", ";
-  ss << "error:" << error();
-  ss << ", ";
-  ss << "listsize:" << listsize();
+  if (vld()) {
+    ss << ", key:" << key();
+    ss << ", volume:" << volume();
+    ss << ", error:" << error();
+    ss << ", listsize:" << static_cast<int>(listsize());
+  } else {
+    ss << ", key: x";
+    ss << ", volume: x";
+    ss << ", error: x";
+    ss << ", listsize: x";
+  }
+  ss << "}";
   return ss.str();
 }
 
@@ -181,12 +226,15 @@ std::string NotifyResponse::to_string() const {
   std::stringstream ss;
   ss << "{";
   ss << "vld:" << vld();
-  ss << ", ";
-  ss << "prod_id:" << prod_id();
-  ss << ", ";
-  ss << "key:" << key();
-  ss << ", ";
-  ss << "volume:" << volume();
+  if (vld()) {
+    ss << ", prod_id:" << static_cast<int>(prod_id());
+    ss << ", key:" << key();
+    ss << ", volume:" << volume();
+  } else {
+    ss << ", prod_id: x";
+    ss << ", key: x";
+    ss << ", volume: x";
+  }
   ss << "}";
   return ss.str();
 }
@@ -332,10 +380,27 @@ class Mdl::Impl {
   Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
 
   void step() {
-    handle(VSampler::uc(tb_));
-    handle(VSampler::qc(tb_));
-    handle(VSampler::nr(tb_));
-    handle(VSampler::qr(tb_));
+    const UpdateCommand& uc = VSampler::uc(tb_);
+    const QueryCommand& qc = VSampler::qc(tb_);
+
+    if (uc.vld() || qc.vld()) {
+      LOG_ISSUE(lg_, uc, qc);
+    }
+
+    handle(uc);
+    handle(qc);
+
+    const NotifyResponse nr = VSampler::nr(tb_);
+    const QueryResponse qr = VSampler::qr(tb_);
+
+    if (nr.vld() || qr.vld()) {
+      LOG_RESPONSE(lg_, nr, qr);
+    }
+
+    handle(nr);
+    handle(qr);
+
+    // Advance predicted state.
     ur_pipe_.step();
     nr_pipe_.step();
     qr_pipe_.step();
@@ -405,6 +470,10 @@ class Mdl::Impl {
           ctxt.erase(it);
         }
       } break;
+      case Cmd::Invalid:
+      default:
+          // Bad command
+          ;
     }
 
     // Update predicted notify responses based upon outcome of prior command.

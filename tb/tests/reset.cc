@@ -28,6 +28,7 @@
 #include "reset.h"
 
 #include "../log.h"
+#include "../mdl.h"
 #include "../tb.h"
 #include "../test.h"
 #include "Vobj/Vtb.h"
@@ -68,60 +69,14 @@ std::uint32_t expected_init_cycles() {
 }
 
 struct CheckResetCB : tb::VKernelCB {
-  CheckResetCB(tb::log::Scope* lg) : lg_(lg) {}
+  CheckResetCB(tb::log::Scope* lg) : r_(lg) {}
   bool on_negedge_clk(Vtb* tb) override {
-    bool do_continue = true;
-    switch (st_) {
-      case State::PreReset: {
-        V_LOG(lg_, Info, "In pre-reset...");
-        st_ = State::AssertReset;
-      } break;
-      case State::AssertReset: {
-        V_LOG(lg_, Info, "In setting reset...");
-        tb::VDriver::reset(tb, true);
-        st_ = State::InReset;
-      } break;
-      case State::InReset: {
-        tb::VDriver::reset(tb, false);
-        st_ = State::PostReset;
-      } break;
-      case State::PostReset: {
-        const bool is_busy = tb::VDriver::is_busy(tb);
-        V_EXPECT_TRUE(lg_, is_busy);
-        if (is_busy) {
-          V_LOG(lg_, Info, "Machine becomes busy...");
-          cnt_ = expected_init_cycles();
-          st_ = State::PostInit;
-        }
-      } break;
-      case State::PostInit: {
-        const bool timeout = (--cnt_ == 0);
-        const bool is_busy = tb::VDriver::is_busy(tb);
-        if (timeout) {
-          V_EXPECT_TRUE(lg_, !is_busy);
-        } else if (!timeout) {
-          V_EXPECT_TRUE(lg_, is_busy);
-        }
-        if (timeout || !is_busy) {
-          V_LOG(lg_, Info, "Machine becomes idle...");
-          // Winddown interval for tracing.
-          cnt_ = 10;
-          st_ = State::Done;
-        }
-      } break;
-      case State::Done: {
-        do_continue = (--cnt_ > 0);
-        if (cnt_ == 0) {
-          V_LOG(lg_, Info, "Reset test complete...");
-        }
-      } break;
-    }
-    return do_continue;
+    r_.check_reset(tb);
+    return !r_.is_done();
   }
 
-  std::uint32_t cnt_;
-  State st_{State::PreReset};
-  tb::log::Scope* lg_;
+ private:
+  tb::ResetTracker r_;
 };
 
 struct CheckReset : public tb::Test {
@@ -129,11 +84,71 @@ struct CheckReset : public tb::Test {
 
   bool run() override {
     CheckResetCB cb{lg()};
-    return k()->run(&cb);
+    return k()->run(std::addressof(cb));
   };
 };
 
 }  // namespace
+
+namespace tb {
+
+ResetTracker::ResetTracker(tb::log::Scope* ls) : ls_(ls) {}
+
+void ResetTracker::check_reset(Vtb* tb) {
+  switch (st_) {
+    case State::PreReset: {
+      V_LOG(ls_, Info, "In pre-reset...");
+      st_ = State::AssertReset;
+    } break;
+    case State::AssertReset: {
+      V_LOG(ls_, Info, "In setting reset...");
+      tb::VDriver::reset(tb, true);
+      st_ = State::InReset;
+    } break;
+    case State::InReset: {
+      tb::VDriver::reset(tb, false);
+      st_ = State::PostReset;
+    } break;
+    case State::PostReset: {
+      const bool is_busy = tb::VDriver::is_busy(tb);
+      is_failed_ = !is_busy;
+      V_EXPECT_TRUE(ls_, is_busy);
+      if (is_busy) {
+        V_LOG(ls_, Info, "Machine becomes busy...");
+        cnt_ = expected_init_cycles();
+        st_ = is_failed_ ? State::Done : State::PostInit;
+      }
+    } break;
+    case State::PostInit: {
+      const bool timeout = (--cnt_ == 0);
+      const bool is_busy = tb::VDriver::is_busy(tb);
+      if (timeout) {
+        is_failed_ |= is_busy;
+        V_EXPECT_TRUE(ls_, !is_busy);
+      } else if (!timeout) {
+        is_failed_ |= !is_busy;
+        V_EXPECT_TRUE(ls_, is_busy);
+      }
+      if (timeout || !is_busy) {
+        V_LOG(ls_, Info, "Machine becomes idle...");
+        // Winddown interval for tracing.
+        cnt_ = 10;
+        st_ = State::Done;
+      } else if (is_failed_) {
+        cnt_ = 0;
+        st_ = State::Done;
+      }
+    } break;
+    case State::Done: {
+      is_done_ = (--cnt_ > 0);
+      if (is_done_) {
+        V_LOG(ls_, Info, "Reset test complete...");
+      }
+    } break;
+  }
+}
+
+}  // namespace tb
 
 namespace tb::tests::reset {
 

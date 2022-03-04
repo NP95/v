@@ -71,6 +71,7 @@
   if (__lg) {                       \
     using namespace ::tb::log;      \
     Msg msg(Level::__level);        \
+    msg.pp(__FILE__, __LINE__);     \
     msg.append(__msg);              \
     (__lg)->write(msg);             \
   }                                 \
@@ -121,7 +122,7 @@ class Msg {
     append(lhs_s);
     append(" (");
     append(lhs);
-    append(" ) != ");
+    append(") != ");
     append(rhs_s);
     append(" (");
     append(rhs);

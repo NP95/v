@@ -28,9 +28,36 @@
 #ifndef V_TB_TESTS_RESET_H
 #define V_TB_TESTS_RESET_H
 
+class Vtb;
+
 namespace tb {
 
+// Forwards
 class TestRegistry;
+namespace log {
+class Scope;
+}
+
+enum class State { PreReset, AssertReset, InReset, PostReset, PostInit, Done };
+
+const char* to_string(State s);
+
+class ResetTracker {
+ public:
+  ResetTracker(tb::log::Scope* ls);
+
+  void check_reset(Vtb* tb);
+
+  bool is_done() const { return is_done_; }
+  bool is_failed() const { return is_failed_; }
+
+ private:
+  bool is_done_{false};
+  bool is_failed_{false};
+  int cnt_;
+  State st_{State::PreReset};
+  tb::log::Scope* ls_;
+};
 
 namespace tests::reset {
 
