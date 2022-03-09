@@ -28,10 +28,8 @@
 #include "reset.h"
 
 #include "../log.h"
-#include "../mdl.h"
 #include "../tb.h"
 #include "../test.h"
-#include "Vobj/Vtb.h"
 #include "directed.h"
 
 namespace {

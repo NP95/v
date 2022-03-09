@@ -30,7 +30,6 @@
 #include <deque>
 
 #include "../log.h"
-#include "../mdl.h"
 #include "../tb.h"
 
 enum class Opcode {

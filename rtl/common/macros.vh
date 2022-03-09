@@ -37,7 +37,7 @@
 `define V_DFFEN(__type, __name) \
     __type __name``_r; \
     __type __name``_w; \
-    logic                  __name``_en; \
+    logic __name``_en; \
     dffen #(.W($bits(__type))) u_``__name``_reg ( \
       .d(__name``_w), .q(__name``_r), .en(__name``_en), .clk)
 

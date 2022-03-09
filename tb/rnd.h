@@ -74,8 +74,11 @@ class Bag {
     weight_total_ += weight;
   }
 
-  T pick(Rnd& r) const {
-    const float sel = r.uniform(0.0f, weight_total_);
+  T pick(Rnd* r) const {
+    if (ts_.empty()) return T{};
+
+    // assert(!ts_.empty());
+    const float sel = r->uniform(0.0f, weight_total_);
     float pos = 0.0f;
     // O(N) with number of items in bag.
     for (std::size_t i = 0; i < ts_.size() - 1; i++) {

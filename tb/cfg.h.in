@@ -45,6 +45,8 @@ namespace cfg {
 
   constexpr const bool has_vcd = @has_vcd@;
 
+  constexpr const bool allow_duplicates = @CFG_ALLOW_DUPLICATES@;
+
 } // namespace cfg
 
 #endif

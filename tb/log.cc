@@ -27,6 +27,8 @@
 
 #include "log.h"
 
+#include <sstream>
+
 #include "common.h"
 #include "mdl.h"
 #include "tb.h"
@@ -35,7 +37,12 @@ namespace tb::log {
 
 const char* to_string(bool b) { return b ? "true" : "false"; }
 
-std::string Msg::str() const { return msg_; }
+std::string Msg::str() const {
+  //  std::stringstream ss;
+  //  ss << fn() << ':' << ln() << ': ' << msg_;
+  //  return ss.str();
+  return msg_;
+}
 
 void Msg::pp(const std::string& f, unsigned l) {
   fn(f);
@@ -67,6 +74,11 @@ Scope* Scope::create_child(const std::string& sn) {
 void Scope::write(const Msg& msg) {
   if (log()) {
     log()->write(msg.str());
+  }
+  if (msg.l() == Level::Error) {
+    throw VKernelException{"Error raised"};
+  } else if (msg.l() == Level::Fatal) {
+    throw VKernelException{"Fatal raised"};
   }
 }
 

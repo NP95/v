@@ -112,6 +112,7 @@ class Msg {
   void pp(const std::string& f, unsigned l);
   void fn(const std::string& fn) { fn_ = fn; }
   std::string fn() const { return fn_; }
+  Level l() const { return l_; }
 
   void ln(unsigned ln) { ln_ = ln; }
   unsigned ln() const { return ln_; }

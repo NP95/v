@@ -25,6 +25,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+set(CFG_ALLOW_DUPLICATES 1)
+
 set(RTL_ROOT "${CMAKE_SOURCE_DIR}/rtl")
 
 set(RTL_SOURCES

@@ -34,9 +34,6 @@
 
 #include "cfg.h"
 #include "opts.h"
-#ifdef ENABLE_VCD
-#include "verilated_vcd_c.h"
-#endif
 
 // Verilator artifacts
 class Vtb;
@@ -63,6 +60,15 @@ struct VKernelCB {
   virtual bool on_posedge_clk(Vtb* tb) { return true; }
 };
 
+class VKernelException {
+ public:
+  VKernelException(const char* msg) : msg_(msg) {}
+  const char* msg() const { return msg_; }
+
+ private:
+  const char* msg_;
+};
+
 class VKernel {
  public:
   explicit VKernel(const VKernelOptions& opts);
@@ -73,9 +79,11 @@ class VKernel {
 
   std::uint64_t tb_time() const { return tb_time_; }
   std::uint64_t tb_cycle() const;
+  const Mdl* mdl() const { return mdl_.get(); }
 
  private:
   void build_verilated_environment();
+  bool eval_clock_edge(VKernelCB* cb, bool edge);
 
   std::unique_ptr<Mdl> mdl_;
   std::unique_ptr<VerilatedContext> vctxt_;

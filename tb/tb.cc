@@ -86,19 +86,21 @@ bool VKernel::run(VKernelCB* cb) {
   VDriver::issue(vtb, UpdateCommand{});
   VDriver::issue(vtb, QueryCommand{});
 
+  int rundown_n = 0;
+  const int rundown_cycles = 5;
   bool do_stepping = true;
-  while (do_stepping) {
-    tb_time_++;
-
-    if (tb_time_ % 5 == 0) {
-      if (VPorts::clk(vtb)) {
-        do_stepping = cb->on_negedge_clk(vtb);
-        mdl_->step();
-        VPorts::clk(vtb, false);
-      } else {
-        do_stepping = cb->on_posedge_clk(vtb);
-        VPorts::clk(vtb, true);
+  while (do_stepping || --rundown_n > 0) {
+    try {
+      if (++tb_time_ % 5 == 0) {
+        const bool edge = VPorts::clk(vtb);
+        if (do_stepping) {
+          do_stepping = eval_clock_edge(cb, edge);
+        }
+        VPorts::clk(vtb, !edge);
       }
+    } catch (const VKernelException& ex) {
+      do_stepping = false;
+      rundown_n = rundown_cycles;
     }
 
     vtb_->eval();
@@ -107,6 +109,17 @@ bool VKernel::run(VKernelCB* cb) {
 #endif
   }
   return true;
+}
+
+bool VKernel::eval_clock_edge(VKernelCB* cb, bool edge) {
+  bool do_stepping;
+  if (edge) {
+    do_stepping = cb->on_negedge_clk(vtb_.get());
+    mdl_->step();
+  } else {
+    do_stepping = cb->on_posedge_clk(vtb_.get());
+  }
+  return do_stepping;
 }
 
 void VKernel::end() {

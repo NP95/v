@@ -36,6 +36,9 @@ localparam int ENTRIES_N = @ENTRIES_N@;
 
 localparam bit IS_BID_TABLE = 'b0;
 
+localparam bit ALLOW_DUPLICATES = @CFG_ALLOW_DUPLICATES@;
+
+
 typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
 
 typedef enum logic [1:0] {  // Clear contents of list

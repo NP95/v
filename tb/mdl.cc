@@ -35,6 +35,7 @@
 #include "cfg.h"
 #include "common.h"
 #include "log.h"
+#include "rnd.h"
 
 // clang-format off
 #define LOG_ISSUE(__ls, __uc, __qc)             \
@@ -93,7 +94,7 @@ UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key,
 
 std::string UpdateCommand::to_string() const {
   std::stringstream ss;
-  ss << "{";
+  ss << "uc{";
   ss << "vld:" << vld();
   if (vld()) {
     ss << ", prod_id:" << static_cast<int>(prod_id());
@@ -112,12 +113,20 @@ std::string UpdateCommand::to_string() const {
 
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
+
+  // If invalid, payload is don't care.
+  if (lhs.vld()) return true;
+
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.cmd() != rhs.cmd()) return false;
   if (lhs.key() != rhs.key()) return false;
   if (lhs.volume() != rhs.volume()) return false;
 
   return true;
+}
+
+bool operator!=(const UpdateCommand& lhs, const UpdateCommand& rhs) {
+  return !operator==(lhs, rhs);
 }
 
 UpdateResponse::UpdateResponse() : vld_(false) {}
@@ -127,7 +136,7 @@ UpdateResponse::UpdateResponse(prod_id_t prod_id)
 
 std::string UpdateResponse::to_string() const {
   std::stringstream ss;
-  ss << "{";
+  ss << "ur{";
   ss << "vld:" << vld();
   if (vld()) {
     ss << ", prod_id:" << static_cast<int>(prod_id());
@@ -140,9 +149,17 @@ std::string UpdateResponse::to_string() const {
 
 bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
+
+  // If invalid, payload is don't care.
+  if (lhs.vld()) return true;
+
   if (lhs.prod_id() != rhs.prod_id()) return false;
 
   return true;
+}
+
+bool operator!=(const UpdateResponse& lhs, const UpdateResponse& rhs) {
+  return !operator==(lhs, rhs);
 }
 
 QueryCommand::QueryCommand() : vld_(false) {}
@@ -152,7 +169,7 @@ QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
 
 std::string QueryCommand::to_string() const {
   std::stringstream ss;
-  ss << "{";
+  ss << "qc{";
   ss << "vld:" << vld();
   if (vld()) {
     ss << ", prod_id:" << static_cast<int>(prod_id());
@@ -167,10 +184,18 @@ std::string QueryCommand::to_string() const {
 
 bool operator==(const QueryCommand& lhs, const QueryCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
+
+  // If invalid, payload is don't care.
+  if (lhs.vld()) return true;
+
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.level() != rhs.level()) return false;
 
   return true;
+}
+
+bool operator!=(const QueryCommand& lhs, const QueryCommand& rhs) {
+  return !operator==(lhs, rhs);
 }
 
 QueryResponse::QueryResponse() : vld_(false) {}
@@ -186,7 +211,7 @@ QueryResponse::QueryResponse(key_t key, volume_t volume, bool error,
 
 std::string QueryResponse::to_string() const {
   std::stringstream ss;
-  ss << "{";
+  ss << "qr{";
   ss << "vld:" << vld();
   if (vld()) {
     ss << ", key:" << key();
@@ -205,12 +230,23 @@ std::string QueryResponse::to_string() const {
 
 bool operator==(const QueryResponse& lhs, const QueryResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
+  // If invalid, payload is don't care.
+  if (lhs.vld()) return true;
+
+  if (lhs.error() != rhs.error()) return false;
+
+  // If error, disregard further contents (unreliable).
+  if (lhs.error()) return true;
+
   if (lhs.key() != rhs.key()) return false;
   if (lhs.volume() != rhs.volume()) return false;
-  if (lhs.error() != rhs.error()) return false;
   if (lhs.listsize() != rhs.listsize()) return false;
 
   return true;
+}
+
+bool operator!=(const QueryResponse& lhs, const QueryResponse& rhs) {
+  return !operator==(lhs, rhs);
 }
 
 NotifyResponse::NotifyResponse() : vld_(false) {}
@@ -224,7 +260,7 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
 
 std::string NotifyResponse::to_string() const {
   std::stringstream ss;
-  ss << "{";
+  ss << "nr{";
   ss << "vld:" << vld();
   if (vld()) {
     ss << ", prod_id:" << static_cast<int>(prod_id());
@@ -241,6 +277,8 @@ std::string NotifyResponse::to_string() const {
 
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
+  // If invalid, payload is don't care.
+  if (lhs.vld()) return true;
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.key() != rhs.key()) return false;
   if (lhs.volume() != rhs.volume()) return false;
@@ -248,11 +286,15 @@ bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   return true;
 }
 
+bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs) {
+  return !operator==(lhs, rhs);
+}
+
 struct VSampler {
   static UpdateCommand uc(Vtb* tb) {
     if (to_bool(tb->i_upd_vld)) {
       return UpdateCommand{tb->i_upd_prod_id, to_cmd(tb->i_upd_cmd),
-                           tb->i_upd_key, tb->i_upd_size};
+                           static_cast<key_t>(tb->i_upd_key), tb->i_upd_size};
     } else {
       return UpdateCommand{};
     }
@@ -269,7 +311,8 @@ struct VSampler {
   // Sample Notify Reponse Interface:
   static NotifyResponse nr(Vtb* tb) {
     if (to_bool(tb->o_lv0_vld_r)) {
-      return NotifyResponse{tb->o_lv0_prod_id_r, tb->o_lv0_key_r,
+      return NotifyResponse{tb->o_lv0_prod_id_r,
+                            static_cast<key_t>(tb->o_lv0_key_r),
                             tb->o_lv0_size_r};
     } else {
       return NotifyResponse{};
@@ -279,7 +322,7 @@ struct VSampler {
   // Sample Query Response Interface:
   static QueryResponse qr(Vtb* tb) {
     if (to_bool(tb->o_lut_vld_r)) {
-      return QueryResponse{tb->o_lut_key, tb->o_lut_size,
+      return QueryResponse{static_cast<key_t>(tb->o_lut_key), tb->o_lut_size,
                            to_bool(tb->o_lut_error), tb->o_lut_listsize};
     } else {
       return QueryResponse{};
@@ -361,7 +404,7 @@ struct Entry {
 };
 
 bool compare_keys(key_t rhs, key_t lhs) {
-  return cfg::is_bid_table ? (rhs < lhs) : (rhs > lhs);
+  return cfg::is_bid_table ? (rhs > lhs) : (rhs < lhs);
 }
 
 bool compare_entries(const Entry& lhs, const Entry& rhs) {
@@ -373,6 +416,8 @@ std::ostream& operator<<(std::ostream& os, const Entry& e) {
 }
 
 class Mdl::Impl {
+  friend class MdlValidation;
+
   static constexpr const std::size_t QUERY_PIPE_DELAY = 1;
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 4;
 
@@ -484,11 +529,14 @@ class Mdl::Impl {
   void handle(const NotifyResponse& nr) {
     const NotifyResponse& predicted = nr_pipe_.head();
     const NotifyResponse& actual = nr;
-    V_EXPECT_EQ(lg_, predicted.vld(), actual.vld());
-    const bool consensus = predicted.vld() && actual.vld();
-    if (consensus) {
-      V_EXPECT_EQ(lg_, predicted, actual);
+    const char* fail_message = nullptr;
+    if (predicted.vld() == actual.vld()) {
+      if (predicted.vld() && (predicted != actual))
+        fail_message = "Payload mismatch";
+    } else {
+      fail_message = "Unexpected Notify Response";
     }
+    if (fail_message) report_fail(fail_message, predicted, actual);
   }
 
   void handle(const QueryCommand& qc) {
@@ -513,15 +561,28 @@ class Mdl::Impl {
   void handle(const QueryResponse& qr) {
     const QueryResponse& predicted = qr_pipe_.head();
     const QueryResponse& actual = qr;
-    V_EXPECT_EQ(lg_, predicted.vld(), actual.vld());
-    bool consensus = predicted.vld() && actual.vld();
-    if (consensus) {
-      V_EXPECT_EQ(lg_, predicted.error(), actual.error());
-      consensus = !predicted.error() && !actual.error();
-      if (consensus) {
-        V_EXPECT_EQ(lg_, predicted, actual);
-      }
+    const char* fail_message = nullptr;
+    if (predicted.vld() == actual.vld()) {
+      if (predicted.vld() && (predicted != actual))
+        fail_message = "Payload mismatch";
+    } else {
+      fail_message = "Unexpected Query Response";
     }
+    if (fail_message) {
+      report_fail(fail_message, predicted, actual);
+    }
+  }
+
+  template <typename T>
+  void report_fail(const char* reason, const T& predicted, const T& actual) {
+    using namespace tb::log;
+    Msg msg{Level::Error};
+    msg.append(reason);
+    msg.append(": predicted ");
+    msg.append(predicted);
+    msg.append(" vs. actual ");
+    msg.append(actual);
+    lg_->write(msg);
   }
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
@@ -538,5 +599,45 @@ Mdl::Mdl(Vtb* tb, log::Scope* lg) { impl_ = std::make_unique<Impl>(tb, lg); }
 Mdl::~Mdl() {}
 
 void Mdl::step() { impl_->step(); }
+
+const Mdl::Impl* Mdl::impl() const { return impl_.get(); }
+
+class MdlValidation::Impl {
+ public:
+  Impl(const Mdl* mdl) : impl_(mdl->impl()) {}
+
+  bool has_active_entries(prod_id_t id) const {
+    if (impl_ == nullptr) return false;
+
+    return (id < impl_->tbl_.size()) && !impl_->tbl_[id].empty();
+  }
+
+  std::pair<bool, key_t> pick_active_key(Rnd* rnd, prod_id_t id) const {
+    const std::vector<Entry>& es_{impl_->tbl_[id]};
+    if (es_.empty()) {
+      return {false, key_t{}};
+    }
+
+    return {true, es_[rnd->uniform(es_.size() - 1)].key};
+  }
+
+ private:
+  const Mdl::Impl* impl_;
+};
+
+MdlValidation::MdlValidation(const Mdl* mdl) {
+  impl_ = std::make_unique<Impl>(mdl);
+}
+
+MdlValidation::~MdlValidation() {}
+
+bool MdlValidation::has_active_entries(prod_id_t id) const {
+  return impl_->has_active_entries(id);
+}
+
+std::pair<bool, key_t> MdlValidation::pick_active_key(Rnd* rnd,
+                                                      prod_id_t id) const {
+  return impl_->pick_active_key(rnd, id);
+}
 
 }  // namespace tb

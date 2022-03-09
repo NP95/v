@@ -90,6 +90,7 @@ logic [v_pkg::ENTRIES_N - 1:0]          add_mask_insert;
 // Delete:
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld_shift;
 logic [v_pkg::ENTRIES_N - 1:0]          del_vld;
+logic [v_pkg::ENTRIES_N - 1:0]          del_sel;
 logic [v_pkg::ENTRIES_N - 1:0]          del_mask_left;
 logic                                   del_listsize_dec;
 
@@ -154,6 +155,8 @@ assign match_sel [i] = i_stcur_vld_r [i] & (i_pipe_key_r == i_stcur_keys_r [i]);
 
 end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
+// TODO: needs to be unique
+
 // Flag denoting that a matching key was found in the current state.
 assign match_hit = (match_sel != '0);
 
@@ -179,8 +182,8 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
 
   cmp #(.W($bits(v_pkg::key_t))) u_cmp (
   //
-    .i_a                                  (i_pipe_key_r)
-  , .i_b                                  (i_stcur_keys_r [i])
+    .i_a                                  (i_stcur_keys_r [i])
+  , .i_b                                  (i_pipe_key_r)
   //
   , .o_eq                                 (cmp_eq [i])
   , .o_gt                                 (cmp_gt [i])
@@ -281,7 +284,6 @@ assign add_listsize_inc = (~match_full);
 // NOTE: to avoid a costly prioritization operation, we implicitly assume that
 // all keys within the current state vector are unique.
 
-
 // From the comparison vector (which is constrained to be one-hot),
 //
 //               +-- Matching key
@@ -292,9 +294,27 @@ assign add_listsize_inc = (~match_full);
 //
 //   1  1  1  1  1  0  0  0  0  0  0  0  0
 //
-mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
+
+if (v_pkg::ALLOW_DUPLICATES) begin
+
+pri #(.W(v_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
   //
     .i_x                                (match_sel)
+  //
+  , .o_y                                (del_sel)
+);
+
+end else begin
+
+assign del_sel = match_sel;
+
+end // else: !if(v_pkg::ALLOW_DUPLICATES)
+
+//
+//
+mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
+  //
+    .i_x                                (del_sel)
   //
   , .o_y                                (del_mask_left)
 );
@@ -316,12 +336,12 @@ mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
 
 // Positions rightward of currently nominated bit (inclusive) update to new
 // post-delete positions.
-assign del_vld_shift = i_stcur_vld_r & (del_mask_left << 1);
+assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
 
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
-assign del_vld =
-    i_stcur_vld_r | ({v_pkg::ENTRIES_N{match_hit}} & del_vld_shift);
+assign del_vld = match_hit ?
+    ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift) : i_stcur_vld_r;
 
 // On delete, the listsize is decremented whenever a hit takes place (i.e. a
 // matching entry has been found in the context, which will now be removed).

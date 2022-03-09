@@ -33,6 +33,7 @@
 class Vtb;
 
 namespace tb {
+class Rnd;
 
 namespace log {
 class Scope;
@@ -49,7 +50,7 @@ enum class Cmd : vluint8_t {
 
 const char* to_string(Cmd c);
 
-using key_t = vluint64_t;
+using key_t = vlsint64_t;
 using volume_t = vluint32_t;
 using level_t = vluint8_t;
 using listsize_t = vluint8_t;
@@ -76,6 +77,7 @@ class UpdateCommand {
 };
 
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs);
+bool operator!=(const UpdateCommand& lhs, const UpdateCommand& rhs);
 
 class UpdateResponse {
  public:
@@ -93,6 +95,7 @@ class UpdateResponse {
 };
 
 bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs);
+bool operator!=(const UpdateResponse& lhs, const UpdateResponse& rhs);
 
 class QueryCommand {
  public:
@@ -112,6 +115,7 @@ class QueryCommand {
 };
 
 bool operator==(const QueryCommand& lhs, const QueryCommand& rhs);
+bool operator!=(const QueryCommand& lhs, const QueryCommand& rhs);
 
 class QueryResponse {
  public:
@@ -135,6 +139,7 @@ class QueryResponse {
 };
 
 bool operator==(const QueryResponse& lhs, const QueryResponse& rhs);
+bool operator!=(const QueryResponse& lhs, const QueryResponse& rhs);
 
 class NotifyResponse {
  public:
@@ -156,8 +161,11 @@ class NotifyResponse {
 };
 
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs);
+bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs);
 
 class Mdl {
+  friend class MdlValidation;
+
   class Impl;
   std::unique_ptr<Impl> impl_;
 
@@ -166,6 +174,22 @@ class Mdl {
   ~Mdl();
 
   void step();
+
+ private:
+  const Impl* impl() const;
+};
+
+class MdlValidation {
+  class Impl;
+  std::unique_ptr<Impl> impl_;
+
+ public:
+  explicit MdlValidation(const Mdl* mdl);
+  ~MdlValidation();
+
+  bool has_active_entries(prod_id_t id) const;
+
+  std::pair<bool, key_t> pick_active_key(Rnd* rnd, prod_id_t id) const;
 };
 
 }  // namespace tb

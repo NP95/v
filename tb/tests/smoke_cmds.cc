@@ -210,6 +210,65 @@ struct CheckRplCmd : public tb::tests::Directed {
   }
 };
 
+struct CheckAddOrder : tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckAddOrder);
+
+  void program() override {
+    V_NOTE("Test begins...");
+
+    auto issue_with_key = [&](tb::key_t k) {
+      push_back(tb::UpdateCommand{0, tb::Cmd::Add, k, 0});
+      wait_cycles(1);
+    };
+
+    // Ascending order
+    for (int i = 0; i < 5; i++) {
+      issue_with_key(i);
+    }
+
+    push_back(tb::UpdateCommand{0, tb::Cmd::Clr, 0, 0});
+    wait_cycles(1);
+
+    for (int i = 0; i < 5; i++) {
+      issue_with_key(5 - i);
+    }
+
+    V_NOTE("Test ends...");
+  }
+};
+
+struct CheckDelKey : tb::tests::Directed {
+  CREATE_TEST_BUILDER(CheckDelKey);
+
+  void program() override {
+    V_NOTE("Test begins...");
+
+    auto issue_add = [&](tb::key_t k) {
+      push_back(tb::UpdateCommand{0, tb::Cmd::Add, k, 0});
+      wait_cycles(1);
+    };
+
+    for (int i = 0; i < 5; i++) {
+      issue_add(i);
+    }
+
+    auto issue_del = [&](tb::key_t k) {
+      push_back(tb::UpdateCommand{0, tb::Cmd::Del, k, 0});
+      wait_cycles(1);
+    };
+
+    for (int i = 0; i < 5; i++) {
+      issue_del(4 - i);
+    }
+
+    // Expect empty
+    push_back(tb::QueryCommand{0, 0});
+    wait_cycles(10);
+
+    V_NOTE("Test ends...");
+  }
+};
+
 }  // namespace
 
 namespace tb::tests::smoke_cmds {
@@ -220,6 +279,8 @@ void init(tb::TestRegistry* r) {
   CheckListSize::Builder::init(r);
   CheckClrCmd::Builder::init(r);
   CheckRplCmd::Builder::init(r);
+  CheckAddOrder::Builder::init(r);
+  CheckDelKey::Builder::init(r);
 }
 
 }  // namespace tb::tests::smoke_cmds

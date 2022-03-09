@@ -31,49 +31,103 @@
 #include "../tb.h"
 #include "../test.h"
 #include "Vobj/Vtb.h"
+#include "cfg.h"
 #include "reset.h"
 
 namespace {
 
+struct Options {
+  float clr_weight = 0.01f;
+  float add_weight = 1.0f;
+  float del_weight = 1.0f;
+  float rep_weight = 1.0f;
+  float inv_weight = 1.0f;
+
+  int contexts_n = 1;
+
+  int n = 10000;
+
+  tb::Rnd* rnd = nullptr;
+
+  const tb::Mdl* mdl = nullptr;
+};
+
 class Stimulus {
  public:
-  Stimulus() {}
+  Stimulus(const Options& opts) : opts_(opts), val_(opts.mdl) {
+    bag_.push_back(tb::Cmd::Clr, opts_.clr_weight);
+    bag_.push_back(tb::Cmd::Add, opts_.add_weight);
+    bag_.push_back(tb::Cmd::Del, opts_.del_weight);
+    bag_.push_back(tb::Cmd::Rep, opts_.rep_weight);
+    bag_.push_back(tb::Cmd::Invalid, opts_.inv_weight);
+  }
 
   bool get(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
-    if (cnt_ == 0) return false;
+    if (opts_.n == 0) return false;
 
     int issue_count = 0;
-    issue_count += handle(uc) ? 1 : 0;
-    if (cnt_ > 0) {
-      issue_count += handle(qc) ? 1 : 0;
+    issue_count += handle(uc);
+    if (opts_.n > 0) {
+      issue_count += handle(qc);
     }
-    cnt_ -= issue_count;
+    opts_.n -= issue_count;
     return (issue_count > 0);
   }
 
  private:
-  bool handle(tb::UpdateCommand& uc) {
+  int handle(tb::UpdateCommand& uc) {
     b = !b;
-    if (b) return false;
+    if (b) return 0;
 
-    tb::Bag<tb::Cmd> b;
-    b.push_back(tb::Cmd::Clr, 1.0f);
-    b.push_back(tb::Cmd::Add, 1.0f);
-    b.push_back(tb::Cmd::Del, 1.0f);
-    b.push_back(tb::Cmd::Rep, 1.0f);
-    const tb::Cmd cmd = b.pick(rnd_);
-    uc = tb::UpdateCommand{0, cmd, 0, 0};
-    return true;
+    // Constrain such that keys are unique
+
+    generate(uc);
+    return 1;
   }
 
-  bool handle(tb::QueryCommand& qc) {
-    qc = tb::QueryCommand{0, 0};
-    return true;
+  int handle(tb::QueryCommand& qc) {
+    const tb::prod_id_t prod_id = opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+    const tb::level_t level = opts_.rnd->uniform(cfg::ENTRIES_N - 1);
+    qc = tb::QueryCommand{prod_id, 0};
+    return 1;
   }
 
-  tb::Rnd rnd_;
-  int cnt_ = 100;
+  void generate(tb::UpdateCommand& uc) {
+    const tb::Cmd cmd = bag_.pick(opts_.rnd);
+    switch (cmd) {
+      case tb::Cmd::Clr: {
+        // No further updates required.
+        const tb::prod_id_t prod_id =
+            opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+        uc = tb::UpdateCommand{prod_id, cmd, 0, 0};
+      } break;
+      case tb::Cmd::Add: {
+        const tb::prod_id_t prod_id =
+            opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+        const tb::key_t key = opts_.rnd->uniform<tb::key_t>();
+        const tb::volume_t volume = opts_.rnd->uniform<tb::volume_t>();
+        uc = tb::UpdateCommand{prod_id, cmd, key, volume};
+      } break;
+      case tb::Cmd::Rep:
+      case tb::Cmd::Del: {
+        const tb::prod_id_t prod_id = 0;
+        auto [success, key] = val_.pick_active_key(opts_.rnd, prod_id);
+        uc = tb::UpdateCommand{prod_id, tb::Cmd::Del, key, 0};
+      } break;
+      case tb::Cmd::Invalid: {
+        // Insert bubble.
+        uc = tb::UpdateCommand{};
+      } break;
+      default:;
+    }
+  }
+
+  void generate(tb::QueryCommand& qc) {}
+
   bool b = true;
+  tb::Bag<tb::Cmd> bag_;
+  Options opts_;
+  tb::MdlValidation val_;
 };
 
 struct RegressCB : public tb::VKernelCB {
@@ -111,7 +165,12 @@ struct Regress : public tb::Test {
   CREATE_TEST_BUILDER(Regress);
 
   bool run() override {
-    Stimulus s{};
+    Options opts;
+    tb::Rnd rnd;
+    opts.contexts_n = cfg::CONTEXT_N;
+    opts.mdl = k()->mdl();
+    opts.rnd = &rnd;
+    Stimulus s{opts};
     RegressCB cb{this, std::addressof(s)};
     return k()->run(std::addressof(cb));
   }

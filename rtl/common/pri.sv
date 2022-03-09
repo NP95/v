@@ -59,21 +59,24 @@ logic [W - 1:0]                         y;
 
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : pri_PROC
+for (genvar i = 0; i < W; i++) begin
 
-  for (int i = 0; i < W; i++) begin
+  for (genvar j = 0; j < W; j++) begin
 
-    for (int j = 0; j < W; j++) begin
-      prior_bits[i][j] = (FROM_LSB ? (j < i) : (j > i)) & i_x [j];
-    end // for (int j = 0; j < W; j++)
+assign prior_bits[i][j] = (FROM_LSB ? (j < i) : (j > i)) & i_x [j];
 
-    // Output priority selection if current input bit is high and prior bits in
-    // word are 'b0.
-    y [i] = i_x [i] & (prior_bits[i] == '0);
+  end // for (int j = 0; j < W; j++)
 
-  end // for (int i = 0; i < W; i++)
+end // for (int i = 0; i < W; i++)
 
-end // block: pri_PROC
+
+for (genvar i = 0; i < W; i++) begin
+
+// Output priority selection if current input bit is high and prior bits in
+// word are 'b0.
+assign y [i] = i_x [i] & (prior_bits[i] == '0);
+
+end
 
 // ========================================================================== //
 //                                                                            //
