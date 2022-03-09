@@ -45,7 +45,7 @@ struct Options {
 
   int contexts_n = 1;
 
-  int n = 10000;
+  int n = 100000;
 
   tb::Rnd* rnd = nullptr;
 
@@ -53,6 +53,8 @@ struct Options {
 };
 
 class Stimulus {
+  enum class State { Random, FinalCheck, WindDown };
+
  public:
   Stimulus(const Options& opts) : opts_(opts), val_(opts.mdl) {
     bag_.push_back(tb::Cmd::Clr, opts_.clr_weight);
@@ -60,21 +62,51 @@ class Stimulus {
     bag_.push_back(tb::Cmd::Del, opts_.del_weight);
     bag_.push_back(tb::Cmd::Rep, opts_.rep_weight);
     bag_.push_back(tb::Cmd::Invalid, opts_.inv_weight);
+    st_ = State::Random;
   }
 
   bool get(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
-    if (opts_.n == 0) return false;
-
-    int issue_count = 0;
-    issue_count += handle(uc);
-    if (opts_.n > 0) {
-      issue_count += handle(qc);
+    bool ret;
+    switch (st_) {
+      case State::Random: {
+        ret = get_random(uc, qc);
+      } break;
+      case State::FinalCheck: {
+        ret = get_final_check(uc, qc);
+      } break;
+      case State::WindDown: {
+        ret = (--opts_.n > 0);
+      } break;
     }
-    opts_.n -= issue_count;
-    return (issue_count > 0);
+    return ret;
   }
 
  private:
+  bool get_random(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
+    if (opts_.n > 0) {
+      int issue_count = handle(uc);
+      if (opts_.n > 0) {
+        issue_count += handle(qc);
+      }
+      opts_.n -= issue_count;
+    } else {
+      opts_.n = cfg::ENTRIES_N * cfg::CONTEXT_N - 1;
+      st_ = State::FinalCheck;
+    }
+    return true;
+  }
+
+  bool get_final_check(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
+    const tb::prod_id_t id = (opts_.n / cfg::ENTRIES_N);
+    const tb::level_t level = (opts_.n % cfg::ENTRIES_N);
+    qc = tb::QueryCommand{id, level};
+    if (--opts_.n < 0) {
+      opts_.n = 10;
+      st_ = State::WindDown;
+    }
+    return true;
+  }
+
   int handle(tb::UpdateCommand& uc) {
     b = !b;
     if (b) return 0;
@@ -128,6 +160,7 @@ class Stimulus {
   tb::Bag<tb::Cmd> bag_;
   Options opts_;
   tb::MdlValidation val_;
+  State st_;
 };
 
 struct RegressCB : public tb::VKernelCB {
