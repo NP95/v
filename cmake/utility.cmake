@@ -43,8 +43,7 @@ endmacro ()
 
 macro (declare_option str desc def)
   option(${str} ${desc} ${def})
-  set(${str} ${def})
-  message(STATUS "Setting parameter: ${str}=${def}")
+  message(STATUS "Setting parameter: ${str}=${${str}}")
 endmacro ()
 
 macro (declare_flag_option str desc def)

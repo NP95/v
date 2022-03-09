@@ -72,7 +72,7 @@ struct Options {
   float rep_weight = 1.0f;
   float inv_weight = 1.0f;
 
-  int contexts_n = 1;
+  int context_n = cfg::CONTEXT_N;
 
   int n = 100000;
 
@@ -134,7 +134,7 @@ Options Options::construct(const tb::TestOptions& topts, const tb::Mdl* mdl) {
     }
   }
   // The number of contexts to exercise.
-  opts.contexts_n = cfg::ENTRIES_N;
+  opts.context_n = cfg::CONTEXT_N;
   opts.rnd = topts.rnd;
   opts.mdl = mdl;
   return opts;
@@ -229,12 +229,12 @@ class Stimulus {
       case tb::Cmd::Clr: {
         // No further updates required.
         const tb::prod_id_t prod_id =
-            opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+            opts_.rnd->uniform(opts_.context_n - 1, 0);
         uc = tb::UpdateCommand{prod_id, cmd, 0, 0};
       } break;
       case tb::Cmd::Add: {
         const tb::prod_id_t prod_id =
-            opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+            opts_.rnd->uniform(opts_.context_n - 1, 0);
         const tb::key_t key = opts_.rnd->uniform<tb::key_t>();
         const tb::volume_t volume = opts_.rnd->uniform<tb::volume_t>();
         uc = tb::UpdateCommand{prod_id, cmd, key, volume};
@@ -254,9 +254,9 @@ class Stimulus {
   }
 
   void generate(tb::QueryCommand& qc) {
-    const tb::prod_id_t prod_id = opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+    const tb::prod_id_t prod_id = opts_.rnd->uniform(opts_.context_n - 1, 0);
     const tb::level_t level = opts_.rnd->uniform(cfg::ENTRIES_N - 1);
-    qc = tb::QueryCommand{prod_id, 0};
+    qc = tb::QueryCommand{prod_id, level};
   }
 
   void state(State st) { st_ = st; }
