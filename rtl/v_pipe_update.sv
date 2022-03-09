@@ -106,14 +106,14 @@ logic                                             s3_upd_en;
 
 // S3:
 //
-logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stcur_vld_r;
-v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stcur_keys_r;
-v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stcur_volumes_r;
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_exe_stcur_vld_r;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s3_exe_stcur_keys_r;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s3_exe_stcur_volumes_r;
 v_pkg::listsize_t                                 s3_exe_stcur_listsize_r;
 //
-logic [v_pkg::ENTRIES_N - 1:0]                    s3_exe_stnxt_vld;
-v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]             s3_exe_stnxt_keys;
-v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]          s3_exe_stnxt_volumes;
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_exe_stnxt_vld;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s3_exe_stnxt_keys;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s3_exe_stnxt_volumes;
 v_pkg::listsize_t                                 s3_exe_stnxt_listsize;
 
 

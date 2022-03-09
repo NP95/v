@@ -62,9 +62,7 @@ logic                                   n;
 logic                                   c;
 
 logic                                   eq;
-logic                                   gt_infer;
 logic                                   gt;
-logic                                   lt_infer;
 logic                                   lt;
 
 // ========================================================================== //
@@ -72,11 +70,6 @@ logic                                   lt;
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-assign gt_infer = ($signed(i_a) > $signed(i_b));
-assign lt_infer = ($signed(i_a) < $signed(i_b));
 
 // -------------------------------------------------------------------------- //
 //
@@ -116,8 +109,8 @@ assign c = cla_cout;
 //
 
 assign eq = z;
-assign lt = IS_SIGNED ? (~(n ^ v) & ~z) : (c & ~z);
-assign gt = IS_SIGNED ? ~c : (n ^ z);
+assign lt = IS_SIGNED ? (n ^ v) : c;
+assign gt = IS_SIGNED ? ~(z | (n ^ v)) : ~(c | z);
 
 // ========================================================================== //
 //                                                                            //
@@ -126,7 +119,7 @@ assign gt = IS_SIGNED ? ~c : (n ^ z);
 // ========================================================================== //
 
 assign o_eq = eq;
-assign o_gt = gt_infer;
-assign o_lt = lt_infer;
+assign o_gt = gt;
+assign o_lt = lt;
 
 endmodule // cmp

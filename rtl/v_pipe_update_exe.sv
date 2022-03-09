@@ -28,35 +28,36 @@
 `include "common_defs.vh"
 
 `include "v_pkg.vh"
+`include "cfg_pkg.vh"
 
 module v_pipe_update_exe (
 // -------------------------------------------------------------------------- //
 // Command Interface
-  input v_pkg::cmd_t                              i_pipe_cmd_r
-, input v_pkg::key_t                              i_pipe_key_r
-, input v_pkg::volume_t                           i_pipe_volume_r
+  input v_pkg::cmd_t                                i_pipe_cmd_r
+, input v_pkg::key_t                                i_pipe_key_r
+, input v_pkg::volume_t                             i_pipe_volume_r
 
 // -------------------------------------------------------------------------- //
 // State Current
-, input [v_pkg::ENTRIES_N - 1:0]                  i_stcur_vld_r
-, input v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
-, input v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
+, input [cfg_pkg::ENTRIES_N - 1:0]                  i_stcur_vld_r
+, input v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
+, input v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
 //
-, input v_pkg::listsize_t                         i_stcur_listsize_r
+, input v_pkg::listsize_t                           i_stcur_listsize_r
 
 // -------------------------------------------------------------------------- //
 // State Next
-, output logic [v_pkg::ENTRIES_N - 1:0]           o_stnxt_vld
-, output v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
-, output v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
+, output logic [cfg_pkg::ENTRIES_N - 1:0]           o_stnxt_vld
+, output v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
+, output v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
 //
-, output v_pkg::listsize_t                        o_stnxt_listsize
+, output v_pkg::listsize_t                          o_stnxt_listsize
 
 // -------------------------------------------------------------------------- //
 // Notify Interrace
-, output logic                                    o_notify_vld
-, output v_pkg::key_t                             o_notify_key
-, output v_pkg::volume_t                          o_notify_volume
+, output logic                                      o_notify_vld
+, output v_pkg::key_t                               o_notify_key
+, output v_pkg::volume_t                            o_notify_volume
 );
 
 // ========================================================================== //
@@ -66,71 +67,71 @@ module v_pipe_update_exe (
 // ========================================================================== //
 
 // Decoder:
-logic                                   op_clr;
-logic                                   op_add;
-logic                                   op_del;
-logic                                   op_rep;
+logic                                      op_clr;
+logic                                      op_add;
+logic                                      op_del;
+logic                                      op_rep;
 
 // Match:
-logic [v_pkg::ENTRIES_N - 1:0]          match_sel;
-logic                                   match_hit;
-logic                                   match_full;
-v_pkg::volume_t                         match_volume;
+logic [cfg_pkg::ENTRIES_N - 1:0]           match_sel;
+logic                                      match_hit;
+logic                                      match_full;
+v_pkg::volume_t                            match_volume;
 
 // Add:
-logic [v_pkg::ENTRIES_N - 1:0]          add_mask_cmp;
-logic [v_pkg::ENTRIES_N - 1:0]          add_vld_shift;
-logic [v_pkg::ENTRIES_N - 1:0]          add_vld_sel;
-logic [v_pkg::ENTRIES_N - 1:0]          add_vld;
-logic                                   add_listsize_inc;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_cmp;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld_shift;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld_sel;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld;
+logic                                      add_listsize_inc;
 
-logic [v_pkg::ENTRIES_N - 1:0]          add_mask_left;
-logic [v_pkg::ENTRIES_N - 1:0]          add_mask_insert;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_left;
+logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_insert;
 
 // Delete:
-logic [v_pkg::ENTRIES_N - 1:0]          del_vld_shift;
-logic [v_pkg::ENTRIES_N - 1:0]          del_vld;
-logic [v_pkg::ENTRIES_N - 1:0]          del_sel;
-logic [v_pkg::ENTRIES_N - 1:0]          del_mask_left;
-logic                                   del_listsize_dec;
+logic [cfg_pkg::ENTRIES_N - 1:0]           del_vld_shift;
+logic [cfg_pkg::ENTRIES_N - 1:0]           del_vld;
+logic [cfg_pkg::ENTRIES_N - 1:0]           del_sel;
+logic [cfg_pkg::ENTRIES_N - 1:0]           del_mask_left;
+logic                                      del_listsize_dec;
 
 // Validity:
-logic [v_pkg::ENTRIES_N - 1:0]          vld_nxt;
+logic [cfg_pkg::ENTRIES_N - 1:0]           vld_nxt;
 
 //
-logic [v_pkg::ENTRIES_N - 1:0]          mask_right;
-logic [v_pkg::ENTRIES_N - 1:0]          mask_left;
-logic [v_pkg::ENTRIES_N - 1:0]          mask_insert_key;
-logic [v_pkg::ENTRIES_N - 1:0]          mask_insert_vol;
+logic [cfg_pkg::ENTRIES_N - 1:0]           mask_right;
+logic [cfg_pkg::ENTRIES_N - 1:0]           mask_left;
+logic [cfg_pkg::ENTRIES_N - 1:0]           mask_insert_key;
+logic [cfg_pkg::ENTRIES_N - 1:0]           mask_insert_vol;
 
 //
-v_pkg::listsize_t                       stnxt_listsize_nxt;
-v_pkg::listsize_t                       stnxt_listsize;
-logic                                   stnxt_listsize_inc;
-logic                                   stnxt_listsize_dec;
-logic                                   stnxt_listsize_def;
+v_pkg::listsize_t                          stnxt_listsize_nxt;
+v_pkg::listsize_t                          stnxt_listsize;
+logic                                      stnxt_listsize_inc;
+logic                                      stnxt_listsize_dec;
+logic                                      stnxt_listsize_def;
 
-logic [v_pkg::ENTRIES_N - 1:0]          cmp_eq;
-logic [v_pkg::ENTRIES_N - 1:0]          cmp_gt;
-logic [v_pkg::ENTRIES_N - 1:0]          cmp_lt;
+logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_eq;
+logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_gt;
+logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_lt;
 
 
-logic [v_pkg::ENTRIES_N - 1:0]          stnxt_keys_do_upt;
-v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]   stnxt_keys_upt;
-v_pkg::key_t [v_pkg::ENTRIES_N - 1:0]   stnxt_keys;
+logic [cfg_pkg::ENTRIES_N - 1:0]           stnxt_keys_do_upt;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]    stnxt_keys_upt;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]    stnxt_keys;
 
-logic [v_pkg::ENTRIES_N - 1:0]          stnxt_volumes_do_upt;
-v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]stnxt_volumes_upt;
-v_pkg::volume_t [v_pkg::ENTRIES_N - 1:0]stnxt_volumes;
+logic [cfg_pkg::ENTRIES_N - 1:0]           stnxt_volumes_do_upt;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0] stnxt_volumes_upt;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0] stnxt_volumes;
 
 // Notify:
-logic                                   notify_cleared_list;
-logic                                   notify_did_add;
-logic                                   notify_did_del;
-logic                                   notify_did_rep_or_del;
-logic                                   notify_vld;
-v_pkg::key_t                            notify_key;
-v_pkg::volume_t                         notify_volume;
+logic                                      notify_cleared_list;
+logic                                      notify_did_add;
+logic                                      notify_did_del;
+logic                                      notify_did_rep_or_del;
+logic                                      notify_vld;
+v_pkg::key_t                               notify_key;
+v_pkg::volume_t                            notify_volume;
 
 // ========================================================================== //
 //                                                                            //
@@ -155,18 +156,18 @@ assign op_rep = (i_pipe_cmd_r == v_pkg::CMD_REPLACE);
 // Construct one-hot vector denoting the position of matching keys in the
 // current state (if any).
 //
-for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
+for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
 assign match_sel [i] = i_stcur_vld_r [i] & (i_pipe_key_r == i_stcur_keys_r [i]);
 
-end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
+end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 
 // Flag denoting that a matching key was found in the current state.
 assign match_hit = (match_sel != '0);
 
 assign match_full = (i_stcur_vld_r == '1);
 
-mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
+mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
   //
     .i_x                      (i_stcur_volumes_r)
   , .i_sel                    (match_sel)
@@ -181,7 +182,7 @@ mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
 
 // -------------------------------------------------------------------------- //
 //
-for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
+for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
   cmp #(.W($bits(v_pkg::key_t))) u_cmp (
   //
@@ -193,7 +194,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
   , .o_lt                                 (cmp_lt [i])
   );
 
-end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
+end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 
 // ========================================================================== //
 //                                                                            //
@@ -228,7 +229,7 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 // Valid (next)  1           1           1          1          0
 //
 assign add_mask_cmp =
-   i_stcur_vld_r & (cmp_eq | (v_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
+   i_stcur_vld_r & (cmp_eq | (cfg_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
 
 // Use Leading-Zero Detect (LZD) to compute insertion position.
 //
@@ -236,7 +237,7 @@ assign add_mask_cmp =
 //                     |
 //   0  0  0  0  0  0  1  0  0  0  0  0  0
 //
-lzd #(.W(v_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
+lzd #(.W(cfg_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
   //
     .i_x                                (add_mask_cmp)
   //
@@ -251,7 +252,7 @@ lzd #(.W(v_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
 //                     |
 //   1  1  1  1  1  1  1  0  0  0  0  0  0
 //
-mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
+mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
   //
     .i_x                                (add_mask_insert)
   //
@@ -307,13 +308,13 @@ assign add_listsize_inc = (~match_full);
 //   1  1  1  1  1  0  0  0  0  0  0  0  0
 //
 
-if (v_pkg::ALLOW_DUPLICATES) begin
+if (cfg_pkg::ALLOW_DUPLICATES) begin
 
 // The table update logic cannot remove more than one entry per-cycle. In the
 // case where multiple matching keys are allowed to co-exist in the same
 // context, by convention we select the entry nearest the head.
 
-pri #(.W(v_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
+pri #(.W(cfg_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
   //
     .i_x                                (match_sel)
   //
@@ -327,11 +328,11 @@ end else begin
 
 assign del_sel = match_sel;
 
-end // else: !if(v_pkg::ALLOW_DUPLICATES)
+end // else: !if(cfg_pkg::ALLOW_DUPLICATES)
 
 //
 //
-mask #(.W(v_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
+mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
   //
     .i_x                                (del_sel)
   //
@@ -383,14 +384,14 @@ assign del_listsize_dec = match_hit;
 // place.
 //
 assign vld_nxt =
-      ({v_pkg::ENTRIES_N{op_add}} & add_vld)
-    | ({v_pkg::ENTRIES_N{op_del}} & del_vld)
-    | ({v_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
+      ({cfg_pkg::ENTRIES_N{op_add}} & add_vld)
+    | ({cfg_pkg::ENTRIES_N{op_del}} & del_vld)
+    | ({cfg_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
 
 // Compute final validity vector. On a CLEAR op., all bits are cleared
 // regardless of prior state.
 assign o_stnxt_vld =
-    ({v_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
+    ({cfg_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
 
 // -------------------------------------------------------------------------- //
 // Next Keys/Volumes:
@@ -403,20 +404,20 @@ assign o_stnxt_vld =
 // ========================================================================== //
 
 // Shift Right only on ADD operation
-assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_vld_shift);
+assign mask_right = ({cfg_pkg::ENTRIES_N{op_add}} & add_vld_shift);
 
 // Shift Left only on LEFT operation.
-assign mask_left = ({v_pkg::ENTRIES_N{op_del}} & del_mask_left);
+assign mask_left = ({cfg_pkg::ENTRIES_N{op_del}} & del_mask_left);
 
 // TODO: replace
-assign mask_insert_key = ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert);
+assign mask_insert_key = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert);
 
 assign mask_insert_vol =
-      ({v_pkg::ENTRIES_N{op_add}} & add_mask_insert)
-    | ({v_pkg::ENTRIES_N{op_rep}} & match_sel)
+      ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert)
+    | ({cfg_pkg::ENTRIES_N{op_rep}} & match_sel)
     ;
 
-for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
+for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
   if (i == 0) begin
     // Right-most entry:
@@ -437,7 +438,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
       // Take left,
       ({v_pkg::VOLUME_BITS{mask_left [i]}} & i_stcur_volumes_r [i + 1]);
 
-  end else if (i == v_pkg::ENTRIES_N - 1) begin // if (i == 0)
+  end else if (i == cfg_pkg::ENTRIES_N - 1) begin // if (i == 0)
     // Left-most entry:
 
     assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_right [i]);
@@ -456,7 +457,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
       // Take right,
       ({v_pkg::VOLUME_BITS{mask_right [i]}} & i_stcur_volumes_r [i - 1]);
 
-  end else begin // if (i == v_pkg::ENTRIES_N - 1)
+  end else begin // if (i == cfg_pkg::ENTRIES_N - 1)
     // Internal entry:
 
     assign stnxt_keys_do_upt [i] =
@@ -481,7 +482,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
       // Take right,
       ({v_pkg::VOLUME_BITS{mask_right [i]}} & i_stcur_volumes_r [i - 1]);
 
-  end // else: !if(i == v_pkg::ENTRIES_N - 1)
+  end // else: !if(i == cfg_pkg::ENTRIES_N - 1)
 
 
   // Select update or retain prior.
@@ -494,7 +495,7 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
       ({v_pkg::VOLUME_BITS{ stnxt_volumes_do_upt [i]}} & stnxt_volumes_upt [i]) |
       ({v_pkg::VOLUME_BITS{~stnxt_volumes_do_upt [i]}} & i_stcur_volumes_r [i]);
 
-end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
+end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 
 
 // ========================================================================== //

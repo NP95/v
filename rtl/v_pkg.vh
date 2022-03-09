@@ -28,9 +28,11 @@
 `ifndef DESIGN_RTL_V_PKG_VH
 `define DESIGN_RTL_V_PKG_VH
 
+`include "cfg_pkg.vh"
+
 package v_pkg;
 
-typedef logic [$clog2(CONTEXT_N) - 1:0]  id_t;
+typedef logic [$clog2(cfg_pkg::CONTEXT_N) - 1:0]  id_t;
 
 typedef enum logic [1:0] {
   // Clear contents of list
@@ -42,7 +44,6 @@ typedef enum logic [1:0] {
   CMD_DELETE  = 2'b10,
   // Replace entry by key.
   CMD_REPLACE = 2'b11
-
 } cmd_t;
 
 typedef logic [63:0] key_t;
@@ -56,21 +57,21 @@ localparam int VOLUME_BITS = $bits(volume_t);
 typedef logic [31:0] size_t;
 
 
-typedef logic [$clog2(ENTRIES_N) - 1:0]  level_t;
+typedef logic [$clog2(cfg_pkg::ENTRIES_N) - 1:0]  level_t;
 
-typedef logic [$clog2(ENTRIES_N + 1) - 1:0]  listsize_t;
+typedef logic [$clog2(cfg_pkg::ENTRIES_N + 1) - 1:0]  listsize_t;
 localparam int LISTSIZE_W = $bits(listsize_t);
 
 typedef struct packed {
   listsize_t listsize;
-  logic [ENTRIES_N - 1:0] vld;
-  key_t [ENTRIES_N - 1:0] key;
-  volume_t [ENTRIES_N - 1:0] volume;
+  logic [cfg_pkg::ENTRIES_N - 1:0] vld;
+  key_t [cfg_pkg::ENTRIES_N - 1:0] key;
+  volume_t [cfg_pkg::ENTRIES_N - 1:0] volume;
 } state_t;
 
 localparam int      STATE_BITS = $bits(state_t);
 
-typedef logic [$clog2(CONTEXT_N) - 1:0] addr_t;
+typedef logic [$clog2(cfg_pkg::CONTEXT_N) - 1:0] addr_t;
 
 endpackage // v_pkg
 

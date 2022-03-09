@@ -29,8 +29,12 @@
 #define V_TB_OPTS_H
 
 #include <string>
+#include <string_view>
 
 // Forwards
+namespace tb {
+class Rnd;
+}
 namespace tb::log {
 class Scope;
 }
@@ -41,6 +45,8 @@ struct VKernelOptions {
   // Flag indicating that tracing is enabled.
   bool vcd_on = false;
 
+  std::string test_name;
+
   // Destination waveform.
   std::string vcd_fn{"sim.vcd"};
 
@@ -48,7 +54,13 @@ struct VKernelOptions {
   tb::log::Scope* l{nullptr};
 };
 
-struct TestOptions : tb::VKernelOptions {};
+struct TestOptions : tb::VKernelOptions {
+  // Test options:
+  std::string_view args;
+
+  // Randomization state
+  tb::Rnd* rnd = nullptr;
+};
 
 }  // namespace tb
 

@@ -29,6 +29,7 @@
 #include <string_view>
 
 #include "log.h"
+#include "rnd.h"
 #include "tb.h"
 #include "test.h"
 
@@ -36,25 +37,32 @@ namespace {
 
 class Driver {
  public:
-  Driver(int argc, char** argv) {
+  explicit Driver() {
     status_ = 0;
-    argc_ = argc;
-    argv_ = argv;
     tb::init(&tr_);
   }
 
   int status() const { return status_; }
 
-  void execute() {
-    topts_.vcd_on = true;
-    for (int i = 1; i < argc_; ++i) {
-      const std::string_view argstr{argv_[i]};
+  void execute(int argc, char** argv) {
+    bool got_testname = false;
+    tb::TestOptions topts;
+    tb::log::Log log;
+    topts.l = log.create_logger();
+    tb::Rnd rnd;
+    topts.rnd = std::addressof(rnd);
+    for (int i = 1; i < argc; ++i) {
+      const std::string_view argstr{argv[i]};
       if (argstr == "--help" || argstr == "-h") {
         print_usage();
         status_ = 1;
         return;
       } else if (argstr == "-v") {
-        log_.set_os(std::cout);
+        log.set_os(std::cout);
+      } else if (argstr == "-s" || argstr == "--seed") {
+        const std::string sstr{argv[++i]};
+        std::size_t pos = 0;
+        rnd.seed(std::stoi(sstr, &pos));
       } else if (argstr == "--list") {
         for (const tb::TestBuilder* tb : tr_.tests()) {
           std::cout << tb->name() << "\n";
@@ -63,7 +71,7 @@ class Driver {
         return;
       } else if (argstr == "--vcd") {
 #ifdef ENABLE_VCD
-        topts_.vcd_on = true;
+        topts.vcd_on = true;
 #else
         // VCD support has not been compiled into driver. Fail
         std::cout
@@ -71,57 +79,58 @@ class Driver {
         status_ = 1;
 #endif
       } else if (argstr == "--run") {
-        const std::string targs{argv_[++i]};
-        if (!run(targs)) {
-          status_ = 1;
-          return;
-        }
+        topts.test_name = argv[++i];
+        got_testname = true;
+      } else if (argstr == "--args") {
+        topts.args = argv[++i];
       } else {
         std::cout << "Unknown argument: " << argstr << "\n";
         status_ = 1;
         return;
       }
     }
+
+    // Try to run test.
+    if (!got_testname || !run(topts)) {
+      status_ = 1;
+      return;
+    }
   }
 
  private:
-  bool run(const std::string& targs) {
-    if (const tb::TestBuilder* tb = tr_.get(targs); tb != nullptr) {
-      return run(tb);
+  bool run(const tb::TestOptions& opts) {
+    if (const tb::TestBuilder* tb = tr_.get(opts.test_name); tb != nullptr) {
+      return run(opts, tb);
     } else {
       return false;
     }
   }
 
-  bool run(const tb::TestBuilder* tb) {
-    topts_.l = log_.create_logger();
-    std::unique_ptr<tb::Test> t{tb->construct(topts_)};
+  bool run(const tb::TestOptions& opts, const tb::TestBuilder* tb) {
+    std::unique_ptr<tb::Test> t{tb->construct(opts)};
     return t->run();
   }
 
   void print_usage() {
     std::cout << " -h|--help         Print help and quit.\n"
               << " -v                Verbose\n"
+              << " -s|--seed         Randomization seed.\n"
               << " --list            List testcases\n"
 #ifndef ENABLE_VCD
               << " --vcd             Enable waveform tracing (VCD)\n"
 #endif
-              << " --run <args>      Run testcase\n"
-              << " --run_all         Run all testcases\n";
+              << " --run <test>      Run testcase\n"
+              << " --args <args>     Testcase arguments.\n";
   }
 
-  int argc_;
-  char** argv_;
   tb::TestRegistry tr_;
   int status_;
-  tb::log::Log log_;
-  tb::TestOptions topts_;
 };
 
 }  // namespace
 
 int main(int argc, char** argv) {
-  Driver drv{argc, argv};
-  drv.execute();
+  Driver drv{};
+  drv.execute(argc, argv);
   return drv.status();
 }

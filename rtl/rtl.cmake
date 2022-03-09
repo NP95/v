@@ -62,6 +62,7 @@ set(RTL_GENERATED_SOURCES
 
 set(RTL_INCLUDE_PATHS
   "${RTL_ROOT}/common"
+  "${RTL_ROOT}"
   )
 
 set(RTL_CFG_SOURCES "${RTL_ROOT}/cfg.vlt")

@@ -30,13 +30,13 @@
 
 package cfg_pkg;
 
-localparam int CONTEXT_N = @CONTEXT_N@;
+  localparam int CONTEXT_N = @CONTEXT_N@;
 
-localparam int ENTRIES_N = @ENTRIES_N@;
+  localparam int ENTRIES_N = @ENTRIES_N@;
 
-localparam bit IS_BID_TABLE = 'b0;
+  localparam bit IS_BID_TABLE = 'b0;
 
-localparam bit ALLOW_DUPLICATES = @ALLOW_DUPLICATES_VSTR@;
+  localparam bit ALLOW_DUPLICATES = @ALLOW_DUPLICATES_VSTR@;
 
 endpackage // cfg_pkg
 

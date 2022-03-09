@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+#include <string_view>
+#include <vector>
+
 #include "../log.h"
 #include "../mdl.h"
 #include "../rnd.h"
@@ -36,7 +39,33 @@
 
 namespace {
 
+std::vector<std::string_view> split(const std::string_view args,
+                                    const char sep = ',') {
+  std::vector<std::string_view> vs;
+  std::string_view::size_type i = 0, j = 0;
+  do {
+    j = args.find(sep, i);
+    if (j == std::string_view::npos) {
+      vs.push_back(args.substr(i));
+    } else {
+      vs.push_back(args.substr(i, j - i));
+    }
+    i = (j + 1);
+  } while (j != std::string_view::npos);
+  return vs;
+}
+
+std::pair<std::string_view, std::vector<std::string_view> > split_kv(
+    std::string_view sv) {
+  std::string_view::size_type i = sv.find('=');
+  const std::string_view k = sv.substr(0, i);
+  const std::vector<std::string_view> vv{split(sv.substr(++i), ';')};
+  return {k, vv};
+}
+
 struct Options {
+  static Options construct(const tb::TestOptions& opts, const tb::Mdl* mdl);
+
   float clr_weight = 0.01f;
   float add_weight = 1.0f;
   float del_weight = 1.0f;
@@ -52,9 +81,81 @@ struct Options {
   const tb::Mdl* mdl = nullptr;
 };
 
-class Stimulus {
-  enum class State { Random, FinalCheck, WindDown };
+Options Options::construct(const tb::TestOptions& topts, const tb::Mdl* mdl) {
+  Options opts;
+  if (!topts.args.empty()) {
+    // Argument list has been populated; process.
+    std::vector<std::string_view> argv{split(topts.args)};
+    for (const std::string_view vs : argv) {
+      const auto arg{split_kv(vs)};
+      if (arg.first == "n") {
+        std::size_t pos;
+        opts.n = std::stoi(std::string{*arg.second.begin()}, &pos);
+      } else if (arg.first == "p") {
+        // Parse 'probability (p)' argument as:
+        //
+        //    p=a;b;c;d;e
+        //
+        // where (command weight):
+        //
+        //   a - clear weight
+        //   b - add weight
+        //   c - del. weight
+        //   d - rep. weight
+        //   e - inv. weight  (bubble)
+        //
+        std::vector<std::string_view> vs{arg.second};
+        for (int i = 0; i < 5; i++) {
+          if (vs.empty()) {
+            break;
+          }
+          std::size_t pos;
+          const std::string weight_str{vs.back()};
+          switch (i) {
+            case 0: {
+              opts.clr_weight = std::stof(weight_str, &pos);
+            } break;
+            case 1: {
+              opts.add_weight = std::stof(weight_str, &pos);
+            } break;
+            case 2: {
+              opts.del_weight = std::stof(weight_str, &pos);
+            } break;
+            case 3: {
+              opts.rep_weight = std::stof(weight_str, &pos);
+            } break;
+            case 4: {
+              opts.inv_weight = std::stof(weight_str, &pos);
+            } break;
+          }
+          vs.pop_back();
+        }
+      }
+    }
+  }
+  // The number of contexts to exercise.
+  opts.contexts_n = cfg::ENTRIES_N;
+  opts.rnd = topts.rnd;
+  opts.mdl = mdl;
+  return opts;
+}
 
+enum class State { Random, FinalCheck, WindDown };
+
+const char* to_string(State st) {
+  switch (st) {
+    case State::Random:
+      return "Random";
+    case State::FinalCheck:
+      return "FinalCheck";
+    case State::WindDown:
+      return "WindDown";
+    default:
+      return "Invalid";
+  }
+}
+
+class Stimulus {
  public:
   Stimulus(const Options& opts) : opts_(opts), val_(opts.mdl) {
     bag_.push_back(tb::Cmd::Clr, opts_.clr_weight);
@@ -62,7 +163,7 @@ class Stimulus {
     bag_.push_back(tb::Cmd::Del, opts_.del_weight);
     bag_.push_back(tb::Cmd::Rep, opts_.rep_weight);
     bag_.push_back(tb::Cmd::Invalid, opts_.inv_weight);
-    st_ = State::Random;
+    state(State::Random);
   }
 
   bool get(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
@@ -91,7 +192,7 @@ class Stimulus {
       opts_.n -= issue_count;
     } else {
       opts_.n = cfg::ENTRIES_N * cfg::CONTEXT_N - 1;
-      st_ = State::FinalCheck;
+      state(State::FinalCheck);
     }
     return true;
   }
@@ -102,7 +203,7 @@ class Stimulus {
     qc = tb::QueryCommand{id, level};
     if (--opts_.n < 0) {
       opts_.n = 10;
-      st_ = State::WindDown;
+      state(State::WindDown);
     }
     return true;
   }
@@ -118,9 +219,7 @@ class Stimulus {
   }
 
   int handle(tb::QueryCommand& qc) {
-    const tb::prod_id_t prod_id = opts_.rnd->uniform(opts_.contexts_n - 1, 0);
-    const tb::level_t level = opts_.rnd->uniform(cfg::ENTRIES_N - 1);
-    qc = tb::QueryCommand{prod_id, 0};
+    generate(qc);
     return 1;
   }
 
@@ -154,7 +253,13 @@ class Stimulus {
     }
   }
 
-  void generate(tb::QueryCommand& qc) {}
+  void generate(tb::QueryCommand& qc) {
+    const tb::prod_id_t prod_id = opts_.rnd->uniform(opts_.contexts_n - 1, 0);
+    const tb::level_t level = opts_.rnd->uniform(cfg::ENTRIES_N - 1);
+    qc = tb::QueryCommand{prod_id, 0};
+  }
+
+  void state(State st) { st_ = st; }
 
   bool b = true;
   tb::Bag<tb::Cmd> bag_;
@@ -198,12 +303,7 @@ struct Regress : public tb::Test {
   CREATE_TEST_BUILDER(Regress);
 
   bool run() override {
-    Options opts;
-    tb::Rnd rnd;
-    opts.contexts_n = cfg::CONTEXT_N;
-    opts.mdl = k()->mdl();
-    opts.rnd = &rnd;
-    Stimulus s{opts};
+    Stimulus s{Options::construct(this->opts(), k()->mdl())};
     RegressCB cb{this, std::addressof(s)};
     return k()->run(std::addressof(cb));
   }

@@ -102,7 +102,7 @@ logic                                   s1_lut_error;
 `V_DFF(logic, s1_lut_vld);
 `V_DFFEN_WITH_EN(v_pkg::id_t, s1_lut_prod_id, s1_lut_en);
 `V_DFFEN_WITH_EN(logic, s1_lut_error, s1_lut_en);
-`V_DFFEN_WITH_EN(logic [v_pkg::ENTRIES_N - 1:0], s1_lut_level_dec, s1_lut_en);
+`V_DFFEN_WITH_EN(logic [cfg_pkg::ENTRIES_N - 1:0], s1_lut_level_dec, s1_lut_en);
 
 // ========================================================================== //
 //                                                                            //
@@ -138,7 +138,7 @@ assign s1_lut_error_w = s0_lut_error_is_busy;
 
 // -------------------------------------------------------------------------- //
 //
-dec #(.N(v_pkg::ENTRIES_N)) u_s0_id_dec (
+dec #(.N(cfg_pkg::ENTRIES_N)) u_s0_id_dec (
 //
   .i_x                                  (i_lut_level)
 //
@@ -194,7 +194,7 @@ assign s1_lut_error =
 
 // -------------------------------------------------------------------------- //
 //
-mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
+mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 //
   .i_x                                  (i_state_rdata.key)
 , .i_sel                                (s1_lut_level_dec_r)
@@ -204,7 +204,7 @@ mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 
 // -------------------------------------------------------------------------- //
 //
-mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
+mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
 //
   .i_x                                  (i_state_rdata.volume)
 , .i_sel                                (s1_lut_level_dec_r)
