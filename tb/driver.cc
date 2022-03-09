@@ -46,6 +46,7 @@ class Driver {
   int status() const { return status_; }
 
   void execute() {
+    topts_.vcd_on = true;
     for (int i = 1; i < argc_; ++i) {
       const std::string_view argstr{argv_[i]};
       if (argstr == "--help" || argstr == "-h") {
@@ -63,7 +64,6 @@ class Driver {
       } else if (argstr == "--vcd") {
 #ifdef ENABLE_VCD
         topts_.vcd_on = true;
-        ++i;
 #else
         // VCD support has not been compiled into driver. Fail
         std::cout

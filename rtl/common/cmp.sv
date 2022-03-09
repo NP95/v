@@ -30,6 +30,8 @@
 module cmp #(
   // Width of comparitor
   parameter int W
+  // Signed/Unsigned comparison
+, parameter bit IS_SIGNED = 'b1
 ) (
 // -------------------------------------------------------------------------- //
 //
@@ -47,8 +49,22 @@ module cmp #(
 //                                                                            //
 // ========================================================================== //
 
+logic [W - 1:0]                         cla_a;
+logic [W - 1:0]                         cla_b;
+logic                                   cla_cin;
+logic [W - 1:0]                         cla_y;
+logic                                   cla_cout;
+
+// Flags:
+logic                                   z;
+logic                                   v;
+logic                                   n;
+logic                                   c;
+
 logic                                   eq;
+logic                                   gt_infer;
 logic                                   gt;
+logic                                   lt_infer;
 logic                                   lt;
 
 // ========================================================================== //
@@ -59,13 +75,49 @@ logic                                   lt;
 
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : cmp_PROC
+assign gt_infer = ($signed(i_a) > $signed(i_b));
+assign lt_infer = ($signed(i_a) < $signed(i_b));
 
-  eq = ($signed(i_a) == $signed(i_b));
-  gt = ($signed(i_a) > $signed(i_b));
-  lt = ($signed(i_a) < $signed(i_b));
+// -------------------------------------------------------------------------- //
+//
+assign cla_a = i_a;
+assign cla_b = ~i_b;
+assign cla_cin = 1'b1;
 
-end // block: cmp_PROC
+// -------------------------------------------------------------------------- //
+//
+cla #(.W(W)) u_cla (
+  //
+    .i_a                                (cla_a)
+  , .i_b                                (cla_b)
+  , .i_cin                              (cla_cin)
+  //
+  , .o_y                                (cla_y)
+  , .o_cout                             (cla_cout)
+);
+
+// -------------------------------------------------------------------------- //
+//
+
+// Overflow flag
+assign v = ( cla_a[W - 1] &  cla_b[W - 1] & ~cla_y[W - 1]) |
+           (~cla_a[W - 1] & ~cla_b[W - 1] &  cla_y[W - 1]);
+
+// Zero flag
+assign z = (cla_y == '0);
+
+// Negative flag
+assign n = cla_y[W - 1];
+
+// Carry out
+assign c = cla_cout;
+
+// -------------------------------------------------------------------------- //
+//
+
+assign eq = z;
+assign lt = IS_SIGNED ? (~(n ^ v) & ~z) : (c & ~z);
+assign gt = IS_SIGNED ? ~c : (n ^ z);
 
 // ========================================================================== //
 //                                                                            //
@@ -74,7 +126,7 @@ end // block: cmp_PROC
 // ========================================================================== //
 
 assign o_eq = eq;
-assign o_gt = gt;
-assign o_lt = lt;
+assign o_gt = gt_infer;
+assign o_lt = lt_infer;
 
 endmodule // cmp

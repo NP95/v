@@ -53,7 +53,7 @@ set(VERILATOR_OBJ "Vobj")
 
 set(VERILATOR_ARGS
   "-cc"
-  "-Wall"
+#  "-Wall"
   "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")
@@ -118,6 +118,6 @@ add_dependencies(driver verilate)
 # Regression target
 add_custom_target(run_regress
   COMMENT "Running regression."
-  COMMAND "${CMAKE_CURRENT_BINARY_DIR}/driver"
-  MAIN_DEPENDENCY driver
+  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/driver -v --run Regress
+  DEPENDS driver
   )

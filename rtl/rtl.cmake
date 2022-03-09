@@ -45,6 +45,7 @@ set(RTL_SOURCES
   "${RTL_ROOT}/common/mask.sv"
   "${RTL_ROOT}/common/lzd.sv"
   "${RTL_ROOT}/common/pri.sv"
+  "${RTL_ROOT}/common/cla.sv"
   "${RTL_ROOT}/common/cmp.sv"
   "${RTL_ROOT}/common/dec.sv"
   "${RTL_ROOT}/common/mux.sv"
