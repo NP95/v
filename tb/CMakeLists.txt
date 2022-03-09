@@ -53,7 +53,7 @@ set(VERILATOR_OBJ "Vobj")
 
 set(VERILATOR_ARGS
   "-cc"
-#  "-Wall"
+  "-Wall"
   "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")

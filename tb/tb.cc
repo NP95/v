@@ -89,6 +89,7 @@ bool VKernel::run(VKernelCB* cb) {
   int rundown_n = 0;
   const int rundown_cycles = 5;
   bool do_stepping = true;
+  bool failed = false;
   while (do_stepping || --rundown_n > 0) {
     try {
       if (++tb_time_ % 5 == 0) {
@@ -99,6 +100,7 @@ bool VKernel::run(VKernelCB* cb) {
         VPorts::clk(vtb, !edge);
       }
     } catch (const VKernelException& ex) {
+      failed = true;
       do_stepping = false;
       rundown_n = rundown_cycles;
     }
@@ -108,7 +110,7 @@ bool VKernel::run(VKernelCB* cb) {
     if (vcd_) vcd_->dump(tb_time_);
 #endif
   }
-  return true;
+  return failed;
 }
 
 bool VKernel::eval_clock_edge(VKernelCB* cb, bool edge) {
