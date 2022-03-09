@@ -29,7 +29,6 @@ cmake_minimum_required(VERSION 3.20)
 
 project(v)
 
-option(ENABLE_VCD "Enable waveform tracing." ON)
 
 option(VERILATOR_ROOT "Verilator installation root")
 
@@ -41,10 +40,8 @@ list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_SOURCE_DIR}/lib"
   )
 
-include(FetchContent)
 include(FindVerilator)
-
-enable_testing()
+include(utility)
 
 if (Verilator_EXE)
   add_subdirectory(tb)

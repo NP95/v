@@ -25,7 +25,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`verilator_config
+`ifndef DESIGN_RTL_CFG_PKG_VH
+`define DESIGN_RTL_CFG_PKG_VH
 
-lint_off -rule UNUSED -file "*/v_pipe_update_exe.sv" -lines 101
-lint_off -rule UNUSED -file "*/v_pipe_update_exe.sv" -lines 102
+package cfg_pkg;
+
+localparam int CONTEXT_N = @CONTEXT_N@;
+
+localparam int ENTRIES_N = @ENTRIES_N@;
+
+localparam bit IS_BID_TABLE = 'b0;
+
+localparam bit ALLOW_DUPLICATES = @ALLOW_DUPLICATES_VSTR@;
+
+endpackage // cfg_pkg
+
+`endif

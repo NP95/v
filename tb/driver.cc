@@ -26,16 +26,11 @@
 // ========================================================================== //
 
 #include <iostream>
-#include <string>
+#include <string_view>
 
 #include "log.h"
 #include "tb.h"
 #include "test.h"
-
-// TODO: get rid of these includes
-#include "Vobj/Vtb.h"
-#include "mdl.h"
-// TODO:
 
 namespace {
 
@@ -51,14 +46,8 @@ class Driver {
   int status() const { return status_; }
 
   void execute() {
-    // TODO for bring-up
-    topts_.vcd_on = true;
-    log_.set_os(std::cout);
-    (void)run("Regress");
-    // (void)run("CheckDelKey");
-
     for (int i = 1; i < argc_; ++i) {
-      const std::string argstr{argv_[i]};
+      const std::string_view argstr{argv_[i]};
       if (argstr == "--help" || argstr == "-h") {
         print_usage();
         status_ = 1;
@@ -71,21 +60,19 @@ class Driver {
         }
         status_ = 1;
         return;
-#ifdef ENABLE_VCD
       } else if (argstr == "--vcd") {
+#ifdef ENABLE_VCD
         topts_.vcd_on = true;
         ++i;
+#else
+        // VCD support has not been compiled into driver. Fail
+        std::cout
+            << "Waveform tracing has not been enabled in current build.\n";
+        status_ = 1;
 #endif
-      } else if (argstr == "--runall") {
-        for (const tb::TestBuilder* tb : tr_.tests()) {
-          if (!run(tb)) {
-            status_ = 1;
-            return;
-          }
-        }
-      } else if (true || argstr == "--run") {
-        //        const std::string targs{argv_[++i]};
-        if (!run("CheckDelCmd")) {
+      } else if (argstr == "--run") {
+        const std::string targs{argv_[++i]};
+        if (!run(targs)) {
           status_ = 1;
           return;
         }

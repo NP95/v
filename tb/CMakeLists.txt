@@ -26,25 +26,25 @@
 ##========================================================================== //
 
 # ---------------------------------------------------------------------------- #
-# Environment:
+# Options:
+declare_flag_option(ENABLE_VCD "Enable waveform tracing." ON)
+
+# ---------------------------------------------------------------------------- #
+# Build sources:
 include(rtl)
 include(lib)
 
 # ---------------------------------------------------------------------------- #
-# TB flags:
-set(has_vcd false)
+# Configure sources
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cfg.h.in" cfg.h)
 
-set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock")
+foreach (src_fn "${RTL_GENERATED_SOURCES}")
+  cmake_path(GET src_fn STEM LAST_ONLY dst_fn)
+  configure_file(${src_fn} ${dst_fn})
+endforeach ()
 
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.11.0
-  )
-
-FetchContent_MakeAvailable(googletest)
-
-set(TB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+# ---------------------------------------------------------------------------- #
+# Verilate
 
 # Build verilator support library
 verilator_build(vlib)
@@ -53,13 +53,13 @@ set(VERILATOR_OBJ "Vobj")
 
 set(VERILATOR_ARGS
   "-cc"
-#  "-Wall"
+  "-Wall"
   "--Mdir ${VERILATOR_OBJ}"
   "--build"
   "--top tb")
 
 if (ENABLE_VCD)
-  set(has_vcd true)
+  # Enable tracing
   list(APPEND VERILATOR_ARGS "--trace")
 endif ()
 
@@ -67,62 +67,34 @@ set(TB_SOURCES
   "${RTL_CFG_SOURCES}"
   "${RTL_SOURCES}"
   "${LIB_SOURCES}"
-  "${TB_ROOT}/tb.sv")
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
 
-macro (set_tb_param k v)
-  set(${k} ${v})
-endmacro ()
-
-macro (verilate_tb cfg)
-  set(VERILATOR_INCLUDES "-I${CMAKE_CURRENT_BINARY_DIR}")
-  foreach (inc_fn ${RTL_INCLUDE_PATHS})
-    list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
-  endforeach ()
-  foreach (inc_fn ${LIB_INCLUDE_PATHS})
-    list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
-  endforeach ()
-
-  set(VERILATOR_COMMAND_LIST
-    "${VERILATOR_ARGS}"
-    "${VERILATOR_INCLUDES}"
-    "${TB_SOURCES}")
-
-  string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
-
-  add_custom_target(verilate_${cfg}
-    COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
-      ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
-    COMMENT "Verilating (verilate_${cfg})...")
-
-  set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/${VERILATOR_OBJ}/Vtb__ALL.a")
-endmacro ()
-
-macro (build_test_cfg cfg src)
-  verilate_tb(${cfg})
-
-  set(target "${cfg}_test")
-  add_executable(${target} ${TB_CPP})
-  target_include_directories(${target} PRIVATE
-    "${CMAKE_CURRENT_BINARY_DIR}"
-    "${Verilator_INCLUDE_DIR}")
-  target_link_libraries(${target} gtest_main gtest pthread vlib ${VERILATOR_A})
-  add_dependencies(${target} verilate_${cfg})
-
-  add_test(NAME ${target} COMMAND ${target})
-endmacro ()
-
-set_tb_param("CONTEXT_N" 10)
-set_tb_param("ENTRIES_N" 10)
-
-configure_file("${TB_ROOT}/cfg.h.in" cfg.h)
-
-foreach (src_fn "${RTL_GENERATED_SOURCES}")
-  cmake_path(GET src_fn STEM LAST_ONLY dst_fn)
-  configure_file(${src_fn} ${dst_fn})
+set(VERILATOR_INCLUDES "-I${CMAKE_CURRENT_BINARY_DIR}")
+foreach (inc_fn ${RTL_INCLUDE_PATHS})
+  list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
+endforeach ()
+foreach (inc_fn ${LIB_INCLUDE_PATHS})
+  list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
 endforeach ()
 
-set(TB_CPP
+set(VERILATOR_COMMAND_LIST
+  "${VERILATOR_ARGS}"
+  "${VERILATOR_INCLUDES}"
+  "${TB_SOURCES}")
+
+string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
+
+add_custom_target(verilate
+  COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
+  ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
+  COMMENT "Verilating (verilate_${cfg})...")
+
+set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/${VERILATOR_OBJ}/Vtb__ALL.a")
+
+# ---------------------------------------------------------------------------- #
+# Driver executable:
+set(DRIVER_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke_cmds.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/directed.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/reset.cc"
@@ -135,4 +107,17 @@ set(TB_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/driver.cc"
   )
 
-build_test_cfg(cfg_0 ${TB_CPP})
+add_executable(driver ${DRIVER_CPP})
+target_include_directories(driver PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}"
+  "${Verilator_INCLUDE_DIR}")
+target_link_libraries(driver vlib ${VERILATOR_A})
+add_dependencies(driver verilate)
+
+# ---------------------------------------------------------------------------- #
+# Regression target
+add_custom_target(run_regress
+  COMMENT "Running regression."
+  COMMAND "${CMAKE_CURRENT_BINARY_DIR}/driver"
+  MAIN_DEPENDENCY driver
+  )

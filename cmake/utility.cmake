@@ -25,42 +25,31 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-# ---------------------------------------------------------------------------- #
-# RTL Parameterizations
+macro (option_to_string opt)
+  if (${opt})
+    set("${opt}_STR" "true")
+  else ()
+    set("${opt}_STR" "false")
+  endif ()
+endmacro ()
 
-# The number of supported contexts
-declare_option(CONTEXT_N "The number of contexts/prod_id." 10)
+macro (option_to_vstring opt)
+  if (${opt})
+    set("${opt}_VSTR" "1'b1")
+  else ()
+    set("${opt}_VSTR" "1'b0")
+  endif ()
+endmacro ()
 
-# The number of unique entries per context
-declare_option(ENTRIES_N "The number of unique entries per context." 10)
+macro (declare_option str desc def)
+  option(${str} ${desc} ${def})
+  set(${str} ${def})
+  message(STATUS "Setting parameter: ${str}=${def}")
+endmacro ()
 
-# Allow duplicate keys within a given context.
-declare_flag_option(ALLOW_DUPLICATES "Allow duplicate keys." ON)
-
-# ---------------------------------------------------------------------------- #
-# Sources
-set(RTL_ROOT "${CMAKE_SOURCE_DIR}/rtl")
-
-set(RTL_SOURCES
-  "${RTL_ROOT}/common/mask.sv"
-  "${RTL_ROOT}/common/lzd.sv"
-  "${RTL_ROOT}/common/pri.sv"
-  "${RTL_ROOT}/common/cmp.sv"
-  "${RTL_ROOT}/common/dec.sv"
-  "${RTL_ROOT}/common/mux.sv"
-  "${RTL_ROOT}/v_pipe_update_exe.sv"
-  "${RTL_ROOT}/v_pipe_update.sv"
-  "${RTL_ROOT}/v_pipe_query.sv"
-  "${RTL_ROOT}/v_init.sv"
-  "${RTL_ROOT}/v.sv"
-  )
-
-set(RTL_GENERATED_SOURCES
-  "${RTL_ROOT}/cfg_pkg.vh.in"
-  )
-
-set(RTL_INCLUDE_PATHS
-  "${RTL_ROOT}/common"
-  )
-
-set(RTL_CFG_SOURCES "${RTL_ROOT}/cfg.vlt")
+macro (declare_flag_option str desc def)
+  option(${str} ${desc} ${def})
+  option_to_string(${str})
+  option_to_vstring(${str})
+  message(STATUS "Setting parameter: ${str}=${${str}_STR}")
+endmacro ()

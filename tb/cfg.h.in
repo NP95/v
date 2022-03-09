@@ -43,9 +43,9 @@ namespace cfg {
   //  Ask: Head is smallest entry
   constexpr const bool is_bid_table = false;
 
-  constexpr const bool has_vcd = @has_vcd@;
+  constexpr const bool enable_vcd = @ENABLE_VCD_STR@;
 
-  constexpr const bool allow_duplicates = @CFG_ALLOW_DUPLICATES@;
+  constexpr const bool allow_duplicates = @ALLOW_DUPLICATES_STR@;
 
 } // namespace cfg
 
