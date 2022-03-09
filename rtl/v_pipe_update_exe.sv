@@ -134,7 +134,7 @@ v_pkg::volume_t                         notify_volume;
 
 // ========================================================================== //
 //                                                                            //
-//  Combinatorial Logic                                                       //
+//  Command decode                                                            //
 //                                                                            //
 // ========================================================================== //
 
@@ -144,6 +144,12 @@ assign op_clr = (i_pipe_cmd_r == v_pkg::CMD_CLEAR);
 assign op_add = (i_pipe_cmd_r == v_pkg::CMD_ADD);
 assign op_del = (i_pipe_cmd_r == v_pkg::CMD_DELETE);
 assign op_rep = (i_pipe_cmd_r == v_pkg::CMD_REPLACE);
+
+// ========================================================================== //
+//                                                                            //
+//  Table match logic                                                         //
+//                                                                            //
+// ========================================================================== //
 
 // -------------------------------------------------------------------------- //
 // Construct one-hot vector denoting the position of matching keys in the
@@ -155,12 +161,9 @@ assign match_sel [i] = i_stcur_vld_r [i] & (i_pipe_key_r == i_stcur_keys_r [i]);
 
 end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 
-// TODO: needs to be unique
-
 // Flag denoting that a matching key was found in the current state.
 assign match_hit = (match_sel != '0);
 
-// TODO: rename
 assign match_full = (i_stcur_vld_r == '1);
 
 mux #(.N(v_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
@@ -191,6 +194,12 @@ for (genvar i = 0; i < v_pkg::ENTRIES_N; i++) begin
   );
 
 end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
+
+// ========================================================================== //
+//                                                                            //
+//  Add command                                                               //
+//                                                                            //
+// ========================================================================== //
 
 // The list is ordered from MSB (left) to LSB (right) on decreasing key in the
 // BID_TABLE case, or increasing key (!BID_TABLE, i.e. ask-table) case. Compare
@@ -278,9 +287,12 @@ assign add_vld = (i_stcur_vld_r | add_vld_shift | add_mask_insert);
 //
 assign add_listsize_inc = (~match_full);
 
-// -------------------------------------------------------------------------- //
-// Delete
-//
+// ========================================================================== //
+//                                                                            //
+//  Delete command                                                            //
+//                                                                            //
+// ========================================================================== //
+
 // NOTE: to avoid a costly prioritization operation, we implicitly assume that
 // all keys within the current state vector are unique.
 
@@ -297,6 +309,10 @@ assign add_listsize_inc = (~match_full);
 
 if (v_pkg::ALLOW_DUPLICATES) begin
 
+// The table update logic cannot remove more than one entry per-cycle. In the
+// case where multiple matching keys are allowed to co-exist in the same
+// context, by convention we select the entry nearest the head.
+
 pri #(.W(v_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
   //
     .i_x                                (match_sel)
@@ -305,6 +321,9 @@ pri #(.W(v_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
 );
 
 end else begin
+
+// The table has not be configured support multiple keys. For correct operation
+// therefore we require that the stimulus be appropriately constrained.
 
 assign del_sel = match_sel;
 
@@ -340,8 +359,10 @@ assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
 
 // Compose final valid vector as unmodified positions and new left-shifted
 // positions.
-assign del_vld = match_hit ?
-    ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift) : i_stcur_vld_r;
+assign del_vld =
+      match_hit
+    ? ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift)
+    : i_stcur_vld_r;
 
 // On delete, the listsize is decremented whenever a hit takes place (i.e. a
 // matching entry has been found in the context, which will now be removed).
@@ -350,9 +371,13 @@ assign del_listsize_dec = match_hit;
 
 // TODO: flag indicating that a replacement took place.
 
-// -------------------------------------------------------------------------- //
-// Validity vector
-//
+
+// ========================================================================== //
+//                                                                            //
+//  Validity update                                                           //
+//                                                                            //
+// ========================================================================== //
+
 // Compute update to the validatity vector. On a replacement, the overall state
 // of the vector remains unchanged regardless of whether a replacement has taken
 // place.
@@ -370,6 +395,12 @@ assign o_stnxt_vld =
 // -------------------------------------------------------------------------- //
 // Next Keys/Volumes:
 //
+
+// ========================================================================== //
+//                                                                            //
+//  Table update                                                              //
+//                                                                            //
+// ========================================================================== //
 
 // Shift Right only on ADD operation
 assign mask_right = ({v_pkg::ENTRIES_N{op_add}} & add_vld_shift);
@@ -473,21 +504,21 @@ end // for (genvar i = 0; i < v_pkg::ENTRIES_N; i++)
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// Compute update to list size as function of current command
+
 //
 assign stnxt_listsize_inc = (op_add & add_listsize_inc);
 assign stnxt_listsize_dec = (op_del & del_listsize_dec);
 assign stnxt_listsize_def = ~(stnxt_listsize_inc | stnxt_listsize_dec);
 
-// -------------------------------------------------------------------------- //
-//
 //
 assign stnxt_listsize_nxt =
       ({v_pkg::LISTSIZE_W{stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
     | ({v_pkg::LISTSIZE_W{stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
     | ({v_pkg::LISTSIZE_W{stnxt_listsize_def}} &  i_stcur_listsize_r);
 
-// -------------------------------------------------------------------------- //
-//
+// Next listsize is conditionally reset to '0 on a clear operation regardless of
+// prior computed values.
 //
 assign stnxt_listsize = ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt);
 
@@ -497,27 +528,34 @@ assign stnxt_listsize = ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt);
 //                                                                            //
 // ========================================================================== //
 
-// Clear operation and N'th entry was valid.
+// Clear operation and head entry was valid.
+//
 assign notify_cleared_list = op_clr & i_stcur_vld_r [0];
 
-// Add operation. inserted into the N'th entry.
+// Add operation. inserted into the head entry.
+//
 assign notify_did_add = op_add & add_mask_insert [0];
 
 assign notify_did_del = op_del & match_sel [0];
 
-// Replace or Delete operations took place into the N'th entry.
-assign notify_did_rep_or_del =
-   (op_rep | op_del) & match_sel [0];
+// Notify on match replacement or deletion command to the head entry.
+//
+assign notify_did_rep_or_del = (op_rep | op_del) & match_sel [0];
 
-assign notify_vld = notify_cleared_list |
-                    notify_did_add |
-                    notify_did_rep_or_del;
+assign notify_vld =
+  (notify_cleared_list | notify_did_add | notify_did_rep_or_del);
 
-
+// Notify key is current command key, indicated by the hit. On a Clear we ignore
+// the key returned as we may have just cleared an empty context (where the head
+// entry is invalid).
+//
 assign notify_key = i_pipe_key_r;
 
-assign notify_volume = ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r) |
-                       ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);
+// Notify volume is the volume placed into the head position, or the value just
+// removed.
+assign notify_volume =
+  ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r) |
+  ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);
 
 // ========================================================================== //
 //                                                                            //
