@@ -252,7 +252,7 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
 //
 //  Sel     0  0  0  0  0  0  0  1  1  1  0  0  0  0
 
-assign add_vld_sel = i_stcur_vld_r & add_mask_left;
+assign add_vld_sel = (i_stcur_vld_r & add_mask_left);
 
 // -------------------------------------------------------------------------- //
 // Derive validity mask of newly shifted elements
@@ -261,7 +261,7 @@ assign add_vld_sel = i_stcur_vld_r & add_mask_left;
 //
 //  VldSh   0  0  0  0  0  0  1  1  1  0  0  0  0  0
 //
-assign add_vld_shift = add_vld_sel << 1;
+assign add_vld_shift = (add_vld_sel << 1);
 
 // -------------------------------------------------------------------------- //
 // Derive the valid state as a function of the shifted elements, the newly
