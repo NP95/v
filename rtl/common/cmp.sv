@@ -32,6 +32,8 @@ module cmp #(
   parameter int W
   // Signed/Unsigned comparison
 , parameter bit IS_SIGNED = 'b1
+  // Allow synthesis to infer comparison logic
+, parameter bit FPGA_INFER = 'b0
 ) (
 // -------------------------------------------------------------------------- //
 //
@@ -49,6 +51,18 @@ module cmp #(
 //                                                                            //
 // ========================================================================== //
 
+logic                                   eq;
+logic                                   gt;
+logic                                   lt;
+
+// ========================================================================== //
+//                                                                            //
+//  Combinatorial Logic                                                       //
+//                                                                            //
+// ========================================================================== //
+
+if (FPGA_INFER) begin
+
 logic [W - 1:0]                         cla_a;
 logic [W - 1:0]                         cla_b;
 logic                                   cla_cin;
@@ -61,24 +75,12 @@ logic                                   v;
 logic                                   n;
 logic                                   c;
 
-logic                                   eq;
-logic                                   gt;
-logic                                   lt;
-
-// ========================================================================== //
-//                                                                            //
-//  Combinatorial Logic                                                       //
-//                                                                            //
-// ========================================================================== //
-
 // -------------------------------------------------------------------------- //
 //
 assign cla_a = i_a;
 assign cla_b = ~i_b;
 assign cla_cin = 1'b1;
 
-// -------------------------------------------------------------------------- //
-//
 cla #(.W(W)) u_cla (
   //
     .i_a                                (cla_a)
@@ -89,8 +91,9 @@ cla #(.W(W)) u_cla (
   , .o_cout                             (cla_cout)
 );
 
+
 // -------------------------------------------------------------------------- //
-//
+// Derive flags
 
 // Overflow flag
 assign v = ( cla_a[W - 1] &  cla_b[W - 1] & ~cla_y[W - 1]) |
@@ -106,11 +109,19 @@ assign n = cla_y[W - 1];
 assign c = cla_cout;
 
 // -------------------------------------------------------------------------- //
+// Compute final status
 //
-
 assign eq = z;
 assign lt = IS_SIGNED ? (n ^ v) : c;
 assign gt = IS_SIGNED ? ~(z | (n ^ v)) : ~(c | z);
+
+end else begin // if (FPGA_INFER)
+
+assign eq = (i_a == i_b);
+assign lt = IS_SIGNED ? ($signed(i_a) < $signed(i_b)) : (i_a < i_b);
+assign gt = IS_SIGNED ? ($signed(i_a) > $signed(i_b)) : (i_a > i_b);
+
+end // else: !if(FPGA_INFER)
 
 // ========================================================================== //
 //                                                                            //
