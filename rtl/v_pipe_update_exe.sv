@@ -202,40 +202,29 @@ end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 //                                                                            //
 // ========================================================================== //
 
-// The list is ordered from MSB (left) to LSB (right) on decreasing key in the
-// BID_TABLE case, or increasing key (!BID_TABLE, i.e. ask-table) case. Compare
-// each valid {key, volume} 2-tuple by key and form a unary mask denoting those
-// elements which are greater-than or equal, or lesser-than or equal to the
-// current commands key. From this comparison, compute the appropriate location
-// into which the new entry is to be inserted, perform the insertion and update
-// the validity vector.
+// -------------------------------------------------------------------------- //
+// Form a unary mask denoting the valid elements on the context that are
+// greater-than (BID-TABLE)/less-than (ASK-Table) or equal-to the current
+// command (where X is ENTRIES_N - 1).
 //
-//  Below (where X indicates don't-care),
+//  Index   X                                      0
 //
-// Table:        A[N - 1]    A[N - 2]    A[N - 3]   X          X ...
+//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
 //
-// Valid:        1           1           1          0          0
-//
-// Comparison:   fn          fn          fn         fn         fn
-//
-// Relation:     1           1           0          x          x
-//
-// Insertion:    0           0           1          0          0
-//
-// Shift:        0           0           1          1          1
-//
-// Final:        A[N - 1]    A[N - 2]    CMD        A[N - 3]   0
-//
-// Valid (next)  1           1           1          1          0
+//  Compare 0  0  0  0  0  0  0  0  0  0  1  1  1  1
 //
 assign add_mask_cmp =
    i_stcur_vld_r & (cmp_eq | (cfg_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
 
-// Use Leading-Zero Detect (LZD) to compute insertion position.
+// -------------------------------------------------------------------------- //
+// The location into which the current command is to be inserted is the leading
+// zero of the comparison vector).
 //
-//                     +-- Insertion position
-//                     |
-//   0  0  0  0  0  0  1  0  0  0  0  0  0
+//  Compare 0  0  0  0  0  0  0  0  0  0  1  1  1  1
+//
+//                                     +-- Insertion position
+//                                     |
+//  Insert  0  0  0  0  0  0  0  0  0  1  0  0  0  0
 //
 lzd #(.W(cfg_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
   //
@@ -244,13 +233,16 @@ lzd #(.W(cfg_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
   , .o_y                                (add_mask_insert)
 );
 
-// Compute mask inclusive of the current selected insertion point and oriented
-// towards the LSB to denote the set of positions/indices to be shifted-right
-// for the insertion sort position.
+// -------------------------------------------------------------------------- //
+// Compute a mask denoting the valid entries to be shifted leftwards to allow
+// the new element to be inserted.
 //
-//                     +-- Insertion position
-//                     |
-//   1  1  1  1  1  1  1  0  0  0  0  0  0
+//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
+//
+//  Insert  0  0  0  0  0  0  0  0  0  1  0  0  0  0
+//
+//  Mask    1  1  1  1  1  1  1  1  1  1  0  0  0  0
+
 //
 mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
   //
@@ -259,32 +251,46 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
   , .o_y                                (add_mask_left)
 );
 
+// -------------------------------------------------------------------------- //
+// Qualify the mask on element validity.
+//
+//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
+//
+//  Mask    1  1  1  1  1  1  1  1  1  1  0  0  0  0
+//
+//  Sel     0  0  0  0  0  0  0  1  1  1  0  0  0  0
+
 assign add_vld_sel = i_stcur_vld_r & add_mask_left;
 
-// Compute update to valid vector,
+// -------------------------------------------------------------------------- //
+// Derive validity mask of newly shifted elements
 //
-// Prior validity vector (vld):
+//  Sel     0  0  0  0  0  0  0  1  1  1  0  0  0  0
 //
-//   0  0  0  1  1  1  1  1  1  1  1  1  1
-//
-// Entry to be inserted (pivot):
-//
-//   0  0  0  0  0  0  1  0  0  0  0  0  0
-//
-// Next validity vector (vld_nxt):
-//
-//   0  0  1  1  1  1  1  1  1  1  1  1  1
+//  VldSh   0  0  0  0  0  0  1  1  1  0  0  0  0  0
 //
 assign add_vld_shift = add_vld_sel << 1;
 
-// Compose final valid vector as unmodified positions and new left-shifted
-// positions.
+// -------------------------------------------------------------------------- //
+// Derive the valid state as a function of the shifted elements, the newly
+// inserted element and the prior elements that remain unchanged.
+//
+//  VldSh   0  0  0  0  0  0  1  1  1  0  0  0  0  0
+//
+//  Insert  0  0  0  0  0  0  0  0  0  1  0  0  0  0
+//
+//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
+//
+//                                     +-- Insertion position
+//                                     |
+//  AddVld  0  0  0  0  0  0  1  1  1  1  1  1  1  1
 //
 assign add_vld = (i_stcur_vld_r | add_vld_shift | add_mask_insert);
 
-// On an ADD, the list size is always incremented unless the context/prod_id is
-// full (i.e. there are no free entries available). In this case, we simply
-// saturate the count.
+// -------------------------------------------------------------------------- //
+// Increment listsize (integer) value whenever we're executing an add command
+// and the current context is not full (i.e. we are guarenteed to insert the
+// element somewhere).
 //
 assign add_listsize_inc = (~match_full);
 
@@ -294,25 +300,18 @@ assign add_listsize_inc = (~match_full);
 //                                                                            //
 // ========================================================================== //
 
-// NOTE: to avoid a costly prioritization operation, we implicitly assume that
-// all keys within the current state vector are unique.
-
-// From the comparison vector (which is constrained to be one-hot),
-//
-//               +-- Matching key
-//               |
-//   0  0  0  0  1  0  0  0  0  0  0  0  0
-//
-// compute the mask denoting the set of positions to be shifted left.
-//
-//   1  1  1  1  1  0  0  0  0  0  0  0  0
-//
-
 if (cfg_pkg::ALLOW_DUPLICATES) begin
 
-// The table update logic cannot remove more than one entry per-cycle. In the
-// case where multiple matching keys are allowed to co-exist in the same
-// context, by convention we select the entry nearest the head.
+// -------------------------------------------------------------------------- //
+// In the case where we can have multiple keys within the same context, we have
+// have multiple matches. The table update logic supports only one
+// insertion/deletion operation per cycle (which is not unreasonable). Therefore
+// by convention, delete the right-most (towards LSB) element using a
+// prioritization network.
+//
+//  Match   0  0  0  0  0  1  1  1  0  0  0  0  0  0
+//
+//  DelSel  0  0  0  0  0  0  0  1  0  0  0  0  0  0
 
 pri #(.W(cfg_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
   //
@@ -323,14 +322,25 @@ pri #(.W(cfg_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
 
 end else begin
 
-// The table has not be configured support multiple keys. For correct operation
-// therefore we require that the stimulus be appropriately constrained.
-
+// -------------------------------------------------------------------------- //
+// Otherwise, stimulus is constrained such that duplicate keys cannot exist
+// within the same context (we do not care about inter-context key
+// aliasing). Therefore, no prioritization is required, we simply take the 1-hot
+// match vector.
+//
+//  Match   0  0  0  0  0  0  0  1  0  0  0  0  0  0
+//
 assign del_sel = match_sel;
 
 end // else: !if(cfg_pkg::ALLOW_DUPLICATES)
 
+// -------------------------------------------------------------------------- //
+// Compute a left-leaning mask from the 1-hot match vector to denote the
+// elements to be shifted right after the matched element has been removed.
 //
+//  Match   0  0  0  0  0  0  0  1  0  0  0  0  0  0
+//
+//  Mask    1  1  1  1  1  1  1  1  0  0  0  0  0  0
 //
 mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
   //
@@ -339,39 +349,38 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
   , .o_y                                (del_mask_left)
 );
 
-// Compute update to valid vector,
+// -------------------------------------------------------------------------- //
+// Preciate deletion right-shift mask against validity and shit.a
 //
-// Entry to be deleted:
+//  Vld     0  0  0  0  1  1  1  1  1  1  1  1  1  1
 //
-//   0  0  0  0  1  0  0  0  0  0  0  0  0
+//  Mask    1  1  1  1  1  1  1  1  0  0  0  0  0  0
 //
-// Prior validity vector:
+//  DelSh   0  0  0  0  0  1  1  1  1  0  0  0  0  0
 //
-//   1  1  1  1  1  1  1  1  0  0  0  0  0
-//
-// Next validity vector:
-//
-//   1  1  1  1  1  1  1  0  0  0  0  0  0
-//
-
-// Positions rightward of currently nominated bit (inclusive) update to new
-// post-delete positions.
 assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
 
-// Compose final valid vector as unmodified positions and new left-shifted
-// positions.
-assign del_vld =
-      match_hit
-    ? ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift)
-    : i_stcur_vld_r;
+// -------------------------------------------------------------------------- //
+// If the entry to be deleted has been foundf in the table, form final updated
+// validity, otherwise retain priority validity (operation is a NOP).
+//
+//  VldOld  0  0  0  0  1  1  1  1  1  1  1  1  1  1
+//
+//  Mask    0  0  0  0  0  0  0  0  1  1  1  1  1  1
+//
+//  DelSh   0  0  0  0  0  1  1  1  1  0  0  0  0  0
+//
+//  VldNxt  0  0  0  0  0  1  1  1  1  1  1  1  1  1
+//
+assign del_vld = match_hit ?
+                 ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift) :
+                 i_stcur_vld_r;
 
-// On delete, the listsize is decremented whenever a hit takes place (i.e. a
-// matching entry has been found in the context, which will now be removed).
+// -------------------------------------------------------------------------- //
+// On delete, decrement the current listsize count whenever an element has been
+// removed (i.e. on a match hit operation).
 //
 assign del_listsize_dec = match_hit;
-
-// TODO: flag indicating that a replacement took place.
-
 
 // ========================================================================== //
 //                                                                            //
@@ -379,23 +388,19 @@ assign del_listsize_dec = match_hit;
 //                                                                            //
 // ========================================================================== //
 
+// -------------------------------------------------------------------------- //
 // Compute update to the validatity vector. On a replacement, the overall state
 // of the vector remains unchanged regardless of whether a replacement has taken
 // place.
 //
-assign vld_nxt =
-      ({cfg_pkg::ENTRIES_N{op_add}} & add_vld)
-    | ({cfg_pkg::ENTRIES_N{op_del}} & del_vld)
-    | ({cfg_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
-
-// Compute final validity vector. On a CLEAR op., all bits are cleared
-// regardless of prior state.
-assign o_stnxt_vld =
-    ({cfg_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
+assign vld_nxt = ({cfg_pkg::ENTRIES_N{op_add}} & add_vld) |
+                 ({cfg_pkg::ENTRIES_N{op_del}} & del_vld) |
+                 ({cfg_pkg::ENTRIES_N{op_rep}} & i_stcur_vld_r);
 
 // -------------------------------------------------------------------------- //
-// Next Keys/Volumes:
-//
+// Compute final validity vector. On a CLEAR op., all bits are cleared
+// regardless of prior state.
+assign o_stnxt_vld = ({cfg_pkg::ENTRIES_N{~op_clr}} & vld_nxt);
 
 // ========================================================================== //
 //                                                                            //
@@ -403,20 +408,30 @@ assign o_stnxt_vld =
 //                                                                            //
 // ========================================================================== //
 
-// Shift Right only on ADD operation
+// -------------------------------------------------------------------------- //
+// Shift elements left (accept right element) on an add command
+//
 assign mask_right = ({cfg_pkg::ENTRIES_N{op_add}} & add_vld_shift);
 
-// Shift Left only on LEFT operation.
+// -------------------------------------------------------------------------- //
+// Shift elements right (accept left element) on an del command
+//
 assign mask_left = ({cfg_pkg::ENTRIES_N{op_del}} & del_mask_left);
 
-// TODO: replace
+// -------------------------------------------------------------------------- //
+// Insert element at position 'X' on ADD.
+//
 assign mask_insert_key = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert);
 
-assign mask_insert_vol =
-      ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert)
-    | ({cfg_pkg::ENTRIES_N{op_rep}} & match_sel)
-    ;
+// -------------------------------------------------------------------------- //
+// Update volume on ADD or REPlacement commands
+//
+assign mask_insert_vol = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert) |
+                         ({cfg_pkg::ENTRIES_N{op_rep}} & match_sel);
 
+// -------------------------------------------------------------------------- //
+// State update logic
+//
 for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
   if (i == 0) begin
@@ -506,18 +521,20 @@ end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 
 // -------------------------------------------------------------------------- //
 // Compute update to list size as function of current command
-
 //
 assign stnxt_listsize_inc = (op_add & add_listsize_inc);
 assign stnxt_listsize_dec = (op_del & del_listsize_dec);
 assign stnxt_listsize_def = ~(stnxt_listsize_inc | stnxt_listsize_dec);
 
+// -------------------------------------------------------------------------- //
+// Listsize update increment (on add)/decrement (on delete)
 //
 assign stnxt_listsize_nxt =
       ({v_pkg::LISTSIZE_W{stnxt_listsize_inc}} & (i_stcur_listsize_r + 'b1))
     | ({v_pkg::LISTSIZE_W{stnxt_listsize_dec}} & (i_stcur_listsize_r - 'b1))
     | ({v_pkg::LISTSIZE_W{stnxt_listsize_def}} &  i_stcur_listsize_r);
 
+// -------------------------------------------------------------------------- //
 // Next listsize is conditionally reset to '0 on a clear operation regardless of
 // prior computed values.
 //
@@ -529,31 +546,43 @@ assign stnxt_listsize = ({v_pkg::LISTSIZE_W{~op_clr}} & stnxt_listsize_nxt);
 //                                                                            //
 // ========================================================================== //
 
-// Clear operation and head entry was valid.
+// -------------------------------------------------------------------------- //
+// Notify on clear command whenever head element was valid.
 //
 assign notify_cleared_list = op_clr & i_stcur_vld_r [0];
 
-// Add operation. inserted into the head entry.
+// -------------------------------------------------------------------------- //
+// Notify on add command to head element.
 //
 assign notify_did_add = op_add & add_mask_insert [0];
 
+// -------------------------------------------------------------------------- //
+// Notify on delete command on the head element.
+//
 assign notify_did_del = op_del & match_sel [0];
 
-// Notify on match replacement or deletion command to the head entry.
+// -------------------------------------------------------------------------- //
+// Notify on delete to or replacement on head element
 //
 assign notify_did_rep_or_del = (op_rep | op_del) & match_sel [0];
 
+// -------------------------------------------------------------------------- //
+// Issue notify message on either of these prior conditions.
+//
 assign notify_vld =
   (notify_cleared_list | notify_did_add | notify_did_rep_or_del);
 
+// -------------------------------------------------------------------------- //
 // Notify key is current command key, indicated by the hit. On a Clear we ignore
 // the key returned as we may have just cleared an empty context (where the head
 // entry is invalid).
 //
 assign notify_key = i_pipe_key_r;
 
+// -------------------------------------------------------------------------- //
 // Notify volume is the volume placed into the head position, or the value just
-// removed.
+// removed. On clear, we don't case since the volume is to become invalid and we
+// don't consider if the context was initially empty.
 assign notify_volume =
   ({v_pkg::VOLUME_BITS{notify_did_add}} & i_pipe_volume_r) |
   ({v_pkg::VOLUME_BITS{notify_did_del}} & match_volume);

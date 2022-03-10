@@ -1,7 +1,7 @@
 # Introduction
 
-"v" is a solution to an interview problem set by a trading company in
-Manhattan. The problem statement was as follows:
+"v" is a solution to an interview problem set (some years ago) by a trading
+company in Manhattan. The problem statement was as follows:
 
 Maintain a table of 'N' Contexts, where each Context maintains some number 'M'
 of 2-tuples. Each 2-tuple (Entry) consists of a 64b key and a 32b value (the
