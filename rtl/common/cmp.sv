@@ -95,17 +95,21 @@ cla #(.W(W)) u_cla (
 // -------------------------------------------------------------------------- //
 // Derive flags
 
-// Overflow flag
+// Overflow flag (sign at output differs from signs at input)
+//
 assign v = ( cla_a[W - 1] &  cla_b[W - 1] & ~cla_y[W - 1]) |
            (~cla_a[W - 1] & ~cla_b[W - 1] &  cla_y[W - 1]);
 
-// Zero flag
+// Zero flag (operands are equal)
+//
 assign z = (cla_y == '0);
 
-// Negative flag
+// Negative flag (result was < 0 in signed-case)
+//
 assign n = cla_y[W - 1];
 
 // Carry out
+//
 assign c = cla_cout;
 
 // -------------------------------------------------------------------------- //
@@ -116,6 +120,10 @@ assign lt = IS_SIGNED ? (n ^ v) : c;
 assign gt = IS_SIGNED ? ~(z | (n ^ v)) : ~(c | z);
 
 end else begin // if (FPGA_INFER)
+
+// Otherwise, simply allow synthesis to infer comparison operators. In an FPGA
+// setting, this case result in superior QOR if specialized adder hard-macros
+// are inferred instead of random logic.
 
 assign eq = (i_a == i_b);
 assign lt = IS_SIGNED ? ($signed(i_a) < $signed(i_b)) : (i_a < i_b);
