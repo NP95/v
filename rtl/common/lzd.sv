@@ -69,15 +69,10 @@ logic [W - 1:0]                         y;
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// Downstream logic detects first 'b1, therefore conditionally invert input
+// vector to correct format.
 //
-always_comb begin : lzd_PROC
-
-  // Downstream logic detects first 'b1, therefore conditionally invert input
-  // vector to correct format.
-  //
-  x_to_first_one = {W{DETECT_ZERO}} ^ i_x;
-
-end // block: lzd_PROC
+assign x_to_first_one = {W{DETECT_ZERO}} ^ i_x;
 
 // ========================================================================== //
 //                                                                            //

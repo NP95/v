@@ -60,18 +60,19 @@ logic [W - 1:0]                         y;
 
 // -------------------------------------------------------------------------- //
 //
-always_comb begin : mux_PROC
+for (genvar i = 0; i < W; i++) begin
 
-  for (int i = 0; i < W; i++) begin
+  for (genvar j = 0; j < N; j++) begin
 
-    // Consolidate mux branches [0, N) for bit 'i'.
-    for (int j = 0; j < N; j++) begin
-      mux_bit [i][j] = (i_sel[j] & i_x[j][i]);
-    end
+assign mux_bit [i][j] = (i_sel[j] & i_x[j][i]);
 
-    // OR-reduction to form final result for bit 'i'.
-    y [i] = (|mux_bit[i]);
   end
+
+end
+
+for (genvar i = 0; i < W; i++) begin
+
+assign y [i] = (|mux_bit[i]);
 
 end // block: mux_PROC
 

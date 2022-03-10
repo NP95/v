@@ -75,49 +75,37 @@ logic [W - 1:0]                         y;
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// Admit relevant bits from input vector to decision matrix; note:
+// although this appears fairly complex at first glance, in actuality the
+// entirety is computed on elaboration therefore is not present in logic.
 //
-always_comb begin : mask_PROC
+for (genvar j = 0; j < W; j++) begin
 
-  for (int j = 0; j < W; j++) begin
+  for (genvar i = 0; i < W; i++) begin
 
-    for (int i = 0; i < W; i++) begin
+assign matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) & i_x [i];
+assign matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) & i_x [i];
 
-      // Admit relevant bits from input vector to decision matrix; note:
-      // although this appears fairly complex at first glance, in actuality the
-      // entirety is computed on elaboration therefore is not present in logic.
-      //
-      matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) & i_x [i];
-      matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) & i_x [i];
+  end // for (genvar i = 0; i < N; i++)
 
-    end // for (int i = 0; i < N; i++)
+end // for (genvar j = 0; j < W; j++)
 
-    // OR-reduction across entire vector for each bit, expect the majority of
-    // these bits to be 'b0 at elaboration. Additionally, there's a lot of
-    // duplication here that synthesis should be able to optimize away.
-    //
-    y_mask_lsb [j] = (|matrix_lsb [j]);
-    y_mask_msb [j] = (|matrix_msb [j]);
-
-  end // for (int j = 0; j < N; j++)
-
-end // block: mask_PROC
-
-// TODO: commentary.
+// -------------------------------------------------------------------------- //
+// OR-reduction across entire vector for each bit, expect the majority of
+// these bits to be 'b0 at elaboration. Additionally, there's a lot of
+// duplication here that synthesis should be able to optimize away.
 //
-//  y_mask_lsb:                000000000000011111111111111
-//  y_mask_msb:                111111111111000000000000000
-//  i_x:                       000000000000100000000000000
+for (genvar j = 0; j < W; j++) begin
+
+assign y_mask_lsb [j] = (|matrix_lsb [j]);
+assign y_mask_msb [j] = (|matrix_msb [j]);
+
+end // for (genvar j = 0; j < N; j++)
+
+// -------------------------------------------------------------------------- //
 //
-//  TOWARDS_LSB  INCLUSIVE                          RESULT
-//
-//            0          0     111111111111000000000000000
-//            0          1     111111111111100000000000000
-//            1          0     000000000000011111111111111
-//            1          1     000000000000111111111111111
-//
-assign y =
-       ({W{ TOWARDS_LSB}} & y_mask_lsb)
-     | ({W{~TOWARDS_LSB}} & y_mask_msb);
+assign y = ({W{ TOWARDS_LSB}} & y_mask_lsb) |
+           ({W{~TOWARDS_LSB}} & y_mask_msb);
 
 // ========================================================================== //
 //                                                                            //
