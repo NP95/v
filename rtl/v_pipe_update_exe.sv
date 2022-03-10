@@ -167,7 +167,7 @@ assign match_hit = (match_sel != '0);
 
 assign match_full = (i_stcur_vld_r == '1);
 
-mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
+mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::VOLUME_BITS)) u_max_match_volume (
   //
     .i_x                      (i_stcur_volumes_r)
   , .i_sel                    (match_sel)
@@ -184,7 +184,7 @@ mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_max_match_volume (
 //
 for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
-  cmp #(.W($bits(v_pkg::key_t))) u_cmp (
+  cmp #(.W(v_pkg::KEY_BITS)) u_cmp (
   //
     .i_a                                  (i_stcur_keys_r [i])
   , .i_b                                  (i_pipe_key_r)
