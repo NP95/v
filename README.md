@@ -28,8 +28,8 @@ The block shall emit a 'Notify' message each time the largest/smallest tuple in
 a Context is modified by the Update interface. The latency after this is emitted
 in response to the initial Update command is not constrained.
 
-The solution was to be targeted towards an FPGA-context and was to be clocked at
-a clock frequency of at least 175 MHz.
+The solution was to be targeted towards an FPGA and was attain a
+clock frequency of at least 175 MHz.
 
 # Build Instructions
 
@@ -58,7 +58,7 @@ cmake .. -DVERILATOR_ROOT='verilator path' -DCONTEXT_N=5, -DENTRIES_N=4
 ```
 
 which will generate RTL (and verification collateral) for a machine with 5
-Contexts, each containing update 4 Entries.
+Contexts, each containing 4 Entries.
 
 # Dependencies
 
