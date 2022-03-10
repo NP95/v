@@ -88,8 +88,6 @@ logic                                   init_wen_r;
 v_pkg::addr_t                           init_waddr_r;
 v_pkg::state_t                          init_wdata_r;
 //
-logic                                   init_r;
-//
 logic                                   state_wen_r;
 v_pkg::addr_t                           state_waddr_r;
 v_pkg::state_t                          state_wdata_r;
@@ -110,19 +108,29 @@ v_pkg::id_t                             s4_upd_prod_id_r;
 
 // ========================================================================== //
 //                                                                            //
+//  Flops                                                                     //
+//                                                                            //
+// ========================================================================== //
+
+`V_DFFR(logic, init, 'b1);
+
+// ========================================================================== //
+//                                                                            //
 //  Combinatorial Logic                                                       //
 //                                                                            //
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
+// 'Init' boot flag to initiate initialization process after reset.
+assign init_w = '0;
+
+// -------------------------------------------------------------------------- //
+// Mux. in BRAM initialization channels when active (otherwise, infer BRAM which
+// are initialized to zero).
 //
-always_comb begin : table_update_PROC
-
-  wen   = o_busy_r ? init_wen_r : state_wen_r;
-  waddr = o_busy_r ? init_waddr_r : state_waddr_r;
-  wdata = o_busy_r ? init_wdata_r : state_wdata_r;
-
-end // block: table_update_PROC
+assign wen   = o_busy_r ? init_wen_r : state_wen_r;
+assign waddr = o_busy_r ? init_waddr_r : state_waddr_r;
+assign wdata = o_busy_r ? init_wdata_r : state_wdata_r;
 
 // ========================================================================== //
 //                                                                            //
@@ -238,19 +246,5 @@ v_init #(.N(cfg_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
   //
   , .clk                                (clk)
 );
-
-// ========================================================================== //
-//                                                                            //
-//  Flops                                                                     //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-//
-always_ff @(posedge clk)
-  if (rst)
-    init_r <= 'b1;
-  else
-    init_r <= 'b0;
 
 endmodule // v

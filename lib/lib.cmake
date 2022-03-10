@@ -32,6 +32,7 @@ set(TARGET "sim")
 set(LIB_SOURCES
   "${LIB_ROOT}/dff.sv"
   "${LIB_ROOT}/dffen.sv"
+  "${LIB_ROOT}/dffr.sv"
   "${LIB_ROOT}/pd/${TARGET}/sram1r1w.sv"
   )
 

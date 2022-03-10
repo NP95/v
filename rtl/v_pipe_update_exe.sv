@@ -242,7 +242,6 @@ lzd #(.W(cfg_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
 //  Insert  0  0  0  0  0  0  0  0  0  1  0  0  0  0
 //
 //  Mask    1  1  1  1  1  1  1  1  1  1  0  0  0  0
-
 //
 mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_add (
   //
@@ -361,7 +360,7 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
 assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
 
 // -------------------------------------------------------------------------- //
-// If the entry to be deleted has been foundf in the table, form final updated
+// If the entry to be deleted has been found in the table, form final updated
 // validity, otherwise retain priority validity (operation is a NOP).
 //
 //  VldOld  0  0  0  0  1  1  1  1  1  1  1  1  1  1

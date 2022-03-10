@@ -35,7 +35,7 @@ module dff #(parameter int W) (
 , output logic [W - 1:0]              q
 
 // -------------------------------------------------------------------------- //
-// Clk/Reset
+// Clk
 , input                               clk
 );
 

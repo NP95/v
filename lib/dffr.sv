@@ -25,13 +25,31 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef V_RTL_COMMON_UNMACROS_VH
-`define V_RTL_COMMON_UNMACROS_VH
+`include "common_defs.vh"
 
-`undef V_DFF
-`undef V_DFFE
-`undef V_DFFR
+module dffr #(
+  // Register width
+  parameter int W
 
-`undef V_RTL_COMMON_MACROS_VH
+  // Initial reset value
+, parameter logic [W - 1:0] RST = '0
+) (
+// -------------------------------------------------------------------------- //
+// Register Interface
+  input [W - 1:0]                     d
+//
+, output logic [W - 1:0]              q
 
-`endif
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+, input                               clk
+, input                               rst
+);
+
+always_ff @(posedge clk)
+  if (rst)
+    q <= RST;
+  else
+    q <= d;
+
+endmodule // dffr
