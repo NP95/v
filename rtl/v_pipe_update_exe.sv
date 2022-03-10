@@ -342,7 +342,7 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
 );
 
 // -------------------------------------------------------------------------- //
-// Preciate deletion right-shift mask against validity and shit.a
+// Preciate deletion right-shift mask against validity and shift.
 //
 //  Vld     0  0  0  0  1  1  1  1  1  1  1  1  1  1
 //
