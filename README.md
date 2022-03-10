@@ -123,6 +123,13 @@ Contexts, each containing update 4 Entries.
   access is made to the same Context in the update pipeline, or when an attempt
   is made to select an invalid Entry from the table (all conditions specified in
   the original problem statement).
+* The latency through the Query pipeline is one-cycle (the time taken to lookup
+  the BRAM). In practice this is unrealistic as although the data becomes
+  available at this point, often it arrives quite late into the cycle for it to
+  be useful to downstream logic. In practice, if this design was to be part of a
+  larger subsystem, it would be necessary to flop the Update response interface
+  at the output before its value could be used elsewhere. This is outside of the
+  scope however of our current objective.
 * The presented solution has been written in a more
   [ASIC-y](./rtl/common/cmp.sv) fashion than what would typically be found on an
   FPGA platform. In this style, I have paid more attention to X-propagation and

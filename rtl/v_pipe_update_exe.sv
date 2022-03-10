@@ -162,25 +162,24 @@ assign match_sel [i] = i_stcur_vld_r [i] & (i_pipe_key_r == i_stcur_keys_r [i]);
 
 end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
 
+// -------------------------------------------------------------------------- //
 // Flag denoting that a matching key was found in the current state.
+//
 assign match_hit = (match_sel != '0);
 
+// -------------------------------------------------------------------------- //
+// Flag indicating that all Entries in the  context are full
+//
 assign match_full = (i_stcur_vld_r == '1);
 
-mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::VOLUME_BITS)) u_max_match_volume (
-  //
-    .i_x                      (i_stcur_volumes_r)
-  , .i_sel                    (match_sel)
-  //
-  , .o_y                      (match_volume)
-);
+// ========================================================================== //
+//                                                                            //
+//  Add command                                                               //
+//                                                                            //
+// ========================================================================== //
 
 // -------------------------------------------------------------------------- //
-// Add:
-//
-//
-
-// -------------------------------------------------------------------------- //
+// Compare table keys against current command key.a
 //
 for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
 
@@ -195,12 +194,6 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
   );
 
 end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
-
-// ========================================================================== //
-//                                                                            //
-//  Add command                                                               //
-//                                                                            //
-// ========================================================================== //
 
 // -------------------------------------------------------------------------- //
 // Form a unary mask denoting the valid elements on the context that are
@@ -577,6 +570,17 @@ assign notify_vld =
 // entry is invalid).
 //
 assign notify_key = i_pipe_key_r;
+
+// -------------------------------------------------------------------------- //
+// Select volume for matching Entry
+//
+mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::VOLUME_BITS)) u_max_match_volume (
+  //
+    .i_x                      (i_stcur_volumes_r)
+  , .i_sel                    (match_sel)
+  //
+  , .o_y                      (match_volume)
+);
 
 // -------------------------------------------------------------------------- //
 // Notify volume is the volume placed into the head position, or the value just
