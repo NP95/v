@@ -51,7 +51,7 @@ make smoke
 ```
 
 The RTL is fully parameterized on Context count (CONTEXT_N) and Entry count
-(ENTRIES_N). Parameterization is formed during configuration as follows:
+(ENTRIES_N). Parameterization is performed during configuration as follows:
 
 ```shell
 cmake .. -DVERILATOR_ROOT='verilator path' -DCONTEXT_N=5, -DENTRIES_N=4
@@ -61,6 +61,16 @@ which will generate RTL (and verification collateral) for a machine with 5
 Contexts, each containing update 4 Entries.
 
 # Dependencies
+
+* A fairly recent version of Verilator (>= 4.210), specifically a version
+  including the recent (~2020) VerilatedContext improvements. Ideally, project
+  configuration should be performed against a local build of Verilator (pointing
+  towards the current HEAD of main) that has been locally built
+  in-place. Otherwise, an attempt will be made to find the system installation
+  which may not succeed if not present at known paths on the file-system, or
+  when using an older version.
+* A C++17 compliant compiler (developed on Clang 12).
+* A recent version of CMake (>= 3.20)
 
 # Discussion
 
