@@ -118,7 +118,7 @@ add_dependencies(driver verilate)
 # Regression target
 add_custom_target(smoke
   COMMENT "Running regression."
-  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/driver -v --vcd
+  COMMAND $<TARGET_FILE:driver> -v --vcd
      --run Regress --args 'n=999999,p=0.01;5.0;1.0;2.0;0.1'
   DEPENDS driver
   )
