@@ -61,7 +61,7 @@ logic                                   lt;
 //                                                                            //
 // ========================================================================== //
 
-if (FPGA_INFER) begin
+if (!FPGA_INFER) begin
 
 logic [W - 1:0]                         cla_a;
 logic [W - 1:0]                         cla_b;
