@@ -29,8 +29,7 @@
 `define V_RTL_COMMON_UNMACROS_VH
 
 `undef V_DFF
-`undef V_DFFEN
-`undef V_DFFEN_WITH_EN
+`undef V_DFFE
 
 `undef V_RTL_COMMON_MACROS_VH
 

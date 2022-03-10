@@ -135,34 +135,34 @@ logic                                             lv0_en;
 // ========================================================================== //
 
 `V_DFF(logic, s1_upd_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, s1_upd_prod_id, s1_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::cmd_t, s1_upd_cmd, s1_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::key_t, s1_upd_key, s1_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::size_t, s1_upd_size, s1_upd_en);
+`V_DFFE(v_pkg::id_t, s1_upd_prod_id, s1_upd_en);
+`V_DFFE(v_pkg::cmd_t, s1_upd_cmd, s1_upd_en);
+`V_DFFE(v_pkg::key_t, s1_upd_key, s1_upd_en);
+`V_DFFE(v_pkg::size_t, s1_upd_size, s1_upd_en);
 
 `V_DFF(logic, s2_upd_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, s2_upd_prod_id, s2_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::cmd_t, s2_upd_cmd, s2_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::key_t, s2_upd_key, s2_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::size_t, s2_upd_size, s2_upd_en);
-`V_DFFEN_WITH_EN(logic, s2_upd_wrbk_vld, s2_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::state_t, s2_upd_wrbk, s2_upd_en);
+`V_DFFE(v_pkg::id_t, s2_upd_prod_id, s2_upd_en);
+`V_DFFE(v_pkg::cmd_t, s2_upd_cmd, s2_upd_en);
+`V_DFFE(v_pkg::key_t, s2_upd_key, s2_upd_en);
+`V_DFFE(v_pkg::size_t, s2_upd_size, s2_upd_en);
+`V_DFFE(logic, s2_upd_wrbk_vld, s2_upd_en);
+`V_DFFE(v_pkg::state_t, s2_upd_wrbk, s2_upd_en);
 
 `V_DFF(logic, s3_upd_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, s3_upd_prod_id, s3_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::cmd_t, s3_upd_cmd, s3_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::key_t, s3_upd_key, s3_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::size_t, s3_upd_size, s3_upd_en);
-`V_DFFEN_WITH_EN(v_pkg::state_t, s3_upd_state, s3_upd_en);
+`V_DFFE(v_pkg::id_t, s3_upd_prod_id, s3_upd_en);
+`V_DFFE(v_pkg::cmd_t, s3_upd_cmd, s3_upd_en);
+`V_DFFE(v_pkg::key_t, s3_upd_key, s3_upd_en);
+`V_DFFE(v_pkg::size_t, s3_upd_size, s3_upd_en);
+`V_DFFE(v_pkg::state_t, s3_upd_state, s3_upd_en);
 
 `V_DFF(logic, wrbk_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, wrbk_prod_id, wrbk_en);
-`V_DFFEN_WITH_EN(v_pkg::state_t, wrbk_state, wrbk_en);
+`V_DFFE(v_pkg::id_t, wrbk_prod_id, wrbk_en);
+`V_DFFE(v_pkg::state_t, wrbk_state, wrbk_en);
 
 `V_DFF(logic, lv0_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, lv0_prod_id, lv0_en);
-`V_DFFEN_WITH_EN(v_pkg::key_t, lv0_key, lv0_en);
-`V_DFFEN_WITH_EN(v_pkg::size_t, lv0_size, lv0_en);
+`V_DFFE(v_pkg::id_t, lv0_prod_id, lv0_en);
+`V_DFFE(v_pkg::key_t, lv0_key, lv0_en);
+`V_DFFE(v_pkg::size_t, lv0_size, lv0_en);
 
 // ========================================================================== //
 //                                                                            //

@@ -34,14 +34,7 @@
     dff #(.W($bits(__type))) u_``__name``_reg ( \
       .d(__name``_w), .q(__name``_r), .clk)
 
-`define V_DFFEN(__type, __name) \
-    __type __name``_r; \
-    __type __name``_w; \
-    logic __name``_en; \
-    dffen #(.W($bits(__type))) u_``__name``_reg ( \
-      .d(__name``_w), .q(__name``_r), .en(__name``_en), .clk)
-
-`define V_DFFEN_WITH_EN(__type, __name, __en) \
+`define V_DFFE(__type, __name, __en) \
     __type __name``_r; \
     __type __name``_w; \
     dffen #(.W($bits(__type))) u_``__name``_reg ( \

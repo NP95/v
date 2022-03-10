@@ -100,9 +100,9 @@ logic                                   s1_lut_error;
 // ========================================================================== //
 
 `V_DFF(logic, s1_lut_vld);
-`V_DFFEN_WITH_EN(v_pkg::id_t, s1_lut_prod_id, s1_lut_en);
-`V_DFFEN_WITH_EN(logic, s1_lut_error, s1_lut_en);
-`V_DFFEN_WITH_EN(logic [cfg_pkg::ENTRIES_N - 1:0], s1_lut_level_dec, s1_lut_en);
+`V_DFFE(v_pkg::id_t, s1_lut_prod_id, s1_lut_en);
+`V_DFFE(logic, s1_lut_error, s1_lut_en);
+`V_DFFE(logic [cfg_pkg::ENTRIES_N - 1:0], s1_lut_level_dec, s1_lut_en);
 
 // ========================================================================== //
 //                                                                            //
