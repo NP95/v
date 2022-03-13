@@ -62,10 +62,7 @@ module mask #(
 //                                                                            //
 // ========================================================================== //
 
-logic [W - 1:0][W - 1:0]                matrix_lsb;
-logic [W - 1:0][W - 1:0]                matrix_msb;
-logic [W - 1:0]                         y_mask_lsb;
-logic [W - 1:0]                         y_mask_msb;
+logic [W - 1:0][W - 1:0]                matrix;
 logic [W - 1:0]                         y;
 
 // ========================================================================== //
@@ -83,8 +80,8 @@ for (genvar j = 0; j < W; j++) begin
 
   for (genvar i = 0; i < W; i++) begin
 
-assign matrix_lsb [j][i] = (INCLUSIVE && (i == j) || (i > j)) & i_x [i];
-assign matrix_msb [j][i] = (INCLUSIVE && (i == j) || (i < j)) & i_x [i];
+assign matrix [j][i] =
+   ((INCLUSIVE && (i == j)) || (TOWARDS_LSB ? (i > j) : (i < j))) & i_x [i];
 
   end // for (genvar i = 0; i < N; i++)
 
@@ -97,15 +94,9 @@ end // for (genvar j = 0; j < W; j++)
 //
 for (genvar j = 0; j < W; j++) begin
 
-assign y_mask_lsb [j] = (|matrix_lsb [j]);
-assign y_mask_msb [j] = (|matrix_msb [j]);
+assign y [j] = (|matrix [j]);
 
 end // for (genvar j = 0; j < N; j++)
-
-// -------------------------------------------------------------------------- //
-//
-assign y = ({W{ TOWARDS_LSB}} & y_mask_lsb) |
-           ({W{~TOWARDS_LSB}} & y_mask_msb);
 
 // ========================================================================== //
 //                                                                            //
