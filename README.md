@@ -1,6 +1,6 @@
 # Introduction
 
-"v" is a solution to an interview problem set (some years ago) by a trading
+"v" is a solution to an interview problem (set some years ago) by a trading
 company in Manhattan. The problem statement was as follows:
 
 Maintain a table of 'N' Contexts, where each Context maintains some number 'M'
