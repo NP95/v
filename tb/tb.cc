@@ -129,8 +129,8 @@ void VKernel::end() {
   if (vcd_) {
     vcd_->close();
   }
-  vtb_->final();
 #endif
+  vtb_->final();
 }
 
 std::uint64_t VKernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
