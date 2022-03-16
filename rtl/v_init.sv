@@ -81,11 +81,11 @@ fsm_state_t                             fsm_state_next;
 fsm_state_t                             fsm_state_idle_next;
 fsm_state_t                             fsm_state_busy_next;
 fsm_state_t                             fsm_state_done_next;
-logic fsm_state_en;
+logic                                   fsm_state_en;
 logic                                   st_idle;
 logic                                   st_busy;
 logic                                   st_done;
-logic init_waddr_en;
+logic                                   init_waddr_en;
 logic                                   init_waddr_is_final;
 
 // ========================================================================== //
