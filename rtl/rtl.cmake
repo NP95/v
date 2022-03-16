@@ -49,6 +49,7 @@ set(RTL_SOURCES
   "${RTL_ROOT}/common/cmp.sv"
   "${RTL_ROOT}/common/dec.sv"
   "${RTL_ROOT}/common/mux.sv"
+  "${RTL_ROOT}/v_pipe_update_cmp.sv"
   "${RTL_ROOT}/v_pipe_update_exe.sv"
   "${RTL_ROOT}/v_pipe_update.sv"
   "${RTL_ROOT}/v_pipe_query.sv"

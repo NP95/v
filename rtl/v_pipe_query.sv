@@ -66,6 +66,9 @@ module v_pipe_query (
 //
 , input                                           i_s4_upd_vld_r
 , input v_pkg::id_t                               i_s4_upd_prod_id_r
+//
+, input                                           i_s5_upd_vld_r
+, input v_pkg::id_t                               i_s5_upd_prod_id_r
 
 // -------------------------------------------------------------------------- //
 // Clk
@@ -132,7 +135,8 @@ assign s0_lut_error_is_busy   =
     (i_s1_upd_vld_r & (i_s1_upd_prod_id_r == i_lut_prod_id)) |
     (i_s2_upd_vld_r & (i_s2_upd_prod_id_r == i_lut_prod_id)) |
     (i_s3_upd_vld_r & (i_s3_upd_prod_id_r == i_lut_prod_id)) |
-    (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id));
+    (i_s4_upd_vld_r & (i_s4_upd_prod_id_r == i_lut_prod_id)) |
+    (i_s5_upd_vld_r & (i_s5_upd_prod_id_r == i_lut_prod_id));
 
 assign s1_lut_error_w = s0_lut_error_is_busy;
 

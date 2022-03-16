@@ -73,6 +73,9 @@ module v_pipe_update (
 //
 , output                                          o_s4_upd_vld_r
 , output v_pkg::id_t                              o_s4_upd_prod_id_r
+//
+, output                                          o_s5_upd_vld_r
+, output v_pkg::id_t                              o_s5_upd_prod_id_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
@@ -108,13 +111,24 @@ logic                                             s3_upd_en;
 //
 logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_exe_stcur_vld_r;
 v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s3_exe_stcur_keys_r;
-v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s3_exe_stcur_volumes_r;
-v_pkg::listsize_t                                 s3_exe_stcur_listsize_r;
+logic                                             s3_upd_match_hit;
+logic                                             s3_upd_match_full;
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_upd_match_sel;
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_upd_mask_cmp;
+
+logic                                             s4_upd_en;
+
+// S4:
 //
-logic [cfg_pkg::ENTRIES_N - 1:0]                  s3_exe_stnxt_vld;
-v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s3_exe_stnxt_keys;
-v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s3_exe_stnxt_volumes;
-v_pkg::listsize_t                                 s3_exe_stnxt_listsize;
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s4_exe_stcur_vld_r;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s4_exe_stcur_keys_r;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s4_exe_stcur_volumes_r;
+v_pkg::listsize_t                                 s4_exe_stcur_listsize_r;
+//
+logic [cfg_pkg::ENTRIES_N - 1:0]                  s4_exe_stnxt_vld;
+v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]           s4_exe_stnxt_keys;
+v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]        s4_exe_stnxt_volumes;
+v_pkg::listsize_t                                 s4_exe_stnxt_listsize;
 
 
 // EXE
@@ -155,6 +169,17 @@ logic                                             lv0_en;
 `V_DFFE(v_pkg::size_t, s3_upd_size, s3_upd_en);
 `V_DFFE(v_pkg::state_t, s3_upd_state, s3_upd_en);
 
+`V_DFF(logic, s4_upd_vld);
+`V_DFFE(v_pkg::id_t, s4_upd_prod_id, s4_upd_en);
+`V_DFFE(v_pkg::cmd_t, s4_upd_cmd, s4_upd_en);
+`V_DFFE(v_pkg::key_t, s4_upd_key, s4_upd_en);
+`V_DFFE(v_pkg::size_t, s4_upd_size, s4_upd_en);
+`V_DFFE(v_pkg::state_t, s4_upd_state, s4_upd_en);
+`V_DFFE(logic, s4_upd_match_hit, s4_upd_en);
+`V_DFFE(logic, s4_upd_match_full, s4_upd_en);
+`V_DFFE(logic [cfg_pkg::ENTRIES_N - 1:0], s4_upd_mask_cmp, s4_upd_en);
+`V_DFFE(logic [cfg_pkg::ENTRIES_N - 1:0], s4_upd_match_sel, s4_upd_en);
+
 `V_DFF(logic, wrbk_vld);
 `V_DFFE(v_pkg::id_t, wrbk_prod_id, wrbk_en);
 `V_DFFE(v_pkg::state_t, wrbk_state, wrbk_en);
@@ -166,12 +191,9 @@ logic                                             lv0_en;
 
 // ========================================================================== //
 //                                                                            //
-//  Combinatorial Logic                                                       //
+// S0 Stage: Input Latch                                                      //
 //                                                                            //
 // ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-// Stage S0
 
 // Pipeline controls:
 //
@@ -183,8 +205,11 @@ assign s1_upd_cmd_w = i_upd_cmd;
 assign s1_upd_key_w = i_upd_key;
 assign s1_upd_size_w = i_upd_size;
 
-// -------------------------------------------------------------------------- //
-// Stage S1
+// ========================================================================== //
+//                                                                            //
+// S1 Stage: Table Lookup                                                     //
+//                                                                            //
+// ========================================================================== //
 
 // Writeback collision: Forward write-back state to S2 read port on collision;
 // also kill lookup into state table to prevent possible data corruption where
@@ -206,26 +231,44 @@ assign s2_upd_cmd_w = s1_upd_cmd_r;
 assign s2_upd_key_w = s1_upd_key_r;
 assign s2_upd_size_w = s1_upd_size_r;
 
+// ========================================================================== //
+//                                                                            //
+// S2 Stage: Lookup Stage                                                     //
+//                                                                            //
+// ========================================================================== //
+
 // -------------------------------------------------------------------------- //
 // S2 Stage: State arrival and EXE-forwarding stage.
 //
 
+// -------------------------------------------------------------------------- //
 // Attempt hit on current writeback.
-assign s2_upd_state_fwd [1] = wrbk_vld_r & (wrbk_prod_id_r == s2_upd_prod_id_r);
+assign s2_upd_state_fwd [1] = wrbk_vld_w & (wrbk_prod_id_w == s2_upd_prod_id_r);
 // Otherwise, attempt hit on prior writeback
 assign s2_upd_state_fwd [0] = s2_upd_wrbk_vld_r;
 
+pri #(.W(2)) u_s2_forwarding_pri (
+  //
+    .i_x                                (s2_upd_state_fwd)
+  //
+  , .o_y                                (s2_upd_state_sel)
+);
+
 assign s2_upd_state_sel_early = (|s2_upd_state_fwd);
 
+// -------------------------------------------------------------------------- //
 // Early state forwarding; the state that is expected to arrival
 // relatively early into the current cycle.
+//
 assign s2_upd_state_early =
-   ({v_pkg::STATE_BITS{s2_upd_state_sel[1]}} & wrbk_state_r) |
+   ({v_pkg::STATE_BITS{s2_upd_state_sel[1]}} & wrbk_state_w) |
    ({v_pkg::STATE_BITS{s2_upd_state_sel[0]}} & s2_upd_wrbk_r);
 
+// -------------------------------------------------------------------------- //
 // Final State forwarding injecting those signals (from RAM) that is expected to
 // arrive relatively late into the cycle. To this so that such state is injected
 // late into the overall combinatorial logic cone.
+//
 assign s3_upd_state_w =
    ({v_pkg::STATE_BITS{ s2_upd_state_sel_early}} & s2_upd_state_early) |
    ({v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata);
@@ -239,67 +282,101 @@ assign s3_upd_cmd_w = s2_upd_cmd_r;
 assign s3_upd_key_w = s2_upd_key_r;
 assign s3_upd_size_w = s2_upd_size_r;
 
-// -------------------------------------------------------------------------- //
-// S3 Stage: Execute Stage
-//
+// ========================================================================== //
+//                                                                            //
+// S3 Stage: Compare Stage                                                    //
+//                                                                            //
+// ========================================================================== //
+
 assign s3_exe_stcur_vld_r = s3_upd_state_r.vld;
 assign s3_exe_stcur_keys_r = s3_upd_state_r.key;
-assign s3_exe_stcur_volumes_r = s3_upd_state_r.volume;
-assign s3_exe_stcur_listsize_r = s3_upd_state_r.listsize;
 
-// Writeback:
-assign wrbk_vld_w = s3_upd_vld_r;
-assign wrbk_en = wrbk_vld_w;
-assign wrbk_prod_id_w = s3_upd_prod_id_r;
-assign wrbk_state_w.vld = s3_exe_stnxt_vld;
-assign wrbk_state_w.listsize = s3_exe_stnxt_listsize;
-assign wrbk_state_w.key = s3_exe_stnxt_keys;
-assign wrbk_state_w.volume = s3_exe_stnxt_volumes;
+v_pipe_update_cmp u_v_pipe_update_cmp (
+  //
+    .i_pipe_key_r                       (s3_upd_key_r)
+  //
+  , .i_stcur_vld_r                      (s3_exe_stcur_vld_r)
+  , .i_stcur_keys_r                     (s3_exe_stcur_keys_r)
+  //
+  , .o_match_hit                        (s3_upd_match_hit)
+  , .o_match_full                       (s3_upd_match_full)
+  , .o_mask_cmp                         (s3_upd_mask_cmp)
+  , .o_match_sel                        (s3_upd_match_sel)
+);
 
-// Notify bus:
-assign lv0_vld_w = s3_upd_vld_r & exe_notify_vld;
-assign lv0_en = lv0_vld_w;
-assign lv0_prod_id_w = s3_upd_prod_id_r;
-assign lv0_key_w = exe_notify_key;
-assign lv0_size_w = exe_notify_volume;
+// -------------------------------------------------------------------------- //
+//
+assign s4_upd_vld_w = s3_upd_vld_r;
+
+assign s4_upd_en =  s4_upd_vld_w;
+assign s4_upd_prod_id_w = s3_upd_prod_id_r;
+assign s4_upd_cmd_w = s3_upd_cmd_r;
+assign s4_upd_key_w = s3_upd_key_r;
+assign s4_upd_size_w = s3_upd_size_r;
+assign s4_upd_state_w = s3_upd_state_r;
+assign s4_upd_mask_cmp_w = s3_upd_mask_cmp;
+assign s4_upd_match_hit_w = s3_upd_match_hit;
+assign s4_upd_match_full_w = s3_upd_match_full;
+assign s4_upd_match_sel_w = s3_upd_match_sel;
 
 // ========================================================================== //
 //                                                                            //
-//  Instances                                                                 //
+// S4 Stage: Execute Stage                                                    //
 //                                                                            //
 // ========================================================================== //
 
 // -------------------------------------------------------------------------- //
 //
-pri #(.W(2)) u_s3_forwarding_pri (
-  //
-    .i_x                                (s2_upd_state_fwd)
-  //
-  , .o_y                                (s2_upd_state_sel)
-);
+assign s4_exe_stcur_vld_r = s4_upd_state_r.vld;
+assign s4_exe_stcur_keys_r = s4_upd_state_r.key;
+assign s4_exe_stcur_volumes_r = s4_upd_state_r.volume;
+assign s4_exe_stcur_listsize_r = s4_upd_state_r.listsize;
 
 // -------------------------------------------------------------------------- //
 //
 v_pipe_update_exe u_v_pipe_update_exe (
   //
-    .i_pipe_cmd_r                       (s3_upd_cmd_r)
-  , .i_pipe_key_r                       (s3_upd_key_r)
-  , .i_pipe_volume_r                    (s3_upd_size_r)
+    .i_pipe_cmd_r                       (s4_upd_cmd_r)
+  , .i_pipe_key_r                       (s4_upd_key_r)
+  , .i_pipe_volume_r                    (s4_upd_size_r)
+  , .i_pipe_match_hit_r                 (s4_upd_match_hit_r)
+  , .i_pipe_match_full_r                (s4_upd_match_full_r)
+  , .i_pipe_match_sel_r                 (s4_upd_match_sel_r)
+  , .i_pipe_mask_cmp_r                  (s4_upd_mask_cmp_r)
   //
-  , .i_stcur_vld_r                      (s3_exe_stcur_vld_r)
-  , .i_stcur_keys_r                     (s3_exe_stcur_keys_r)
-  , .i_stcur_volumes_r                  (s3_exe_stcur_volumes_r)
-  , .i_stcur_listsize_r                 (s3_exe_stcur_listsize_r)
+  , .i_stcur_vld_r                      (s4_exe_stcur_vld_r)
+  , .i_stcur_keys_r                     (s4_exe_stcur_keys_r)
+  , .i_stcur_volumes_r                  (s4_exe_stcur_volumes_r)
+  , .i_stcur_listsize_r                 (s4_exe_stcur_listsize_r)
   //
-  , .o_stnxt_vld                        (s3_exe_stnxt_vld)
-  , .o_stnxt_keys                       (s3_exe_stnxt_keys)
-  , .o_stnxt_volumes                    (s3_exe_stnxt_volumes)
-  , .o_stnxt_listsize                   (s3_exe_stnxt_listsize)
+  , .o_stnxt_vld                        (s4_exe_stnxt_vld)
+  , .o_stnxt_keys                       (s4_exe_stnxt_keys)
+  , .o_stnxt_volumes                    (s4_exe_stnxt_volumes)
+  , .o_stnxt_listsize                   (s4_exe_stnxt_listsize)
   //
   , .o_notify_vld                       (exe_notify_vld)
   , .o_notify_key                       (exe_notify_key)
   , .o_notify_volume                    (exe_notify_volume)
 );
+
+// Writeback:
+assign wrbk_vld_w = s4_upd_vld_r;
+assign wrbk_en = wrbk_vld_w;
+assign wrbk_prod_id_w = s4_upd_prod_id_r;
+assign wrbk_state_w.vld = s4_exe_stnxt_vld;
+assign wrbk_state_w.listsize = s4_exe_stnxt_listsize;
+assign wrbk_state_w.key = s4_exe_stnxt_keys;
+assign wrbk_state_w.volume = s4_exe_stnxt_volumes;
+
+// -------------------------------------------------------------------------- //
+// Emit messages
+
+// Notify bus:
+assign lv0_vld_w = s4_upd_vld_r & exe_notify_vld;
+assign lv0_en = lv0_vld_w;
+assign lv0_prod_id_w = s4_upd_prod_id_r;
+assign lv0_key_w = exe_notify_key;
+assign lv0_size_w = exe_notify_volume;
 
 // ========================================================================== //
 //                                                                            //
@@ -328,8 +405,10 @@ assign o_s2_upd_vld_r = s2_upd_vld_r;
 assign o_s2_upd_prod_id_r = s2_upd_prod_id_r;
 assign o_s3_upd_vld_r = s3_upd_vld_r;
 assign o_s3_upd_prod_id_r = s3_upd_prod_id_r;
-assign o_s4_upd_vld_r = wrbk_vld_r;
-assign o_s4_upd_prod_id_r = wrbk_prod_id_r;
+assign o_s4_upd_vld_r = s4_upd_vld_r;
+assign o_s4_upd_prod_id_r = s4_upd_prod_id_r;
+assign o_s5_upd_vld_r = wrbk_vld_r;
+assign o_s5_upd_prod_id_r = wrbk_prod_id_r;
 
 endmodule // v_pipe_update
 

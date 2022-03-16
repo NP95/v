@@ -419,7 +419,7 @@ class Mdl::Impl {
   friend class MdlValidation;
 
   static constexpr const std::size_t QUERY_PIPE_DELAY = 1;
-  static constexpr const std::size_t UPDATE_PIPE_DELAY = 4;
+  static constexpr const std::size_t UPDATE_PIPE_DELAY = 5;
 
  public:
   Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}

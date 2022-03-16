@@ -27,5 +27,5 @@
 
 `verilator_config
 
-lint_off -rule UNUSED -file "*/v_pipe_update_exe.sv" -lines 102
 lint_off -rule UNUSED -file "*/v_pipe_update_exe.sv" -lines 103
+lint_off -rule UNUSED -file "*/v_pipe_update_exe.sv" -lines 104

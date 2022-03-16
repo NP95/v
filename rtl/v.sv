@@ -105,6 +105,8 @@ logic                                   s3_upd_vld_r;
 v_pkg::id_t                             s3_upd_prod_id_r;
 logic                                   s4_upd_vld_r;
 v_pkg::id_t                             s4_upd_prod_id_r;
+logic                                   s5_upd_vld_r;
+v_pkg::id_t                             s5_upd_prod_id_r;
 
 // ========================================================================== //
 //                                                                            //
@@ -170,6 +172,8 @@ v_pipe_update u_v_pipe_update (
   , .o_s3_upd_prod_id_r                 (s3_upd_prod_id_r)
   , .o_s4_upd_vld_r                     (s4_upd_vld_r)
   , .o_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
+  , .o_s5_upd_vld_r                     (s5_upd_vld_r)
+  , .o_s5_upd_prod_id_r                 (s5_upd_prod_id_r)
   //
   , .clk                                (clk)
 );
@@ -214,6 +218,8 @@ v_pipe_query u_v_pipe_query (
   , .i_s3_upd_prod_id_r                 (s3_upd_prod_id_r)
   , .i_s4_upd_vld_r                     (s4_upd_vld_r)
   , .i_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
+  , .i_s5_upd_vld_r                     (s5_upd_vld_r)
+  , .i_s5_upd_prod_id_r                 (s5_upd_prod_id_r)
   //
   , .clk                                (clk)
 );

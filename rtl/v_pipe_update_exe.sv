@@ -36,6 +36,11 @@ module v_pipe_update_exe (
   input v_pkg::cmd_t                                i_pipe_cmd_r
 , input v_pkg::key_t                                i_pipe_key_r
 , input v_pkg::volume_t                             i_pipe_volume_r
+//
+, input                                             i_pipe_match_hit_r
+, input                                             i_pipe_match_full_r
+, input [cfg_pkg::ENTRIES_N - 1:0]                  i_pipe_match_sel_r
+, input [cfg_pkg::ENTRIES_N - 1:0]                  i_pipe_mask_cmp_r
 
 // -------------------------------------------------------------------------- //
 // State Current
@@ -73,13 +78,9 @@ logic                                      op_del;
 logic                                      op_rep;
 
 // Match:
-logic [cfg_pkg::ENTRIES_N - 1:0]           match_sel;
-logic                                      match_hit;
-logic                                      match_full;
 v_pkg::volume_t                            match_volume;
 
 // Add:
-logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_cmp;
 logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld_shift;
 logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld_sel;
 logic [cfg_pkg::ENTRIES_N - 1:0]           add_vld;
@@ -110,10 +111,6 @@ v_pkg::listsize_t                          stnxt_listsize;
 logic                                      stnxt_listsize_inc;
 logic                                      stnxt_listsize_dec;
 logic                                      stnxt_listsize_def;
-
-logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_eq;
-logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_gt;
-logic [cfg_pkg::ENTRIES_N - 1:0]           cmp_lt;
 
 
 logic [cfg_pkg::ENTRIES_N - 1:0]           stnxt_keys_do_upt;
@@ -146,69 +143,6 @@ assign op_add = (i_pipe_cmd_r == v_pkg::CMD_ADD);
 assign op_del = (i_pipe_cmd_r == v_pkg::CMD_DELETE);
 assign op_rep = (i_pipe_cmd_r == v_pkg::CMD_REPLACE);
 
-// ========================================================================== //
-//                                                                            //
-//  Table match logic                                                         //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-// Construct one-hot vector denoting the position of matching keys in the
-// current state (if any).
-//
-for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
-
-assign match_sel [i] = i_stcur_vld_r [i] & (i_pipe_key_r == i_stcur_keys_r [i]);
-
-end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
-
-// -------------------------------------------------------------------------- //
-// Flag denoting that a matching key was found in the current state.
-//
-assign match_hit = (match_sel != '0);
-
-// -------------------------------------------------------------------------- //
-// Flag indicating that all Entries in the  context are full
-//
-assign match_full = (i_stcur_vld_r == '1);
-
-// ========================================================================== //
-//                                                                            //
-//  Add command                                                               //
-//                                                                            //
-// ========================================================================== //
-
-// -------------------------------------------------------------------------- //
-// Compare table keys against current command key.a
-//
-for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
-
-  cmp #(.W(v_pkg::KEY_BITS)) u_cmp (
-  //
-    .i_a                                  (i_stcur_keys_r [i])
-  , .i_b                                  (i_pipe_key_r)
-  //
-  , .o_eq                                 (cmp_eq [i])
-  , .o_gt                                 (cmp_gt [i])
-  , .o_lt                                 (cmp_lt [i])
-  );
-
-end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
-
-// -------------------------------------------------------------------------- //
-// Form a unary mask denoting the valid elements on the context that are
-// greater-than (BID-TABLE)/less-than (ASK-Table) or equal-to the current
-// command (where X is ENTRIES_N - 1).
-//
-//  Index   X                                      0
-//
-//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
-//
-//  Compare 0  0  0  0  0  0  0  0  0  0  1  1  1  1
-//
-assign add_mask_cmp =
-   i_stcur_vld_r & (cmp_eq | (cfg_pkg::IS_BID_TABLE ? cmp_gt : cmp_lt));
-
 // -------------------------------------------------------------------------- //
 // The location into which the current command is to be inserted is the leading
 // zero of the comparison vector).
@@ -221,7 +155,7 @@ assign add_mask_cmp =
 //
 lzd #(.W(cfg_pkg::ENTRIES_N), .DETECT_ZERO(1), .FROM_LSB(1)) u_lzd (
   //
-    .i_x                                (add_mask_cmp)
+    .i_x                                (i_pipe_mask_cmp_r)
   //
   , .o_y                                (add_mask_insert)
 );
@@ -284,7 +218,7 @@ assign add_vld = (i_stcur_vld_r | add_vld_shift | add_mask_insert);
 // and the current context is not full (i.e. we are guarenteed to insert the
 // element somewhere).
 //
-assign add_listsize_inc = (~match_full);
+assign add_listsize_inc = (~i_pipe_match_full_r);
 
 // ========================================================================== //
 //                                                                            //
@@ -307,7 +241,7 @@ if (cfg_pkg::ALLOW_DUPLICATES) begin
 
 pri #(.W(cfg_pkg::ENTRIES_N), .FROM_LSB(1)) u_pri_del (
   //
-    .i_x                                (match_sel)
+    .i_x                                (i_pipe_match_sel_r)
   //
   , .o_y                                (del_sel)
 );
@@ -322,7 +256,7 @@ end else begin
 //
 //  Match   0  0  0  0  0  0  0  1  0  0  0  0  0  0
 //
-assign del_sel = match_sel;
+assign del_sel = i_pipe_match_sel_r;
 
 end // else: !if(cfg_pkg::ALLOW_DUPLICATES)
 
@@ -364,7 +298,7 @@ assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
 //
 //  VldNxt  0  0  0  0  0  1  1  1  1  1  1  1  1  1
 //
-assign del_vld = match_hit ?
+assign del_vld = i_pipe_match_hit_r ?
                  ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift) :
                  i_stcur_vld_r;
 
@@ -372,7 +306,7 @@ assign del_vld = match_hit ?
 // On delete, decrement the current listsize count whenever an element has been
 // removed (i.e. on a match hit operation).
 //
-assign del_listsize_dec = match_hit;
+assign del_listsize_dec = i_pipe_match_hit_r;
 
 // ========================================================================== //
 //                                                                            //
@@ -419,7 +353,7 @@ assign mask_insert_key = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert);
 // Update volume on ADD or REPlacement commands
 //
 assign mask_insert_vol = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert) |
-                         ({cfg_pkg::ENTRIES_N{op_rep}} & match_sel);
+                         ({cfg_pkg::ENTRIES_N{op_rep}} & i_pipe_match_sel_r);
 
 // -------------------------------------------------------------------------- //
 // State update logic
@@ -551,12 +485,12 @@ assign notify_did_add = op_add & add_mask_insert [0];
 // -------------------------------------------------------------------------- //
 // Notify on delete command on the head element.
 //
-assign notify_did_del = op_del & match_sel [0];
+assign notify_did_del = op_del & i_pipe_match_sel_r [0];
 
 // -------------------------------------------------------------------------- //
 // Notify on delete to or replacement on head element
 //
-assign notify_did_rep_or_del = (op_rep | op_del) & match_sel [0];
+assign notify_did_rep_or_del = (op_rep | op_del) & i_pipe_match_sel_r [0];
 
 // -------------------------------------------------------------------------- //
 // Issue notify message on either of these prior conditions.
@@ -577,7 +511,7 @@ assign notify_key = i_pipe_key_r;
 mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::VOLUME_BITS)) u_max_match_volume (
   //
     .i_x                      (i_stcur_volumes_r)
-  , .i_sel                    (match_sel)
+  , .i_sel                    (i_pipe_match_sel_r)
   //
   , .o_y                      (match_volume)
 );
