@@ -90,7 +90,6 @@ logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_left;
 logic [cfg_pkg::ENTRIES_N - 1:0]           add_mask_insert;
 
 // Delete:
-logic [cfg_pkg::ENTRIES_N - 1:0]           del_vld_shift;
 logic [cfg_pkg::ENTRIES_N - 1:0]           del_vld;
 logic [cfg_pkg::ENTRIES_N - 1:0]           del_sel;
 logic [cfg_pkg::ENTRIES_N - 1:0]           del_mask_left;
@@ -282,31 +281,14 @@ mask #(.W(cfg_pkg::ENTRIES_N), .TOWARDS_LSB(0), .INCLUSIVE(1)) u_mask_del (
 );
 
 // -------------------------------------------------------------------------- //
-// Predicate deletion right-shift mask against validity and shift.
-//
-//  Vld     0  0  0  0  1  1  1  1  1  1  1  1  1  1
-//
-//  Mask    1  1  1  1  1  1  1  1  0  0  0  0  0  0
-//
-//  DelSh   0  0  0  0  0  1  1  1  1  0  0  0  0  0
-//
-assign del_vld_shift = (i_stcur_vld_r & del_mask_left) >> 1;
-
-// -------------------------------------------------------------------------- //
-// If the entry to be deleted has been found in the table, form final updated
-// validity, otherwise retain priority validity (operation is a NOP).
+// On a successful delete, the next valid bit-vector is simply the existing
+// right-shifted one bit.
 //
 //  VldOld  0  0  0  0  1  1  1  1  1  1  1  1  1  1
 //
-//  Mask    0  0  0  0  0  0  0  0  1  1  1  1  1  1
-//
-//  DelSh   0  0  0  0  0  1  1  1  1  0  0  0  0  0
-//
 //  VldNxt  0  0  0  0  0  1  1  1  1  1  1  1  1  1
 //
-assign del_vld = i_pipe_match_hit_r ?
-                 ((i_stcur_vld_r & ~del_mask_left) | del_vld_shift) :
-                 i_stcur_vld_r;
+assign del_vld = i_pipe_match_hit_r ? (i_stcur_vld_r >> 1) : i_stcur_vld_r;
 
 // -------------------------------------------------------------------------- //
 // On delete, decrement the current listsize count whenever an element has been
