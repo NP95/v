@@ -203,20 +203,16 @@ assign add_vld_sel = (i_stcur_vld_r & add_mask_left);
 assign add_vld_shift = (add_vld_sel << 1);
 
 // -------------------------------------------------------------------------- //
-// Derive the valid state as a function of the shifted elements, the newly
-// inserted element and the prior elements that remain unchanged.
+// Next valid mask for the add command case "right sign extended" value (i.e. we
+// simply push a 1'b1 into the LSB regardless of the current "full-ness" of the
+// context. In the full case, although a 'add' may or may-not occur, the next
+// state of the mask, equals the initial case (i.e. '1 becomes '1).
 //
-//  VldSh   0  0  0  0  0  0  1  1  1  0  0  0  0  0
+//  VldCur  0  0  0  0  0  0  0  1  1  1  1  1  1  1
 //
-//  Insert  0  0  0  0  0  0  0  0  0  1  0  0  0  0
+//  VldNxt  0  0  0  0  0  0  1  1  1  1  1  1  1  1
 //
-//  Valid   0  0  0  0  0  0  0  1  1  1  1  1  1  1
-//
-//                                     +-- Insertion position
-//                                     |
-//  AddVld  0  0  0  0  0  0  1  1  1  1  1  1  1  1
-//
-assign add_vld = (i_stcur_vld_r | add_vld_shift | add_mask_insert);
+assign add_vld = {i_stcur_vld_r [cfg_pkg::ENTRIES_N - 2:0], 1'b1};
 
 // -------------------------------------------------------------------------- //
 // Increment listsize (integer) value whenever we're executing an add command
