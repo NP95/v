@@ -163,7 +163,6 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
         case Opcode::WaitUntilNotBusy: {
           const bool is_busy = VDriver::is_busy(tb);
           consume_instruction = !is_busy;
-          ;
           if (consume_instruction) {
             V_LOG(parent_->lg(), Info, "Initialization complete!");
           }
