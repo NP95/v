@@ -64,40 +64,40 @@ std::unique_ptr<Instruction> Instruction::make_emit(
   i->op = Opcode::Emit;
   i->uc = uc;
   i->qc = qc;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_wait(std::size_t n) {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::WaitCycles;
   i->n = n;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_note(const tb::log::Msg& msg) {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::LogMessage;
   i->msg = msg;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_wait_until_not_busy() {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::WaitUntilNotBusy;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_apply_reset() {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::ApplyReset;
   i->n = 0;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_end_simulation() {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::EndSimulation;
-  return std::move(i);
+  return i;
 }
 
 std::unique_ptr<Instruction> Instruction::make_log_message(
@@ -105,7 +105,7 @@ std::unique_ptr<Instruction> Instruction::make_log_message(
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::LogMessage;
   i->msg = msg;
-  return std::move(i);
+  return i;
 }
 
 class tb::tests::Directed::Impl : public tb::VKernelCB {
