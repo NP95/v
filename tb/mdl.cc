@@ -73,16 +73,11 @@ namespace tb {
 
 const char* to_string(Cmd c) {
   switch (c) {
-    case Cmd::Clr:
-      return "Clr";
-    case Cmd::Add:
-      return "Add";
-    case Cmd::Del:
-      return "Del";
-    case Cmd::Rep:
-      return "Rep";
-    default:
-      return "Invalid";
+    case Cmd::Clr:  return "Clr";
+    case Cmd::Add:  return "Add";
+    case Cmd::Del:  return "Del";
+    case Cmd::Rep:  return "Rep";
+    default:        return "Invalid";
   }
 }
 
