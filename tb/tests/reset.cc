@@ -38,18 +38,12 @@ enum class State { PreReset, AssertReset, InReset, PostReset, PostInit, Done };
 
 const char* to_string(State s) {
   switch (s) {
-    case State::PreReset:
-      return "PreReset";
-    case State::AssertReset:
-      return "AssertReset";
-    case State::InReset:
-      return "InReset";
-    case State::PostReset:
-      return "PostReset";
-    case State::PostInit:
-      return "PostInit";
-    case State::Done:
-      return "Done";
+    case State::PreReset:    return "PreReset";
+    case State::AssertReset: return "AssertReset";
+    case State::InReset:     return "InReset";
+    case State::PostReset:   return "PostReset";
+    case State::PostInit:    return "PostInit";
+    case State::Done:        return "Done";
   }
   return "Invalid";
 }
