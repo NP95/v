@@ -86,8 +86,7 @@ bool VKernel::run(VKernelCB* cb) {
   VDriver::issue(vtb, UpdateCommand{});
   VDriver::issue(vtb, QueryCommand{});
 
-  int rundown_n = 0;
-  const int rundown_cycles = 5;
+  int rundown_n = 5;
   bool do_stepping = true;
   bool failed = false;
   while (do_stepping || --rundown_n > 0) {
@@ -102,7 +101,6 @@ bool VKernel::run(VKernelCB* cb) {
     } catch (const VKernelException& ex) {
       failed = true;
       do_stepping = false;
-      rundown_n = rundown_cycles;
     }
 
     vtb_->eval();
