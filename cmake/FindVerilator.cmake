@@ -28,65 +28,11 @@
 ## OF THE POSSIBILITY OF SUCH DAMAGE.
 ## ==================================================================== ##
 
-if (DEFINED VERILATOR_ROOT)
-
-  # Explicit Verilator installation at VERILATOR_ROOT
-
-  # Expand tilde if present in command line argument. If present, this
-  # can break the verilator scripts.
-  file(REAL_PATH ${VERILATOR_ROOT} VERILATOR_ROOT EXPAND_TILDE)
-
-  find_path(Verilator_INCLUDE_DIR verilated.h
-    HINTS ${VERILATOR_ROOT}/include
-    DOC "Searching for Verilator installation."
-    )
-
-  find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
-    HINTS ${VERILATOR_ROOT}/include/vltstd
-    DOC "Searching for Verilator installation."
-    )
-
-  find_program(Verilator_EXE
-    verilator
-    HINTS ${VERILATOR_ROOT}/bin
-    DOC "Searching for Verilator executable."
-    )
-
-else ()
-
-  # Otherwise, search for system installation of Verilator
-
-  find_path(Verilator_INCLUDE_DIR verilated.h
-    PATH_SUFFIXES include
-    HINTS /usr/share/verilator/include
-    HINTS /opt/verilator/latest/share/verilator/include
-    DOC "Searching for Verilator installation."
-    )
-
-  find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
-    PATH_SUFFIXES include
-    HINTS /usr/share/verilator/include/vltstd
-    HINTS /opt/verilator/latest/share/verilator/include/vltstd
-    DOC "Searching for Verilator installation."
-    )
-
-  find_program(Verilator_EXE
-    verilator
-    HINTS /usr/bin/verilator
-    HINTS /opt/verilator/latest/bin
-    DOC "Searching for Verilator executable."
-    )
-
-  if (NOT DEFINED ENV{VERILATOR_ROOT})
-    message(FATAL_ERROR
-      "Environment does not define VERILATOR_ROOT, which is "
-      "required by the Verilator installation.")
-  endif()
-
-endif()
+find_program(Verilator_EXE verilator
+  DOC "Searching for Verilator executable...")
 
 if (Verilator_EXE)
-  execute_process(COMMAND ${Verilator_EXE} "--version"
+  execute_process(COMMAND ${Verilator_EXE} --version
     OUTPUT_VARIABLE v_version)
   string(REGEX REPLACE "Verilator ([0-9]).([0-9]+).*" "\\1"
     VERILATOR_MAJOR_VERSION ${v_version})
@@ -94,22 +40,26 @@ if (Verilator_EXE)
     VERILATOR_MINOR_VERSION ${v_version})
   set(VERILATOR_VERSION
     ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
-
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
+
+  execute_process(COMMAND ${Verilator_EXE} --getenv VERILATOR_ROOT
+    OUTPUT_VARIABLE VERILATOR_ROOT)
+  message(STATUS "VERILATOR_ROOT set as ${VERILATOR_ROOT}")
 
   macro (verilator_build vlib)
     set(Verilator_SRCS
-      "${Verilator_INCLUDE_DIR}/verilated.cpp"
-      "${Verilator_INCLUDE_DIR}/verilated_dpi.cpp"
-      "${Verilator_INCLUDE_DIR}/verilated_save.cpp")
-    if (ENABLE_VCD)
-      list(APPEND Verilator_SRCS
-        "${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp")
-    endif ()
-
+      "${VERILATOR_ROOT}/include/verilated.cpp"
+      "${VERILATOR_ROOT}/include/verilated_dpi.cpp"
+      "${VERILATOR_ROOT}/include/verilated_save.cpp"
+      "$<ENABLE_VCD:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp"
+      )
     add_library(${vlib} SHARED "${Verilator_SRCS}")
     list(APPEND Verilator_INCLUDE_DIR "${VerilatorDpi_INCLUDE_DIR}")
-    target_include_directories(${vlib} PUBLIC "${Verilator_INCLUDE_DIR}")
+    target_include_directories(${vlib}
+     PUBLIC
+      "${VERILATOR_ROOT}/include"
+      "${VERILATOR_ROOT}/include/vltstd"
+      )
   endmacro ()
 
 else()
