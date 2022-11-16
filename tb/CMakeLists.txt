@@ -49,19 +49,15 @@ endforeach ()
 # Build verilator support library
 verilator_build(vlib)
 
-set(VERILATOR_OBJ "Vobj")
-
 set(VERILATOR_ARGS
   "-cc"
   "-Wall"
-  "--Mdir ${VERILATOR_OBJ}"
+  "--Mdir Vobj"
   "--build"
-  "--top tb")
+  "--top tb"
+  "$<ENABLE_VCD:--trace>"
+  )
 
-if (ENABLE_VCD)
-  # Enable tracing
-  list(APPEND VERILATOR_ARGS "--trace")
-endif ()
 
 set(TB_SOURCES
   "${RTL_CFG_SOURCES}"
@@ -87,10 +83,10 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
 
 add_custom_target(verilate
   COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
-  ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
+    ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
   COMMENT "Verilating (verilate_${cfg})...")
 
-set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/${VERILATOR_OBJ}/Vtb__ALL.a")
+set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a")
 
 # ---------------------------------------------------------------------------- #
 # Driver executable:
@@ -110,7 +106,7 @@ set(DRIVER_CPP
 add_executable(driver ${DRIVER_CPP})
 target_include_directories(driver PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}"
-  "${Verilator_INCLUDE_DIR}")
+  "${VERILATOR_INCLUDE}/include")
 target_link_libraries(driver vlib ${VERILATOR_A})
 add_dependencies(driver verilate)
 
@@ -122,3 +118,11 @@ add_custom_target(smoke
      --run Regress --args 'n=999999,p=0.01;5.0;1.0;2.0;0.1'
   DEPENDS driver
   )
+
+# ---------------------------------------------------------------------------- #
+# Tests
+enable_testing()
+add_test(NAME smoke
+ COMMAND $<TARGET_FILE:driver> 
+   --run Regress --args 'n=999999,p=0.01;5.0;1.0;2.0;0.1'
+ )
