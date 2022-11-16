@@ -42,20 +42,22 @@ if (Verilator_EXE)
     ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
 
-  execute_process(COMMAND ${Verilator_EXE} --getenv VERILATOR_ROOT
-    OUTPUT_VARIABLE VERILATOR_ROOT)
+  execute_process(COMMAND
+    ${Verilator_EXE} --getenv VERILATOR_ROOT
+    OUTPUT_VARIABLE VERILATOR_ROOT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
   message(STATUS "VERILATOR_ROOT set as ${VERILATOR_ROOT}")
 
   macro (verilator_build vlib)
-    set(Verilator_SRCS
+    add_library(${vlib} STATIC
       "${VERILATOR_ROOT}/include/verilated.cpp"
       "${VERILATOR_ROOT}/include/verilated_dpi.cpp"
       "${VERILATOR_ROOT}/include/verilated_save.cpp"
-      "$<ENABLE_VCD:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp"
+      "$<$<BOOL:${ENABLE_VCD}>:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp>"
       )
-    add_library(${vlib} SHARED "${Verilator_SRCS}")
     target_include_directories(${vlib}
-     PUBLIC
+      PRIVATE
       "${VERILATOR_ROOT}/include"
       "${VERILATOR_ROOT}/include/vltstd"
       )
