@@ -54,7 +54,6 @@ if (Verilator_EXE)
       "$<ENABLE_VCD:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp"
       )
     add_library(${vlib} SHARED "${Verilator_SRCS}")
-    list(APPEND Verilator_INCLUDE_DIR "${VerilatorDpi_INCLUDE_DIR}")
     target_include_directories(${vlib}
      PUBLIC
       "${VERILATOR_ROOT}/include"
