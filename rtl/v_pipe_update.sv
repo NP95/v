@@ -363,7 +363,7 @@ v_pipe_update_exe u_v_pipe_update_exe (
 assign wrbk_vld_w = s4_upd_vld_r;
 assign wrbk_en = wrbk_vld_w;
 assign wrbk_prod_id_w = s4_upd_prod_id_r;
-assign wrbk_state_w.vld = s4_exe_stnxt_vld;sdasd
+assign wrbk_state_w.vld = s4_exe_stnxt_vld;
 assign wrbk_state_w.listsize = s4_exe_stnxt_listsize;
 assign wrbk_state_w.key = s4_exe_stnxt_keys;
 assign wrbk_state_w.volume = s4_exe_stnxt_volumes;

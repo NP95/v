@@ -115,6 +115,7 @@ set(DRIVER_CPP
 add_executable(driver ${DRIVER_CPP})
 target_include_directories(driver PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
   "${VERILATOR_ROOT}/include")
 target_link_libraries(driver vlib ${VERILATOR_A})
 add_dependencies(driver verilate)
