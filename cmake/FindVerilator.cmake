@@ -54,7 +54,11 @@ if (EXISTS $ENV{VERILATOR_ROOT})
       "${VERILATOR_ROOT}/include/vltstd"
       )
   endmacro ()
-
 else()
-  message(WARNING "Verilator not found! Simulation is not supported")
+  # Configuration script expects and requires that the VERILATOR_ROOT
+  # variable be set in the current environment. 
+  message(WARNING [[
+    "VERILATOR_ROOT has not been defined in the environment. "
+    "Verilator not found! Simulation is not supported"
+    ]])
 endif ()
