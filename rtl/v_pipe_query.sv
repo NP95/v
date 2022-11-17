@@ -198,7 +198,7 @@ assign s1_lut_error =
 
 // -------------------------------------------------------------------------- //
 //
-mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
+mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::KEY_BITS)) u_s1_key_mux (
 //
   .i_x                                  (i_state_rdata.key)
 , .i_sel                                (s1_lut_level_dec_r)
@@ -208,7 +208,7 @@ mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::key_t))) u_s1_key_mux (
 
 // -------------------------------------------------------------------------- //
 //
-mux #(.N(cfg_pkg::ENTRIES_N), .W($bits(v_pkg::volume_t))) u_s1_volume_mux (
+mux #(.N(cfg_pkg::ENTRIES_N), .W(v_pkg::VOLUME_BITS)) u_s1_volume_mux (
 //
   .i_x                                  (i_state_rdata.volume)
 , .i_sel                                (s1_lut_level_dec_r)

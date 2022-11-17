@@ -47,15 +47,12 @@ typedef enum logic [1:0] {
 } cmd_t;
 
 typedef logic [63:0] key_t;
-
 localparam int KEY_BITS = $bits(key_t);
 
 typedef logic [31:0] volume_t;
-
 localparam int VOLUME_BITS = $bits(volume_t);
 
 typedef logic [31:0] size_t;
-
 
 typedef logic [$clog2(cfg_pkg::ENTRIES_N) - 1:0]  level_t;
 
@@ -68,8 +65,7 @@ typedef struct packed {
   key_t [cfg_pkg::ENTRIES_N - 1:0] key;
   volume_t [cfg_pkg::ENTRIES_N - 1:0] volume;
 } state_t;
-
-localparam int      STATE_BITS = $bits(state_t);
+localparam int STATE_BITS = $bits(state_t);
 
 typedef logic [$clog2(cfg_pkg::CONTEXT_N) - 1:0] addr_t;
 

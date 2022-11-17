@@ -180,7 +180,7 @@ v_pipe_update u_v_pipe_update (
 
 // -------------------------------------------------------------------------- //
 //
-sram1r1w #(.N(cfg_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_update (
+sram1r1w #(.N(cfg_pkg::CONTEXT_N), .W(v_pkg::STATE_BITS)) u_sram1r1w_update (
   //
     .i_ren                              (update_ren)
   , .i_raddr                            (update_raddr)
@@ -226,7 +226,7 @@ v_pipe_query u_v_pipe_query (
 
 // -------------------------------------------------------------------------- //
 //
-sram1r1w #(.N(cfg_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_query (
+sram1r1w #(.N(cfg_pkg::CONTEXT_N), .W(v_pkg::STATE_BITS)) u_sram1r1w_query (
   //
     .i_ren                              (query_ren)
   , .i_raddr                            (query_raddr)
@@ -241,7 +241,7 @@ sram1r1w #(.N(cfg_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_sram1r1w_query (
 
 // -------------------------------------------------------------------------- //
 //
-v_init #(.N(cfg_pkg::CONTEXT_N), .W($bits(v_pkg::state_t))) u_init (
+v_init #(.N(cfg_pkg::CONTEXT_N), .W(v_pkg::STATE_BITS)) u_init (
   //
     .o_init_wen_r                       (init_wen_r)
   , .o_init_waddr_r                     (init_waddr_r)
