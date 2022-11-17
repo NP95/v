@@ -33,6 +33,7 @@ project(v)
 option(VERILATOR_ROOT "Verilator installation root")
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_SOURCE_DIR}/cmake"
