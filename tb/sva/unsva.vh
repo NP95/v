@@ -25,9 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`ifndef V_TB_SVA_SVA_VH
-`define V_TB_SVA_SVA_VH
+`ifdef V_TB_SVA_SVA_VH
 
 `undef assert_not_x_when
+`undef V_TB_SVA_SVA_VH
 
 `endif
