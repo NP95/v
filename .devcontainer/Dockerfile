@@ -8,6 +8,7 @@ RUN apt-get update \
       bison \
       build-essential \
       flex \
+      libfl-dev \
       gdb \
       cmake \
   && apt-get clean \
