@@ -14,14 +14,16 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 
-ARG VERILATOR_VER=5.002
+ARG VERILATOR_VER="5.002"
 
 WORKDIR /tools
 RUN wget https://github.com/verilator/verilator/archive/refs/tags/v${VERILATOR_VER}.tar.gz \
-  && tar -zxf v${VERILATOR_VER}.tag.gz \
+  && tar -zxf v${VERILATOR_VER}.tar.gz \
   && cd verilator-${VERILATOR_VER} \
   && autoconf \
   && ./configure \
-  && make
+  && make \
+  && cd .. \
+  && rm -rf v${VERILATOR_VER}.tar.gz
 
 ENV VERILATOR_ROOT /tools/verilator-${VERILATOR_VER}
