@@ -29,6 +29,8 @@
 # Options:
 declare_flag_option(ENABLE_VCD "Enable waveform tracing." ON)
 
+option(ENABLE_SVA "Enable SystemVerilog assertions" ON)
+
 # ---------------------------------------------------------------------------- #
 # Build sources:
 include(rtl)
@@ -66,6 +68,13 @@ set(TB_SOURCES
   "${RTL_SOURCES}"
   "${LIB_SOURCES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
+
+if (ENABLE_SVA)
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/sva)
+  include(sva)
+  list(APPEND TB_SOURCES ${SVA_SOURCES})
+  list(APPEND RTL_INCLUDE_PATHS ${SVA_INCLUDES})
+endif ()
 
 set(VERILATOR_INCLUDES "-I${CMAKE_CURRENT_BINARY_DIR}")
 foreach (inc_fn ${RTL_INCLUDE_PATHS})
