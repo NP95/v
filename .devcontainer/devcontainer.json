@@ -1,4 +1,4 @@
 {
 	"name": "Verilator Dev.",
-	"build": { "dockerfile": "Dockerfile" },
+	"build": { "dockerfile": "Dockerfile" }
 }
