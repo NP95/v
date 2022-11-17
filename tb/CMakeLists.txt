@@ -55,8 +55,10 @@ set(VERILATOR_ARGS
   "--Mdir Vobj"
   "--build"
   "--top tb"
-  "$<ENABLE_VCD:--trace>"
   )
+if (ENABLE_VCD)
+  list(APPEND VERILATOR_ARGS --trace)
+endif ()
 
 
 set(TB_SOURCES
@@ -84,7 +86,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/filelist "${FILELIST}")
 add_custom_target(verilate
   COMMAND ${CMAKE_COMMAND} -E env VERILATOR_ROOT=${VERILATOR_ROOT}
     ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/filelist
-  COMMENT "Verilating (verilate_${cfg})...")
+  COMMENT "Verilating...")
 
 set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a")
 
@@ -106,7 +108,7 @@ set(DRIVER_CPP
 add_executable(driver ${DRIVER_CPP})
 target_include_directories(driver PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}"
-  "${VERILATOR_INCLUDE}/include")
+  "${VERILATOR_ROOT}/include")
 target_link_libraries(driver vlib ${VERILATOR_A})
 add_dependencies(driver verilate)
 

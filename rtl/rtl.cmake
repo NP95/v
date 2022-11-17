@@ -29,10 +29,10 @@
 # RTL Parameterizations
 
 # The number of supported contexts
-declare_option(CONTEXT_N "The number of contexts/prod_id." 10)
+set(CONTEXT_N 10)
 
 # The number of unique entries per context
-declare_option(ENTRIES_N "The number of unique entries per context." 10)
+set(ENTRIES_N 10)
 
 # Allow duplicate keys within a given context.
 declare_flag_option(ALLOW_DUPLICATES "Allow duplicate keys." ON)

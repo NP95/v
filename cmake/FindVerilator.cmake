@@ -28,26 +28,18 @@
 ## OF THE POSSIBILITY OF SUCH DAMAGE.
 ## ==================================================================== ##
 
-find_program(Verilator_EXE verilator
-  DOC "Searching for Verilator executable...")
-
-if (Verilator_EXE)
+if (EXISTS $ENV{VERILATOR_ROOT})
+  set(VERILATOR_ROOT $ENV{VERILATOR_ROOT})
+  set(Verilator_EXE ${VERILATOR_ROOT}/bin/verilator)
   execute_process(COMMAND ${Verilator_EXE} --version
-    OUTPUT_VARIABLE v_version)
+    OUTPUT_VARIABLE Verilator_VER)
   string(REGEX REPLACE "Verilator ([0-9]).([0-9]+).*" "\\1"
-    VERILATOR_MAJOR_VERSION ${v_version})
+    VERILATOR_VERSION_MAJOR ${Verilator_VER})
   string(REGEX REPLACE "Verilator ([0-9]).([0-9]+).*" "\\2"
-    VERILATOR_MINOR_VERSION ${v_version})
+    VERILATOR_VERSION_MINOR ${Verilator_VER})
   set(VERILATOR_VERSION
-    ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
+    ${VERILATOR_VERSION_MAJOR}.${VERILATOR_VERSION_MINOR})
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
-
-  execute_process(COMMAND
-    ${Verilator_EXE} --getenv VERILATOR_ROOT
-    OUTPUT_VARIABLE VERILATOR_ROOT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  message(STATUS "VERILATOR_ROOT set as ${VERILATOR_ROOT}")
 
   macro (verilator_build vlib)
     add_library(${vlib} STATIC

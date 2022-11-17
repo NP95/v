@@ -35,6 +35,8 @@
 
 namespace tb {
 
+Test::~Test() {}
+
 void TestBuilder::build(Test* t, const TestOptions& opts) const {
   t->opts_ = opts;
   VKernelOptions vopts;

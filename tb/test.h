@@ -62,7 +62,7 @@ class Test {
 
  public:
   explicit Test() = default;
-  virtual ~Test() = default;
+  virtual ~Test();
 
   log::Scope* lg() const { return opts_.l; }
   const TestOptions& opts() const { return opts_; }

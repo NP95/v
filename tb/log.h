@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "common.h"
 
@@ -104,8 +105,8 @@ enum class Level { Debug, Info, Warning, Error, Fatal };
 
 class Msg {
  public:
-  Msg() = default;
-  Msg(Level l) : l_(l) {}
+  explicit Msg() = default;
+  explicit Msg(Level l) : l_(l) {}
 
   std::string str() const;
 
@@ -130,7 +131,6 @@ class Msg {
     append(")");
   }
 
-  template <>
   void trace_mismatch(const char* lhs_s, bool lhs, const char* rhs_s,
                       bool rhs) {
     trace_mismatch(lhs_s, to_string(lhs), rhs_s, to_string(rhs));
