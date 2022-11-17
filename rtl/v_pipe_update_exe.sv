@@ -342,9 +342,9 @@ assign mask_insert_vol = ({cfg_pkg::ENTRIES_N{op_add}} & add_mask_insert) |
 // -------------------------------------------------------------------------- //
 // State update logic
 //
-for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
+for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin : upt_GEN
 
-  if (i == 0) begin
+  if (i == 0) begin : upt_0_GEN
     // Right-most entry:
 
     assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_left [i]);
@@ -363,7 +363,7 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
       // Take left,
       ({v_pkg::VOLUME_BITS{mask_left [i]}} & i_stcur_volumes_r [i + 1]);
 
-  end else if (i == cfg_pkg::ENTRIES_N - 1) begin // if (i == 0)
+  end else if (i == cfg_pkg::ENTRIES_N - 1) begin : upt_N_GEN
     // Left-most entry:
 
     assign stnxt_keys_do_upt [i] = (mask_insert_key [i] | mask_right [i]);
@@ -382,7 +382,7 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
       // Take right,
       ({v_pkg::VOLUME_BITS{mask_right [i]}} & i_stcur_volumes_r [i - 1]);
 
-  end else begin // if (i == cfg_pkg::ENTRIES_N - 1)
+  end else begin : upt_i_GEN
     // Internal entry:
 
     assign stnxt_keys_do_upt [i] =
@@ -407,7 +407,7 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
       // Take right,
       ({v_pkg::VOLUME_BITS{mask_right [i]}} & i_stcur_volumes_r [i - 1]);
 
-  end // else: !if(i == cfg_pkg::ENTRIES_N - 1)
+  end : upt_i_GEN
 
 
   // Select update or retain prior.
@@ -420,8 +420,7 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
       ({v_pkg::VOLUME_BITS{ stnxt_volumes_do_upt [i]}} & stnxt_volumes_upt [i]) |
       ({v_pkg::VOLUME_BITS{~stnxt_volumes_do_upt [i]}} & i_stcur_volumes_r [i]);
 
-end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
-
+end : upt_GEN
 
 // ========================================================================== //
 //                                                                            //

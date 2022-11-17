@@ -98,7 +98,7 @@ assign match_full = (i_stcur_vld_r == '1);
 // -------------------------------------------------------------------------- //
 // Compare table keys against current command key.a
 //
-for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
+for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin : cmp_GEN
 
   cmp #(.W(v_pkg::KEY_BITS)) u_cmp (
   //
@@ -110,7 +110,7 @@ for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++) begin
   , .o_lt                                 (cmp_lt [i])
   );
 
-end // for (genvar i = 0; i < cfg_pkg::ENTRIES_N; i++)
+end : cmp_GEN
 
 // -------------------------------------------------------------------------- //
 // Form a unary mask denoting the valid elements on the context that are
