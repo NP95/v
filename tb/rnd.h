@@ -37,7 +37,7 @@ class Rnd {
   using seed_type = std::mt19937::result_type;
 
  public:
-  explicit Rnd(seed_type s = seed_type{});
+  explicit Rnd(seed_type s = seed_type{}) { seed(s); }
 
   // Set seed of randomization engine.
   void seed(seed_type s) { mt_.seed(s); }
