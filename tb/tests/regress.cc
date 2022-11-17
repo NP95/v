@@ -167,7 +167,7 @@ class Stimulus {
   }
 
   bool get(tb::UpdateCommand& uc, tb::QueryCommand& qc) {
-    bool ret;
+    bool ret = false;
     switch (st_) {
       case State::Random: {
         ret = get_random(uc, qc);
