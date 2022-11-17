@@ -27,4 +27,8 @@ RUN wget https://github.com/verilator/verilator/archive/refs/tags/v${VERILATOR_V
   && cd .. \
   && rm -rf v${VERILATOR_VER}.tar.gz
 
-ENV VERILATOR_ROOT /tools/verilator-${VERILATOR_VER}
+# Required for the build system.
+ENV VERILATOR_ROOT="/tools/verilator-${VERILATOR_VER}"
+
+# Required for the linter.
+ENV PATH="${VERILATOR_ROOT}/bin:$PATH"

@@ -1,4 +1,20 @@
 {
 	"name": "Verilator Dev.",
-	"build": { "dockerfile": "Dockerfile" }
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"twxs.cmake",
+				"ms-vscode.cpptools",
+				"dracula-theme.theme-dracula",
+				"mshr-h.veriloghdl",
+				"ms-vscode.cmake-tools",
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.cpptools-themes",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
 }

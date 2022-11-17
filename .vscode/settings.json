@@ -1,4 +1,6 @@
 {
     "cmake.buildDirectory":"${workspaceFolder}/build",
     "cmake.sourceDirectory":"${workspaceFolder}",
+    "verilog.linting.linter":"verilator",
+    "verilog.linting.verilator.arguments": "-Wall -I${command:cmake.buildDirectory}/rtl/common -I${common:cmake.buildDirectory}/lib -I${common:cmake.buildDirectory}/tb/sva",
 }
