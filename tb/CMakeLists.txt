@@ -125,15 +125,14 @@ add_dependencies(driver verilate)
 add_custom_target(smoke
   COMMENT "Running regression."
   COMMAND $<TARGET_FILE:driver> -v --vcd
-     --run Regress --args 'n=999999,p=0.01;5.0;1.0;2.0;0.1'
+     --run Regress --args 'n=100,p=0.01;5.0;1.0;2.0;0.1'
   DEPENDS driver
   )
 
 # ---------------------------------------------------------------------------- #
 # Tests
-enable_testing()
-add_test(NAME smoke
+add_test(NAME test_smoke
  COMMAND $<TARGET_FILE:driver> 
-   --run Regress --args 'n=999999,p=0.01;5.0;1.0;2.0;0.1'
+   --run Regress --args 'n=10000,p=0.01;5.0;1.0;2.0;0.1'
    )
 
