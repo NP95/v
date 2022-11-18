@@ -71,6 +71,79 @@
 
 namespace tb {
 
+namespace log {
+
+template<>
+void render_to_stream(std::ostream& os, const Cmd& cmd) {
+  switch (cmd) {
+    case Cmd::Clr:  os << "Clr";
+    case Cmd::Add:  os << "Add";
+    case Cmd::Del:  os << "Del";
+    case Cmd::Rep:  os << "Rep";
+    default:        os << "Invalid";
+  }
+}
+
+template<>
+void render_to_stream(std::ostream& os, const UpdateCommand& uc) {
+  RecordRenderer rr{os, "uc"};
+  rr.add("vld", uc.vld());
+  if (uc.vld()) {
+    rr.add("prod_id", uc.prod_id());
+    rr.add("cmd", uc.cmd());
+    rr.add("key", uc.key());
+    rr.add("volume", uc.volume());
+  } else {
+    rr.add("prod_id", "x");
+    rr.add("cmd", Cmd::Invalid);
+    rr.add("key", "x");
+    rr.add("volume", "x");    
+  }
+}
+
+template<>
+void render_to_stream(std::ostream& os, const UpdateResponse& ur) {
+  RecordRenderer rr{os, "ur"};
+  rr.add("vld", ur.vld());
+  if (ur.vld()) {
+    rr.add("prod_id", ur.prod_id());
+  } else {
+    rr.add("prod_id", "x");
+  }
+}
+
+template<>
+void render_to_stream(std::ostream& os, const QueryCommand& qc) {
+  RecordRenderer rr{os, "qc"};
+  rr.add("vld", qc.vld());
+  if (qc.vld()) {
+    rr.add("prod_id", qc.prod_id());
+    rr.add("level", qc.level());
+  } else {
+    rr.add("prod_id", "x");
+    rr.add("level", "x");
+  }
+}
+
+template<>
+void render_to_stream(std::ostream& os, const QueryResponse& qr) {
+  RecordRenderer rr{os, "qr"};
+  rr.add("vld", qr.vld());
+  if (qr.vld()) {
+    rr.add("key", qr.key());
+    rr.add("volume", qr.volume());
+    rr.add("error", qr.error());
+    rr.add("listsize", qr.listsize());
+  } else {
+    rr.add("key", "x");
+    rr.add("volume", "x");
+    rr.add("error", "x");
+    rr.add("listsize", "x");    
+  }
+}
+
+} // namespace log
+
 const char* to_string(Cmd c) {
   switch (c) {
     case Cmd::Clr:  return "Clr";
@@ -110,7 +183,7 @@ bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
 
   // If invalid, payload is don't care.
-  if (lhs.vld()) return true;
+  if (!lhs.vld()) return true;
 
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.cmd() != rhs.cmd()) return false;
@@ -146,7 +219,7 @@ bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
 
   // If invalid, payload is don't care.
-  if (lhs.vld()) return true;
+  if (!lhs.vld()) return true;
 
   if (lhs.prod_id() != rhs.prod_id()) return false;
 
@@ -420,8 +493,8 @@ class Mdl::Impl {
   Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
 
   void step() {
-    const UpdateCommand& uc = VSampler::uc(tb_);
-    const QueryCommand& qc = VSampler::qc(tb_);
+    const UpdateCommand uc{VSampler::uc(tb_)};
+    const QueryCommand qc{VSampler::qc(tb_)};
 
     if (uc.vld() || qc.vld()) {
       LOG_ISSUE(lg_, uc, qc);
@@ -430,8 +503,8 @@ class Mdl::Impl {
     handle(uc);
     handle(qc);
 
-    const NotifyResponse nr = VSampler::nr(tb_);
-    const QueryResponse qr = VSampler::qr(tb_);
+    const NotifyResponse nr{VSampler::nr(tb_)};
+    const QueryResponse qr{VSampler::qr(tb_)};
 
     if (nr.vld() || qr.vld()) {
       LOG_RESPONSE(lg_, nr, qr);

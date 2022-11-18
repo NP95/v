@@ -29,6 +29,7 @@
 #define V_TB_MDL_H
 
 #include "verilated.h"
+#include "log.h"
 
 class Vtb;
 
@@ -48,6 +49,11 @@ enum class Cmd : vluint8_t {
   Invalid = 0xff
 };
 
+namespace log {
+template<>
+void render_to_stream(std::ostream& os, const Cmd& cmd);
+}
+
 const char* to_string(Cmd c);
 
 using key_t = vlsint64_t;
@@ -57,8 +63,8 @@ using listsize_t = vluint8_t;
 
 class UpdateCommand {
  public:
-  UpdateCommand();
-  UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
+  explicit UpdateCommand();
+  explicit UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
 
   std::string to_string() const;
 
@@ -76,13 +82,15 @@ class UpdateCommand {
   volume_t volume_;
 };
 
+
+
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs);
 bool operator!=(const UpdateCommand& lhs, const UpdateCommand& rhs);
 
 class UpdateResponse {
  public:
-  UpdateResponse();
-  UpdateResponse(prod_id_t prod_id);
+  explicit UpdateResponse();
+  explicit UpdateResponse(prod_id_t prod_id);
 
   std::string to_string() const;
 
@@ -99,8 +107,8 @@ bool operator!=(const UpdateResponse& lhs, const UpdateResponse& rhs);
 
 class QueryCommand {
  public:
-  QueryCommand();
-  QueryCommand(prod_id_t prod_id, level_t level);
+  explicit QueryCommand();
+  explicit QueryCommand(prod_id_t prod_id, level_t level);
 
   std::string to_string() const;
 
@@ -119,8 +127,8 @@ bool operator!=(const QueryCommand& lhs, const QueryCommand& rhs);
 
 class QueryResponse {
  public:
-  QueryResponse();
-  QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
+  explicit QueryResponse();
+  explicit QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
 
   std::string to_string() const;
 
@@ -143,8 +151,8 @@ bool operator!=(const QueryResponse& lhs, const QueryResponse& rhs);
 
 class NotifyResponse {
  public:
-  NotifyResponse();
-  NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
+  explicit NotifyResponse();
+  explicit NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
 
   std::string to_string() const;
 
@@ -162,6 +170,17 @@ class NotifyResponse {
 
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs);
 bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs);
+
+namespace log {
+template<>
+void render_to_stream(std::ostream& os, const UpdateCommand& uc);
+template<>
+void render_to_stream(std::ostream& os, const UpdateResponse& ur);
+template<>
+void render_to_stream(std::ostream& os, const QueryCommand& qc);
+template<>
+void render_to_stream(std::ostream& os, const QueryResponse& qr);
+} // namespace log
 
 class Mdl {
   friend class MdlValidation;

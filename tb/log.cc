@@ -28,12 +28,92 @@
 #include "log.h"
 
 #include <sstream>
+#include <string>
+#include <algorithm>
 
 #include "common.h"
 #include "mdl.h"
 #include "tb.h"
 
 namespace tb::log {
+
+template<>
+void render_to_stream(std::ostream& os, const bool& b) {
+  os << (b ? "1" : "0");
+}
+
+LoggerScope::LoggerScope(const std::string& name, Logger* logger, LoggerScope* parent)
+  : name_(name), logger_(logger), parent_(parent) {
+}
+
+std::string LoggerScope::path() {
+  if (!path_) {
+    path_ = render_path();
+  }
+  return *path_;
+}
+
+void LoggerScope::append(const Message& message) {
+  logger_->write(path() + message.to_string());
+}
+
+LoggerScope* LoggerScope::create_child(const std::string& scope_name) {
+  children_.emplace_back(
+    std::unique_ptr<LoggerScope>(new LoggerScope(scope_name, logger_, this)));
+  return children_.back().get();
+}
+
+std::string LoggerScope::render_path() {
+  std::vector<std::string> vs;
+  vs.push_back(name_);
+  LoggerScope* scope = parent_;
+  while (scope != nullptr) {
+    vs.push_back(scope->name());
+    scope = scope->parent_;
+  }
+  std::reverse(vs.begin(), vs.end());
+  std::string path;
+  for (std::size_t i = 0; i < vs.size(); i++) {
+    path += vs[i];
+    if (i != (vs.size() - 1)) {
+      path += scope_separator;
+    }
+  }
+  return path;
+}
+
+Logger::Logger(std::ostream& os)
+  : os_(os) {}
+
+LoggerScope* Logger::scope() {
+  if (!parent_scope_) {
+    parent_scope_.reset(new LoggerScope("tb", this));
+  }
+  return parent_scope_.get();
+}
+
+void Logger::write(const std::string& s) {
+  os_ << s << "\n";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const char* to_string(bool b) { return b ? "true" : "false"; }
 

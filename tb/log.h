@@ -31,6 +31,8 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <sstream>
+#include <optional>
 
 #include "common.h"
 
@@ -98,13 +100,155 @@ namespace tb::log {
 
 class Log;
 class Scope;
+class Logger;
+
+#define LOG_LEVELS(__func)  \
+  __func(Debug)\
+  __func(Info)\
+  __func(Warning)\
+  __func(Error)\
+  __func(Fatal)
+
+enum class Level {
+#define __declare_level(__level) __level,
+  LOG_LEVELS(__declare_level)
+#undef __declare_level
+};
+
+template<typename T>
+void render_to_stream(std::ostream& os, const T& t) {
+  os << t;
+}
+
+template<>
+void render_to_stream(std::ostream& os, const bool& b);
+
+class RecordRenderer {
+public:
+  explicit RecordRenderer(std::ostream& os, const std::string& type = "unk")
+    : os_(os) {
+    os_ << type << "{";
+  }
+
+  ~RecordRenderer() {
+    if (!finalized_) finalize();
+  }
+
+  template<typename T>
+  void add(const std::string& k, const T& t) {
+    if (entries_n_++) os_ << ", ";
+    os_ << k;
+    os_ << ":";
+    render_to_stream(os_, t);
+  }
+
+private:
+  void finalize() {
+    os_ << "}";
+    finalized_ = true;
+  }
+  //!
+  bool finalized_{false};
+  //! Number of previously rendered key/value pairs.
+  std::size_t entries_n_{0};
+  //! Output stream.
+  std::ostream& os_;
+};
+
+class Message {
+public:
+#define __declare_message_builder(__level) \
+  template<typename ...T> \
+  static Message __level(T&& ...ts) { \
+    return Build(Level::__level, std::forward<T>(ts)...); \
+  }
+  LOG_LEVELS(__declare_message_builder)
+#undef __declare_message_builder
+
+  Level level() const { return level_; }
+  std::string to_string() const { return ss_.str(); }
+
+private:
+  template<typename ...T>
+  static Message Build(Level level, T&& ...ts) {
+    Message m{level};
+    m.append(std::forward<T>(ts)...);
+    return m;
+  }
+
+  explicit Message(Level level)
+    : level_(level) {}
+
+  template<typename ...T>
+  void append(T&& ...ts) {
+     (render_to_stream(ss_, std::forward<T>(ts)), ...);
+  }
+
+  std::stringstream ss_;
+
+  Level level_;
+};
+
+
+class LoggerScope {
+  friend class Logger;
+
+  static constexpr const char* scope_separator = ".";
+
+  explicit LoggerScope(
+    const std::string& name, Logger* logger, LoggerScope* parent = nullptr);
+public:
+  //! Current scope name
+  std::string name() { return name_; }
+  //! Current scope path
+  std::string path();
+
+  void append(const Message& m);
+
+  LoggerScope* create_child(const std::string& scope_name);
+
+private:
+  //!
+  std::string render_path();
+
+  //! Name of current scope.
+  std::string name_;
+  //! Pointer to parent scope (nullptr if root scope)
+  LoggerScope* parent_{nullptr};
+  //! Owning pointer to child logger scopes.
+  std::vector<std::unique_ptr<LoggerScope>> children_;
+  //! Path of scope within logger hierarchy.
+  std::optional<std::string> path_;
+  //!
+  Logger* logger_{nullptr};
+};
+
+class Logger {
+  friend class LoggerScope;
+public:
+  explicit Logger(std::ostream& os);
+
+  LoggerScope* scope();
+private:
+  //! Write composed message to logger output stream.
+  void write(const std::string& s);
+  //!
+  std::unique_ptr<LoggerScope> parent_scope_;
+  //! Output logging stream.
+  std::ostream& os_;
+};
 
 const char* to_string(bool b);
 
-enum class Level { Debug, Info, Warning, Error, Fatal };
+
 
 class Msg {
- public:
+public:
+
+
+
+
+public:
   explicit Msg() = default;
   explicit Msg(Level l) : l_(l) {}
 
@@ -117,6 +261,9 @@ class Msg {
 
   void ln(unsigned ln) { ln_ = ln; }
   unsigned ln() const { return ln_; }
+
+
+
 
   template <typename T>
   void trace_mismatch(const char* lhs_s, T lhs, const char* rhs_s, T rhs) {
