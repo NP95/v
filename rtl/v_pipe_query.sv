@@ -34,45 +34,49 @@ module v_pipe_query (
 
 // -------------------------------------------------------------------------- //
 // List Query Bus
-  input                                           i_lut_vld
-, input v_pkg::id_t                               i_lut_prod_id
-, input v_pkg::level_t                            i_lut_level
+  input wire logic                                i_lut_vld
+, input wire v_pkg::id_t                          i_lut_prod_id
+, input wire v_pkg::level_t                       i_lut_level
 //
-, output logic                                    o_lut_vld_r
-, output v_pkg::key_t                             o_lut_key
-, output v_pkg::volume_t                          o_lut_size
-, output logic                                    o_lut_error
-, output v_pkg::listsize_t                        o_lut_listsize
+, output wire logic                               o_lut_vld_r
+, output wire v_pkg::key_t                        o_lut_key
+, output wire v_pkg::volume_t                     o_lut_size
+, output wire logic                               o_lut_error
+, output wire v_pkg::listsize_t                   o_lut_listsize
 
 // -------------------------------------------------------------------------- //
 // State Interface
 //
-, input v_pkg::state_t                            i_state_rdata
+, input wire v_pkg::state_t                       i_state_rdata
 //
-, output logic                                    o_state_ren
-, output v_pkg::addr_t                            o_state_raddr
+, output wire logic                               o_state_ren
+, output wire v_pkg::addr_t                       o_state_raddr
 
 // -------------------------------------------------------------------------- //
 // Update Pipeline Interface
 //
-, input                                           i_s1_upd_vld_r
-, input v_pkg::id_t                               i_s1_upd_prod_id_r
+, input wire logic                                i_s1_upd_vld_r
+, input wire v_pkg::id_t                          i_s1_upd_prod_id_r
 //
-, input                                           i_s2_upd_vld_r
-, input v_pkg::id_t                               i_s2_upd_prod_id_r
+, input wire logic                                i_s2_upd_vld_r
+, input wire v_pkg::id_t                          i_s2_upd_prod_id_r
 //
-, input                                           i_s3_upd_vld_r
-, input v_pkg::id_t                               i_s3_upd_prod_id_r
+, input wire logic                                i_s3_upd_vld_r
+, input wire v_pkg::id_t                          i_s3_upd_prod_id_r
 //
-, input                                           i_s4_upd_vld_r
-, input v_pkg::id_t                               i_s4_upd_prod_id_r
+, input wire logic                                i_s4_upd_vld_r
+, input wire v_pkg::id_t                          i_s4_upd_prod_id_r
 //
-, input                                           i_s5_upd_vld_r
-, input v_pkg::id_t                               i_s5_upd_prod_id_r
+, input wire logic                                i_s5_upd_vld_r
+, input wire v_pkg::id_t                          i_s5_upd_prod_id_r
+
+// -------------------------------------------------------------------------- //
+// Initialization
+, input wire logic                                init_r
 
 // -------------------------------------------------------------------------- //
 // Clk
-, input                                           clk
+, input wire logic                                clk
 );
 
 // ========================================================================== //
@@ -118,7 +122,7 @@ logic                                   s1_lut_error;
 assign s0_state_ren     = i_lut_vld;
 assign s0_state_raddr   = i_lut_prod_id;
 
-assign s1_lut_vld_w     = i_lut_vld;
+assign s1_lut_vld_w     = i_lut_vld & (~init_r);
 assign s1_lut_en        = s1_lut_vld_w;
 assign s1_lut_prod_id_w = i_lut_prod_id;
 

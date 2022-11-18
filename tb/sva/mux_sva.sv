@@ -27,13 +27,10 @@
 
 `include "common_defs.vh"
 
-module sva;
+module mux_sva #(parameter int N) (
+  input wire logic [N - 1:0]                     i_sel
+);
 
-bind mux sva_mux #(.N) b_sva_mux (.i_sel);
+MUX_SEL_MUST_BE_1HOT_OR_NULL: assert final ($onehot0(i_sel));
 
-bind dffen sva_dffen b_svn_dffen (.en);
-
-bind v sva_v b_sva_v (.i_upd_vld, .i_upd_prod_id, .i_upd_cmd, .i_upd_key,
-  .i_upd_size, .i_lut_vld, .i_lut_prod_id, .i_lut_level, .clk, .arst_n);
-
-endmodule : sva
+endmodule : mux_sva

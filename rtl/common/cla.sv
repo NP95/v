@@ -33,12 +33,12 @@ module cla #(
 ) (
 // -------------------------------------------------------------------------- //
 //
-  input [W - 1:0]                                 i_a
-, input [W - 1:0]                                 i_b
-, input                                           i_cin
+  input wire logic [W - 1:0]                      i_a
+, input wire logic [W - 1:0]                      i_b
+, input wire logic                                i_cin
 //
-, output logic [W - 1:0]                          o_y
-, output logic                                    o_cout
+, output wire logic [W - 1:0]                     o_y
+, output wire logic                               o_cout
 );
 
 // -------------------------------------------------------------------------- //

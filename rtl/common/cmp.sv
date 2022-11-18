@@ -37,12 +37,12 @@ module cmp #(
 ) (
 // -------------------------------------------------------------------------- //
 //
-  input [W - 1:0]                                 i_a
-, input [W - 1:0]                                 i_b
+  input wire logic [W - 1:0]                      i_a
+, input wire logic [W - 1:0]                      i_b
 //
-, output logic                                    o_eq
-, output logic                                    o_gt
-, output logic                                    o_lt
+, output wire logic                               o_eq
+, output wire logic                               o_gt
+, output wire logic                               o_lt
 );
 
 // ========================================================================== //

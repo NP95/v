@@ -175,6 +175,8 @@ v_pipe_update u_v_pipe_update (
   , .o_s5_upd_vld_r                     (s5_upd_vld_r)
   , .o_s5_upd_prod_id_r                 (s5_upd_prod_id_r)
   //
+  , .init_r                             (init_r)
+  //
   , .clk                                (clk)
 );
 
@@ -220,6 +222,8 @@ v_pipe_query u_v_pipe_query (
   , .i_s4_upd_prod_id_r                 (s4_upd_prod_id_r)
   , .i_s5_upd_vld_r                     (s5_upd_vld_r)
   , .i_s5_upd_prod_id_r                 (s5_upd_prod_id_r)
+  //
+  , .init_r                             (init_r)
   //
   , .clk                                (clk)
 );

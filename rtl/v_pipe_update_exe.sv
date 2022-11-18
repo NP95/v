@@ -33,36 +33,36 @@
 module v_pipe_update_exe (
 // -------------------------------------------------------------------------- //
 // Command Interface
-  input v_pkg::cmd_t                                i_pipe_cmd_r
-, input v_pkg::key_t                                i_pipe_key_r
-, input v_pkg::volume_t                             i_pipe_volume_r
+  input wire v_pkg::cmd_t                                i_pipe_cmd_r
+, input wire v_pkg::key_t                                i_pipe_key_r
+, input wire v_pkg::volume_t                             i_pipe_volume_r
 //
-, input                                             i_pipe_match_hit_r
-, input                                             i_pipe_match_full_r
-, input [cfg_pkg::ENTRIES_N - 1:0]                  i_pipe_match_sel_r
-, input [cfg_pkg::ENTRIES_N - 1:0]                  i_pipe_mask_cmp_r
+, input wire logic                                       i_pipe_match_hit_r
+, input wire logic                                       i_pipe_match_full_r
+, input wire logic [cfg_pkg::ENTRIES_N - 1:0]            i_pipe_match_sel_r
+, input wire logic [cfg_pkg::ENTRIES_N - 1:0]            i_pipe_mask_cmp_r
 
 // -------------------------------------------------------------------------- //
 // State Current
-, input [cfg_pkg::ENTRIES_N - 1:0]                  i_stcur_vld_r
-, input v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
-, input v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
+, input wire logic [cfg_pkg::ENTRIES_N - 1:0]            i_stcur_vld_r
+, input wire v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
+, input wire v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0]  i_stcur_volumes_r
 //
-, input v_pkg::listsize_t                           i_stcur_listsize_r
+, input wire v_pkg::listsize_t                           i_stcur_listsize_r
 
 // -------------------------------------------------------------------------- //
 // State Next
-, output logic [cfg_pkg::ENTRIES_N - 1:0]           o_stnxt_vld
-, output v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
-, output v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
+, output wire logic [cfg_pkg::ENTRIES_N - 1:0]           o_stnxt_vld
+, output wire v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]    o_stnxt_keys
+, output wire v_pkg::volume_t [cfg_pkg::ENTRIES_N - 1:0] o_stnxt_volumes
 //
-, output v_pkg::listsize_t                          o_stnxt_listsize
+, output wire v_pkg::listsize_t                          o_stnxt_listsize
 
 // -------------------------------------------------------------------------- //
 // Notify Interrace
-, output logic                                      o_notify_vld
-, output v_pkg::key_t                               o_notify_key
-, output v_pkg::volume_t                            o_notify_volume
+, output wire logic                                      o_notify_vld
+, output wire v_pkg::key_t                               o_notify_key
+, output wire v_pkg::volume_t                            o_notify_volume
 );
 
 // ========================================================================== //

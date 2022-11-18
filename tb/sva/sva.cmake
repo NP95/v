@@ -28,10 +28,10 @@
 set(SVA_ROOT ${CMAKE_SOURCE_DIR}/tb/sva)
 
 set(SVA_SOURCES
-  ${SVA_ROOT}/sva.sv
-  ${SVA_ROOT}/sva_mux.sv
-  ${SVA_ROOT}/sva_dffen.sv
-  ${SVA_ROOT}/sva_v.sv
+  ${SVA_ROOT}/binds.sv
+  ${SVA_ROOT}/mux_sva.sv
+  ${SVA_ROOT}/dffen_sva.sv
+  ${SVA_ROOT}/v_sva.sv
   )
 
 set(SVA_INCLUDES

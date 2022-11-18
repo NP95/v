@@ -33,48 +33,48 @@ module tb (
 
 // -------------------------------------------------------------------------- //
 // List Update Bus
-  input                                           i_upd_vld
-, input v_pkg::id_t                               i_upd_prod_id
-, input v_pkg::cmd_t                              i_upd_cmd
-, input v_pkg::key_t                              i_upd_key
-, input v_pkg::size_t                             i_upd_size
+  input wire logic                                i_upd_vld
+, input wire v_pkg::id_t                          i_upd_prod_id
+, input wire v_pkg::cmd_t                         i_upd_cmd
+, input wire v_pkg::key_t                         i_upd_key
+, input wire v_pkg::size_t                        i_upd_size
 
 // -------------------------------------------------------------------------- //
 // List Query Bus
-, input                                           i_lut_vld
-, input v_pkg::id_t                               i_lut_prod_id
-, input v_pkg::level_t                            i_lut_level
+, input wire logic                                i_lut_vld
+, input wire v_pkg::id_t                          i_lut_prod_id
+, input wire v_pkg::level_t                       i_lut_level
 //
-, output logic                                    o_lut_vld_r
-, output v_pkg::key_t                             o_lut_key
-, output v_pkg::size_t                            o_lut_size
-, output logic                                    o_lut_error
-, output v_pkg::listsize_t                        o_lut_listsize
+, output wire logic                               o_lut_vld_r
+, output wire v_pkg::key_t                        o_lut_key
+, output wire v_pkg::size_t                       o_lut_size
+, output wire logic                               o_lut_error
+, output wire v_pkg::listsize_t                   o_lut_listsize
 
 // -------------------------------------------------------------------------- //
 // Notify Bus
 
-, output logic                                    o_lv0_vld_r
-, output v_pkg::id_t                              o_lv0_prod_id_r
-, output v_pkg::key_t                             o_lv0_key_r
-, output v_pkg::size_t                            o_lv0_size_r
+, output wire logic                               o_lv0_vld_r
+, output wire v_pkg::id_t                         o_lv0_prod_id_r
+, output wire v_pkg::key_t                        o_lv0_key_r
+, output wire v_pkg::size_t                       o_lv0_size_r
 
 // -------------------------------------------------------------------------- //
 // Status
-, output logic                                    o_busy_r
+, output wire logic                               o_busy_r
 
 // -------------------------------------------------------------------------- //
 // Testbench State
-, output logic [31:0]                             o_tb_cycle
+, output wire logic [31:0]                        o_tb_cycle
 //
-, output logic                                    o_tb_wrbk_vld_r
-, output v_pkg::id_t                              o_tb_wrbk_prod_id_r
-, output v_pkg::state_t                           o_tb_wrbk_state_r
+, output wire logic                               o_tb_wrbk_vld_r
+, output wire v_pkg::id_t                         o_tb_wrbk_prod_id_r
+, output wire v_pkg::state_t                      o_tb_wrbk_state_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
-, input                                           clk
-, input                                           arst_n
+, input wire logic                                clk
+, input wire logic                                arst_n
 );
 
 // ========================================================================== //

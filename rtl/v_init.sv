@@ -41,19 +41,19 @@ module v_init #(
 
 // -------------------------------------------------------------------------- //
 // Memory Interfacex
-  output logic                                    o_init_wen_r
-, output logic [$clog2(N) - 1:0]                  o_init_waddr_r
-, output logic [W - 1:0]                          o_init_wdata_r
+  output wire logic                               o_init_wen_r
+, output wire logic [$clog2(N) - 1:0]             o_init_waddr_r
+, output wire logic [W - 1:0]                     o_init_wdata_r
 
 // -------------------------------------------------------------------------- //
 // Control/Status
-, input                                           i_init
+, input wire logic                                i_init
 //
-, output logic                                    o_busy_r
+, output wire logic                               o_busy_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
-, input                                           clk
+, input wire logic                                clk
 );
 
 // ========================================================================== //

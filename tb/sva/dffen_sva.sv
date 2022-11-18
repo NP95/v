@@ -25,12 +25,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`include "common_defs.vh"
 `include "sva.vh"
 
-module sva_dffen (
-  input                               en    
+module dffen_sva (
+  input wire logic                     en    
 );
 
 ASSERT_FLOP_EN_CANNOT_BE_UNKNOWN: assert final (!$isunknown(en));
 
-endmodule : sva_dffen
+endmodule : dffen_sva

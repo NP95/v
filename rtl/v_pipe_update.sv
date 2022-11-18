@@ -34,52 +34,56 @@ module v_pipe_update (
 
 // -------------------------------------------------------------------------- //
 // List Update Bus
-  input                                           i_upd_vld
-, input v_pkg::id_t                               i_upd_prod_id
-, input v_pkg::cmd_t                              i_upd_cmd
-, input v_pkg::key_t                              i_upd_key
-, input v_pkg::size_t                             i_upd_size
+  input wire logic                                i_upd_vld
+, input wire v_pkg::id_t                          i_upd_prod_id
+, input wire v_pkg::cmd_t                         i_upd_cmd
+, input wire v_pkg::key_t                         i_upd_key
+, input wire v_pkg::size_t                        i_upd_size
 
 // -------------------------------------------------------------------------- //
 // State Interface
 //
-, input v_pkg::state_t                            i_state_rdata
+, input wire v_pkg::state_t                       i_state_rdata
 //
-, output logic                                    o_state_ren
-, output v_pkg::addr_t                            o_state_raddr
+, output wire logic                               o_state_ren
+, output wire v_pkg::addr_t                       o_state_raddr
 //
-, output logic                                    o_state_wen_r
-, output v_pkg::addr_t                            o_state_waddr_r
-, output v_pkg::state_t                           o_state_wdata_r
+, output wire logic                               o_state_wen_r
+, output wire v_pkg::addr_t                       o_state_waddr_r
+, output wire v_pkg::state_t                      o_state_wdata_r
 
 // -------------------------------------------------------------------------- //
 // Notify Bus
-, output logic                                    o_lv0_vld_r
-, output v_pkg::id_t                              o_lv0_prod_id_r
-, output v_pkg::key_t                             o_lv0_key_r
-, output v_pkg::size_t                            o_lv0_size_r
+, output wire logic                               o_lv0_vld_r
+, output wire v_pkg::id_t                         o_lv0_prod_id_r
+, output wire v_pkg::key_t                        o_lv0_key_r
+, output wire v_pkg::size_t                       o_lv0_size_r
 
 // -------------------------------------------------------------------------- //
 // Update Pipeline Interface
 //
-, output                                          o_s1_upd_vld_r
-, output v_pkg::id_t                              o_s1_upd_prod_id_r
+, output wire logic                               o_s1_upd_vld_r
+, output wire v_pkg::id_t                         o_s1_upd_prod_id_r
 //
-, output                                          o_s2_upd_vld_r
-, output v_pkg::id_t                              o_s2_upd_prod_id_r
+, output wire logic                               o_s2_upd_vld_r
+, output wire v_pkg::id_t                         o_s2_upd_prod_id_r
 //
-, output                                          o_s3_upd_vld_r
-, output v_pkg::id_t                              o_s3_upd_prod_id_r
+, output wire logic                               o_s3_upd_vld_r
+, output wire v_pkg::id_t                         o_s3_upd_prod_id_r
 //
-, output                                          o_s4_upd_vld_r
-, output v_pkg::id_t                              o_s4_upd_prod_id_r
+, output wire logic                               o_s4_upd_vld_r
+, output wire v_pkg::id_t                         o_s4_upd_prod_id_r
 //
-, output                                          o_s5_upd_vld_r
-, output v_pkg::id_t                              o_s5_upd_prod_id_r
+, output wire logic                               o_s5_upd_vld_r
+, output wire v_pkg::id_t                         o_s5_upd_prod_id_r
+
+// -------------------------------------------------------------------------- //
+// Initialization
+, input wire logic                                init_r
 
 // -------------------------------------------------------------------------- //
 // Clk/Reset
-, input                                           clk
+, input wire logic                                clk
 );
 
 // ========================================================================== //
@@ -197,7 +201,7 @@ logic                                             lv0_en;
 
 // Pipeline controls:
 //
-assign s1_upd_vld_w = i_upd_vld;
+assign s1_upd_vld_w = i_upd_vld & (~init_r);
 
 assign s1_upd_en = s1_upd_vld_w;
 assign s1_upd_prod_id_w = i_upd_prod_id;
@@ -223,7 +227,7 @@ assign s1_state_raddr = s1_upd_prod_id_r;
 
 // Pipeline controls:
 //
-assign s2_upd_vld_w = s1_upd_vld_r;
+assign s2_upd_vld_w = s1_upd_vld_r & (~init_r);
 
 assign s2_upd_en = s2_upd_vld_w;
 assign s2_upd_prod_id_w = s1_upd_prod_id_r;
@@ -274,7 +278,7 @@ assign s3_upd_state_w =
    ({v_pkg::STATE_BITS{~s2_upd_state_sel_early}} & i_state_rdata);
 
 
-assign s3_upd_vld_w = s2_upd_vld_r;
+assign s3_upd_vld_w = s2_upd_vld_r & (~init_r);
 
 assign s3_upd_en =  s3_upd_vld_w;
 assign s3_upd_prod_id_w = s2_upd_prod_id_r;
@@ -306,7 +310,7 @@ v_pipe_update_cmp u_v_pipe_update_cmp (
 
 // -------------------------------------------------------------------------- //
 //
-assign s4_upd_vld_w = s3_upd_vld_r;
+assign s4_upd_vld_w = s3_upd_vld_r & (~init_r);
 
 assign s4_upd_en =  s4_upd_vld_w;
 assign s4_upd_prod_id_w = s3_upd_prod_id_r;
@@ -360,7 +364,7 @@ v_pipe_update_exe u_v_pipe_update_exe (
 );
 
 // Writeback:
-assign wrbk_vld_w = s4_upd_vld_r;
+assign wrbk_vld_w = s4_upd_vld_r & (~init_r);
 assign wrbk_en = wrbk_vld_w;
 assign wrbk_prod_id_w = s4_upd_prod_id_r;
 assign wrbk_state_w.vld = s4_exe_stnxt_vld;
@@ -372,7 +376,7 @@ assign wrbk_state_w.volume = s4_exe_stnxt_volumes;
 // Emit messages
 
 // Notify bus:
-assign lv0_vld_w = s4_upd_vld_r & exe_notify_vld;
+assign lv0_vld_w = s4_upd_vld_r & exe_notify_vld & (~init_r);
 assign lv0_en = lv0_vld_w;
 assign lv0_prod_id_w = s4_upd_prod_id_r;
 assign lv0_key_w = exe_notify_key;

@@ -33,19 +33,19 @@
 module v_pipe_update_cmp (
 // -------------------------------------------------------------------------- //
 // Command Interface
-  input v_pkg::key_t                                i_pipe_key_r
+  input wire v_pkg::key_t                            i_pipe_key_r
 
 // -------------------------------------------------------------------------- //
 // State Current
-, input [cfg_pkg::ENTRIES_N - 1:0]                  i_stcur_vld_r
-, input v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0]     i_stcur_keys_r
+, input wire logic [cfg_pkg::ENTRIES_N - 1:0]        i_stcur_vld_r
+, input wire v_pkg::key_t [cfg_pkg::ENTRIES_N - 1:0] i_stcur_keys_r
 
 // -------------------------------------------------------------------------- //
 // Command Interface
-, output logic                                      o_match_hit
-, output logic                                      o_match_full
-, output logic [cfg_pkg::ENTRIES_N - 1:0]           o_match_sel
-, output logic [cfg_pkg::ENTRIES_N - 1:0]           o_mask_cmp
+, output wire logic                                  o_match_hit
+, output wire logic                                  o_match_full
+, output wire logic [cfg_pkg::ENTRIES_N - 1:0]       o_match_sel
+, output wire logic [cfg_pkg::ENTRIES_N - 1:0]       o_mask_cmp
 );
 
 // ========================================================================== //

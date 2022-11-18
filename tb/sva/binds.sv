@@ -25,38 +25,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-`include "sva.vh"
+`include "common_defs.vh"
 
-module sva_v (
+module binds;
 
-// -------------------------------------------------------------------------- //
-// List Update Bus
-  input                                           i_upd_vld
-, input v_pkg::id_t                               i_upd_prod_id
-, input v_pkg::cmd_t                              i_upd_cmd
-, input v_pkg::key_t                              i_upd_key
-, input v_pkg::size_t                             i_upd_size
+bind mux mux_sva #(.N) b_mux_sva (.i_sel);
 
-// -------------------------------------------------------------------------- //
-// List Query Bus
-, input                                           i_lut_vld
-, input v_pkg::id_t                               i_lut_prod_id
-, input v_pkg::level_t                            i_lut_level
+bind dffen dffen_sva b_dffen_sva (.en);
 
-// -------------------------------------------------------------------------- //
-// Clk/Reset
-, input                                           clk
-, input                                           arst_n
-);
+bind v v_sva b_v_sva (.i_upd_vld, .i_upd_prod_id, .i_upd_cmd, .i_upd_key,
+  .i_upd_size, .i_lut_vld, .i_lut_prod_id, .i_lut_level, .clk, .arst_n);
 
-`assert_not_x_when(i_upd_vld, i_upd_prod_id);
-`assert_not_x_when(i_upd_vld, i_upd_cmd);
-`assert_not_x_when(i_upd_vld, i_upd_key);
-`assert_not_x_when(i_upd_vld, i_upd_size);
-
-`assert_not_x_when(i_lut_vld, i_lut_prod_id);
-`assert_not_x_when(i_lut_vld, i_lut_level);
-
-endmodule : sva_v
-
-`include "unsva.vh"
+endmodule : binds

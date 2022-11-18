@@ -26,11 +26,38 @@
 //========================================================================== //
 
 `include "common_defs.vh"
+`include "sva.vh"
 
-module sva_mux #(parameter int N) (
-  input wire logic [N - 1:0]                     i_sel
+module v_sva (
+
+// -------------------------------------------------------------------------- //
+// List Update Bus
+  input wire logic                                i_upd_vld
+, input wire v_pkg::id_t                          i_upd_prod_id
+, input wire v_pkg::cmd_t                         i_upd_cmd
+, input wire v_pkg::key_t                         i_upd_key
+, input wire v_pkg::size_t                        i_upd_size
+
+// -------------------------------------------------------------------------- //
+// List Query Bus
+, input wire logic                                i_lut_vld
+, input wire v_pkg::id_t                          i_lut_prod_id
+, input wire v_pkg::level_t                       i_lut_level
+
+// -------------------------------------------------------------------------- //
+// Clk/Reset
+, input wire logic                                clk
+, input wire logic                                arst_n
 );
 
-MUX_SEL_MUST_BE_1HOT_OR_NULL: assert final ($onehot0(i_sel));
+`assert_not_x_when(i_upd_vld, i_upd_prod_id);
+`assert_not_x_when(i_upd_vld, i_upd_cmd);
+`assert_not_x_when(i_upd_vld, i_upd_key);
+`assert_not_x_when(i_upd_vld, i_upd_size);
 
-endmodule : sva_mux
+`assert_not_x_when(i_lut_vld, i_lut_prod_id);
+`assert_not_x_when(i_lut_vld, i_lut_level);
+
+endmodule : v_sva
+
+`include "unsva.vh"
