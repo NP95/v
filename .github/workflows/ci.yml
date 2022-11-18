@@ -12,14 +12,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@v3
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
-      run: cmake ${{runner.workspace}}
+      run: cmake .
     - name: Build
-      working-directory: ${{runner.workspace}}/build
       run: cmake --build .
     - name: Test
-      working-directory: ${{runner.workspace}}/build
       run: ctest .
