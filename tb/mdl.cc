@@ -84,8 +84,7 @@ void render_to_stream(std::ostream& os, const Cmd& cmd) {
   }
 }
 
-template<>
-void render_to_stream(std::ostream& os, const UpdateCommand& uc) {
+void StreamRenderer<UpdateCommand>::write(std::ostream& os, const UpdateCommand& uc) {
   RecordRenderer rr{os, "uc"};
   rr.add("vld", uc.vld());
   if (uc.vld()) {
@@ -101,8 +100,7 @@ void render_to_stream(std::ostream& os, const UpdateCommand& uc) {
   }
 }
 
-template<>
-void render_to_stream(std::ostream& os, const UpdateResponse& ur) {
+void StreamRenderer<UpdateResponse>::write(std::ostream& os, const UpdateResponse& ur) {
   RecordRenderer rr{os, "ur"};
   rr.add("vld", ur.vld());
   if (ur.vld()) {
@@ -112,8 +110,7 @@ void render_to_stream(std::ostream& os, const UpdateResponse& ur) {
   }
 }
 
-template<>
-void render_to_stream(std::ostream& os, const QueryCommand& qc) {
+void StreamRenderer<QueryCommand>::write(std::ostream& os, const QueryCommand& qc) {
   RecordRenderer rr{os, "qc"};
   rr.add("vld", qc.vld());
   if (qc.vld()) {
@@ -125,8 +122,7 @@ void render_to_stream(std::ostream& os, const QueryCommand& qc) {
   }
 }
 
-template<>
-void render_to_stream(std::ostream& os, const QueryResponse& qr) {
+void StreamRenderer<QueryResponse>::write(std::ostream& os, const QueryResponse& qr) {
   RecordRenderer rr{os, "qr"};
   rr.add("vld", qr.vld());
   if (qr.vld()) {

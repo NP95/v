@@ -172,14 +172,27 @@ bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs);
 bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs);
 
 namespace log {
+
 template<>
-void render_to_stream(std::ostream& os, const UpdateCommand& uc);
+struct StreamRenderer<UpdateCommand> {
+  static void write(std::ostream& os, const UpdateCommand& uc);
+};
+
 template<>
-void render_to_stream(std::ostream& os, const UpdateResponse& ur);
+struct StreamRenderer<UpdateResponse> {
+  static void write(std::ostream& os, const UpdateResponse& ur);
+};
+
 template<>
-void render_to_stream(std::ostream& os, const QueryCommand& qc);
+struct StreamRenderer<QueryCommand> {
+  static void write(std::ostream& os, const QueryCommand& qc);
+};
+
 template<>
-void render_to_stream(std::ostream& os, const QueryResponse& qr);
+struct StreamRenderer<QueryResponse> {
+  static void write(std::ostream& os, const QueryResponse& qr);
+};
+
 } // namespace log
 
 class Mdl {

@@ -115,13 +115,16 @@ enum class Level {
 #undef __declare_level
 };
 
+
 template<typename T>
-void render_to_stream(std::ostream& os, const T& t) {
-  os << t;
-}
+struct StreamRenderer {
+  static void write(std::ostream& os, const T& t) { os << t; }
+};
 
 template<>
-void render_to_stream(std::ostream& os, const bool& b);
+struct StreamRenderer<bool> {
+  static void write(std::ostream& os, const bool& t);
+};
 
 class RecordRenderer {
 public:
@@ -139,7 +142,7 @@ public:
     if (entries_n_++) os_ << ", ";
     os_ << k;
     os_ << ":";
-    render_to_stream(os_, t);
+    StreamRenderer::write(os_, t);
   }
 
 private:
@@ -156,6 +159,7 @@ private:
 };
 
 class Message {
+  friend class LoggerScope;
 public:
 #define __declare_message_builder(__level) \
   template<typename ...T> \
@@ -165,15 +169,12 @@ public:
   LOG_LEVELS(__declare_message_builder)
 #undef __declare_message_builder
 
-  Level level() const { return level_; }
-  std::string to_string() const { return ss_.str(); }
-
 private:
   template<typename ...T>
   static Message Build(Level level, T&& ...ts) {
-    Message m{level};
-    m.append(std::forward<T>(ts)...);
-    return m;
+    Message message{level};
+    message.append(std::forward<T>(ts)...);
+    return message;
   }
 
   explicit Message(Level level)
@@ -181,8 +182,11 @@ private:
 
   template<typename ...T>
   void append(T&& ...ts) {
-     (render_to_stream(ss_, std::forward<T>(ts)), ...);
+     (StreamRenderer<T>::write(ss_, std::forward<T>(ts)), ...);
   }
+
+  Level level() const { return level_; }
+  std::string to_string() const { return ss_.str(); }
 
   std::stringstream ss_;
 

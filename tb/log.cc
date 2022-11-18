@@ -42,6 +42,10 @@ void render_to_stream(std::ostream& os, const bool& b) {
   os << (b ? "1" : "0");
 }
 
+void StreamRenderer<bool>::write(std::ostream& os, const bool& b) {
+  os << (b ? "1" : "0");
+}
+
 LoggerScope::LoggerScope(const std::string& name, Logger* logger, LoggerScope* parent)
   : name_(name), logger_(logger), parent_(parent) {
 }
