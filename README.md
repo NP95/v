@@ -1,6 +1,6 @@
 # Introduction
 
-![CI Badge](https://github.com/stephenry/v/workflows/ci/badge.svg)
+![CI Badge](https://github.com/stephenry/v/workflows/CI/badge.svg)
 
 "v" is a solution to an interview problem (set some years ago) by a trading
 company in Manhattan. The problem statement was as follows:
