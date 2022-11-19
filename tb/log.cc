@@ -48,15 +48,11 @@ Scope::Scope(const std::string& name, Logger* logger, Scope* parent)
   : name_(name), logger_(logger), parent_(parent) {
 }
 
-std::string Scope::path() {
+std::string Scope::path() const {
   if (!path_) {
     path_ = render_path();
   }
   return *path_;
-}
-
-void Scope::append(const Message& message) {
-  logger_->write(path(), message);
 }
 
 Scope* Scope::create_child(const std::string& scope_name) {
@@ -65,7 +61,7 @@ Scope* Scope::create_child(const std::string& scope_name) {
   return children_.back().get();
 }
 
-std::string Scope::render_path() {
+std::string Scope::render_path() const {
   std::vector<std::string> vs;
   vs.push_back(name_);
   Scope* scope = parent_;
@@ -92,11 +88,6 @@ Scope* Logger::top() {
     parent_scope_.reset(new Scope("tb", this));
   }
   return parent_scope_.get();
-}
-
-void Logger::write(const std::string& path, const Message& message) {
-  os_ << path << ":" << message.to_string() << "\n";
-//  Sim::log_event(message.level());
 }
 
 }  // namespace tb::log

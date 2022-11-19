@@ -506,7 +506,7 @@ class Mdl::Impl {
     const QueryCommand qc{VSampler::qc(tb_)};
 
     if (lg_ && (uc.vld() || qc.vld())) {
-      lg_->append(Message::Info("Issue ", uc, " | ", qc));;
+      lg_->Info("Issue ", uc, " | ", qc);;
     }
 
     handle(uc);
@@ -516,7 +516,7 @@ class Mdl::Impl {
     const QueryResponse qr{VSampler::qr(tb_)};
 
     if (lg_ && (nr.vld() || qr.vld())) {
-      lg_->append(Message::Info("Response ", nr, " | ", qr));
+      lg_->Info("Response ", nr, " | ", qr);
     }
 
     handle(nr);

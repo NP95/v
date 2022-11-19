@@ -92,8 +92,8 @@ VERILATOR_TYPES(DECLARE_HANDLER)
 #undef DECLARE_HANDLER
 
 class RecordRenderer {
-  static constexpr const LPAREN = "{";
-  static constexpr const RPAREN = "}";
+  static constexpr const char* LPAREN = "{";
+  static constexpr const char* RPAREN = "}";
 public:
   explicit RecordRenderer(std::ostream& os, const std::string& type = "unk")
     : os_(os) {
@@ -153,7 +153,8 @@ public:
 
   Level level() const { return level_; }
   
-  std::string to_string() const { return ss_.str(); }
+  void to(std::string& s) const { s = ss_.str(); }
+  void to(std::ostream& os) const { os << ss_.rdbuf(); }
 
 private:
   template<typename ...T>
@@ -170,9 +171,8 @@ private:
   void append(T&& ...ts) { 
     (StreamRenderer<std::decay_t<T>>::write(ss_, std::forward<T>(ts)), ...);
   }
-
+  //! Current accumulated message.
   std::stringstream ss_;
-
   Level level_;
 };
 
@@ -188,15 +188,24 @@ public:
   //! Current scope name
   std::string name() { return name_; }
   //! Current scope path
-  std::string path();
+  std::string path() const;
 
-  void append(const Message& m);
+#define __declare_message(__level) \
+  template<typename ...Ts> \
+  void __level(Ts&& ...ts) const { \
+    write(Level::__level, std::forward<Ts>(ts)...); \
+  }
+  LOG_LEVELS(__declare_message)
+#undef __declare_message
 
   Scope* create_child(const std::string& scope_name);
 
 private:
+  template<typename ...Ts>
+  void write(Level l, Ts&& ...ts) const;
+
   //!
-  std::string render_path();
+  std::string render_path() const;
   //! Name of current scope.
   std::string name_;
   //! Pointer to parent scope (nullptr if root scope)
@@ -204,25 +213,57 @@ private:
   //! Owning pointer to child logger scopes.
   std::vector<std::unique_ptr<Scope>> children_;
   //! Path of scope within logger hierarchy.
-  std::optional<std::string> path_;
+  mutable std::optional<std::string> path_;
   //! Parent Logger instance.
   Logger* logger_{nullptr};
 };
 
 class Logger {
   friend class Scope;
+  friend class Context;
 public:
+  class Context {
+    friend class Logger;
+
+    static constexpr const char* PATH_LPAREN = "{";
+    static constexpr const char* PATH_RPAREN = "}";
+    static constexpr const char* PATH_COLON = ":";
+
+    explicit Context(const Scope* s, Logger* logger)
+     : s_(s), logger_(logger)
+    {}
+  public:
+    void write(const Message& message) const {
+      std::ostream& os{logger_->os()};
+      os << PATH_LPAREN << s_->path() << PATH_RPAREN << PATH_COLON << " ";
+      message.to(os);
+    }
+
+  private:
+    const Scope* s_;
+    Logger* logger_;
+  };
+
   explicit Logger(std::ostream& os);
 
   Scope* top();
+
+  Context create_context(const Scope* s) { return Context{s, this}; }
+
 private:
-  //! Write composed message to logger output stream.
-  void write(const std::string& path, const Message& message);
+  //! 
+  std::ostream& os() const { return os_; }
   //!
   std::unique_ptr<Scope> parent_scope_;
   //! Output logging stream.
   std::ostream& os_;
 };
+
+template<typename ...Ts>
+void Scope::write(Level l, Ts&& ...ts) const {
+  auto context{logger_->create_context(this)};
+  context.write(Message::Build(l, std::forward<Ts>(ts)...));
+}
 
 }  // namespace tb::log
 
