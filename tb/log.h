@@ -33,6 +33,7 @@
 #include <memory>
 #include <sstream>
 #include <optional>
+#include "verilated.h"
 
 #include "common.h"
 
@@ -70,11 +71,33 @@ struct StreamRenderer<bool> {
   static void write(std::ostream& os, const bool& t);
 };
 
+template<>
+struct StreamRenderer<const char*> {
+  static void write(std::ostream& os, const char* msg);
+};
+
+#define VERILATOR_TYPES(__func) \
+  __func(vlsint64_t) \
+  __func(vluint32_t) \
+  __func(vluint8_t)
+
+#define DECLARE_HANDLER(__type) \
+template<> \
+struct StreamRenderer<__type> { \
+  static void write(std::ostream& os, const __type& t) { \
+    os << t; \
+  } \
+};
+VERILATOR_TYPES(DECLARE_HANDLER)
+#undef DECLARE_HANDLER
+
 class RecordRenderer {
+  static constexpr const LPAREN = "{";
+  static constexpr const RPAREN = "}";
 public:
   explicit RecordRenderer(std::ostream& os, const std::string& type = "unk")
     : os_(os) {
-    os_ << type << "{";
+    os_ << type << LPAREN;
   }
 
   ~RecordRenderer() {
@@ -83,6 +106,7 @@ public:
 
   template<typename T>
   void add(const std::string& k, const T& t) {
+    if (finalized_) return;
     preamble(k);
     writekey(t);
   }
@@ -94,30 +118,21 @@ private:
     os_ << ":";    
   }
 
-  void writekey(const char *msg) {
-    os_ << msg;
-  }
-
-  template<typename T>
-  std::enable_if_t<std::is_integral_v<T>> writekey(const T& t) {
-    os_ << t;
-  }
-
   template<typename T>
   void writekey(const AsHex<T>& h) {
     os_ << std::hex << "0x" << h.t;
   }
   
   template<typename T>
-  std::enable_if_t<!std::is_integral_v<T>> writekey(const T& t) {
-    StreamRenderer<T>::write(os_, t);
+  void writekey(T& t) {
+    StreamRenderer<std::decay_t<T>>::write(os_, t);
   }
 
   void finalize() {
-    os_ << "}";
+    os_ << RPAREN;
     finalized_ = true;
   }
-  //!
+  //! Record has been serialized.
   bool finalized_{false};
   //! Number of previously rendered key/value pairs.
   std::size_t entries_n_{0};
@@ -151,18 +166,10 @@ private:
   explicit Message(Level level)
     : level_(level) {}
 
-  void append1(const char *s) {
-    ss_ << s;
-  }
-
-  template<typename T>
-  void append1(T&& t) {
-    using U = std::decay_t<T>;
-    StreamRenderer<U>::write(ss_, std::forward<T>(t));
-  }
-
   template<typename ...T>
-  void append(T&& ...ts) { (append1(std::forward<T>(ts)), ...); }
+  void append(T&& ...ts) { 
+    (StreamRenderer<std::decay_t<T>>::write(ss_, std::forward<T>(ts)), ...);
+  }
 
   std::stringstream ss_;
 
@@ -198,7 +205,7 @@ private:
   std::vector<std::unique_ptr<Scope>> children_;
   //! Path of scope within logger hierarchy.
   std::optional<std::string> path_;
-  //!
+  //! Parent Logger instance.
   Logger* logger_{nullptr};
 };
 
@@ -207,7 +214,7 @@ class Logger {
 public:
   explicit Logger(std::ostream& os);
 
-  Scope* scope();
+  Scope* top();
 private:
   //! Write composed message to logger output stream.
   void write(const std::string& path, const Message& message);

@@ -40,6 +40,9 @@ namespace tb::log {
 void StreamRenderer<bool>::write(std::ostream& os, const bool& b) {
   os << (b ? "1" : "0");
 }
+void StreamRenderer<const char*>::write(std::ostream& os, const char* msg) {
+  os << msg;
+}
 
 Scope::Scope(const std::string& name, Logger* logger, Scope* parent)
   : name_(name), logger_(logger), parent_(parent) {
@@ -73,10 +76,10 @@ std::string Scope::render_path() {
   std::reverse(vs.begin(), vs.end());
   std::string path;
   for (std::size_t i = 0; i < vs.size(); i++) {
-    path += vs[i];
-    if (i != (vs.size() - 1)) {
+    if (i != 0) {
       path += scope_separator;
     }
+    path += vs[i];
   }
   return path;
 }
@@ -84,7 +87,7 @@ std::string Scope::render_path() {
 Logger::Logger(std::ostream& os)
   : os_(os) {}
 
-Scope* Logger::scope() {
+Scope* Logger::top() {
   if (!parent_scope_) {
     parent_scope_.reset(new Scope("tb", this));
   }
