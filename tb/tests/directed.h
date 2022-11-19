@@ -36,7 +36,7 @@
 
 class Instruction;
 namespace tb::log {
-class Msg;
+class Scope;
 };
 
 namespace tb::tests {

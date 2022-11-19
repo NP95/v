@@ -23,49 +23,21 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-//========================================================================== //
+// ========================================================================== //
 
-#ifndef V_TB_SIM_H
-#define V_TB_SIM_H
+#include "sim.h"
 
-#include <string>
-#include <optional>
-#include <vector>
+#include "tb.h"
+#include "log"
+#include "test.h"
+#include "rnd.h"
 
 namespace tb {
 
-class Rnd;
-class VKernel;
-class Mdl;
-namespace log { class Logger; }
+void Sim::initialize() {
+  Sim::rnd = std::make_unique<Rnd>();
+  Sim::kernel = std::make_unique<VKernel>();
+  Sim::mdl = std::make_unique<Mdl>();
+}
 
-struct Sim {
-
-    static void initialize();
-
-    inline static std::optional<std::string> test_name;
-
-    inline static std::vector<std::string> test_args;
-
-#ifdef ENABLE_VCD
-    inline static bool vcd_on = false;
-
-    inline static std::string vcd_fn = "v.vcd";
-#endif
-
-    //! Global logger
-    inline static std::unique_ptr<log::Logger> log;
-
-    //! Global randomization state.
-    inline static std::unique_ptr<Rnd> rnd;
-
-    //! Global simulation kernel.
-    inline static std::unique_ptr<VKernel> kernel;
-
-    //! Global validation model.
-    inline static std::unique_ptr<Mdl> mdl;
-};
-
-} // namespace tb
-
-#endif
+}

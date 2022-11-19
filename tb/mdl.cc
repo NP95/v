@@ -498,15 +498,16 @@ class Mdl::Impl {
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 5;
 
  public:
-  explicit Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
+  explicit Impl(Vtb* tb, log::Scope* logger)
+   : tb_(tb), logger_(logger) {}
 
   void step() {
     using namespace log;
     const UpdateCommand uc{VSampler::uc(tb_)};
     const QueryCommand qc{VSampler::qc(tb_)};
 
-    if (lg_ && (uc.vld() || qc.vld())) {
-      lg_->Info("Issue ", uc, " | ", qc);;
+    if (logger_ && (uc.vld() || qc.vld())) {
+      logger_->Info("Issue ", uc, " | ", qc);;
     }
 
     handle(uc);
@@ -515,8 +516,8 @@ class Mdl::Impl {
     const NotifyResponse nr{VSampler::nr(tb_)};
     const QueryResponse qr{VSampler::qr(tb_)};
 
-    if (lg_ && (nr.vld() || qr.vld())) {
-      lg_->Info("Response ", nr, " | ", qr);
+    if (logger_ && (nr.vld() || qr.vld())) {
+      logger_->Info("Response ", nr, " | ", qr);
     }
 
     handle(nr);
@@ -668,10 +669,12 @@ class Mdl::Impl {
   DelayPipe<QueryResponse, QUERY_PIPE_DELAY> qr_pipe_;
 
   Vtb* tb_;
-  log::Scope* lg_;
+  log::Scope* logger_{nullptr};
 };
 
-Mdl::Mdl(Vtb* tb, log::Scope* lg) { impl_ = std::make_unique<Impl>(tb, lg); }
+Mdl::Mdl(Vtb* tb, log::Scope* logger) {
+  impl_ = std::make_unique<Impl>(tb, logger);
+}
 
 Mdl::~Mdl() {}
 
@@ -691,9 +694,7 @@ class MdlValidation::Impl {
 
   std::pair<bool, key_t> pick_active_key(Rnd* rnd, prod_id_t id) const {
     const std::vector<Entry>& es_{impl_->tbl_[id]};
-    if (es_.empty()) {
-      return {false, key_t{}};
-    }
+    if (es_.empty()) { return {false, key_t{}}; }
 
     return {true, es_[rnd->uniform(es_.size() - 1)].key};
   }

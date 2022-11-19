@@ -26,12 +26,16 @@
 // ========================================================================== //
 
 #include <iostream>
+#include <fstream>
 #include <string_view>
+#include <memory>
 
 #include "log.h"
 #include "rnd.h"
 #include "tb.h"
 #include "test.h"
+#include "sim.h"
+#include "mdl.h"
 
 namespace {
 
@@ -45,82 +49,92 @@ class Driver {
   int status() const { return status_; }
 
   void execute(int argc, char** argv) {
-    bool got_testname = false;
-    tb::TestOptions topts;
- //   tb::log::Log log;
- //   topts.l = log.create_logger();
-    tb::Rnd rnd;
-    topts.rnd = std::addressof(rnd);
+    std::ostream& msgos{std::cout};
+    std::unique_ptr<std::ofstream> ofs;
     for (int i = 1; i < argc; ++i) {
       const std::string_view argstr{argv[i]};
-      if (argstr == "--help" || argstr == "-h") {
-        print_usage();
+      if (argstr == "-h" || argstr == "--help") {
+        // -h|--help: Print help information
+        print_usage(msgos);
         status_ = 1;
         return;
-      } else if (argstr == "-v") {
- //       log.set_os(std::cout);
+      } else if (argstr == "-v" || argstr == "--verbose") {
+        // -v|--vebose: Enable verbose tracing.
+        tb::Sim::log = std::make_unique<tb::log::Logger>(msgos);
+      } else if (argstr == "-f" || argstr == "--file") {
+        // -f|--file: Trace to file.
+        ofs = std::make_unique<std::ofstream>(argv[++i]);
+        tb::Sim::log = std::make_unique<tb::log::Logger>(*ofs);
       } else if (argstr == "-s" || argstr == "--seed") {
+        // -s|--seed: Randomization seed (integer)
         const std::string sstr{argv[++i]};
         std::size_t pos = 0;
-        rnd.seed(std::stoi(sstr, &pos));
+        tb::Sim::rnd->seed(std::stoi(sstr, &pos));
       } else if (argstr == "--list") {
-        for (const tb::TestBuilder* tb : tr_.tests()) {
-          std::cout << tb->name() << "\n";
-        }
+        // --list: List set of currently registered tests.
+        print_tests(msgos);
         status_ = 1;
         return;
       } else if (argstr == "--vcd") {
+        // --vcd: emit VCD of simulation.
 #ifdef ENABLE_VCD
-        topts.vcd_on = true;
+        tb::Sim::vcd_on = true;
 #else
         // VCD support has not been compiled into driver. Fail
-        std::cout
+        msgos
             << "Waveform tracing has not been enabled in current build.\n";
         status_ = 1;
+        return;
 #endif
       } else if (argstr == "--run") {
-        topts.test_name = argv[++i];
-        got_testname = true;
-      } else if (argstr == "--args") {
-        topts.args = argv[++i];
+        // -r|--run: Testname to run.
+        tb::Sim::test_name = argv[++i];
+      } else if (argstr == "-a" || argstr == "--args") {
+        // -a|--args: Arguments passed to test.
+        tb::Sim::test_args.push_back(argv[++i]);
       } else {
-        std::cout << "Unknown argument: " << argstr << "\n";
+        msgos << "Unknown argument: " << argstr << "\n";
+        print_usage(msgos);
         status_ = 1;
         return;
       }
     }
 
-    // Try to run test.
-    if (!got_testname || !run(topts)) {
+    if (!tb::Sim::test_name) {
+      msgos << "No testname provided!\n";
+      print_usage(msgos);
       status_ = 1;
-      return;
+    } else if (const tb::TestBuilder* tb = tr_.get(*tb::Sim::test_name); tb != nullptr) {
+      tb::log::Scope* test_scope{nullptr};
+      if (tb::Sim::log) {
+        test_scope = tb::Sim::log->top()->create_child("test");
+      }
+      std::unique_ptr<tb::Test> t{tb->construct(test_scope)};
+      status_ = t->run() ? 1 : 0;
+    } else {
+      msgos << "Unknown test: " << *tb::Sim::test_name << "\n";
+      status_ = 1;
     }
   }
 
  private:
-  bool run(const tb::TestOptions& opts) {
-    if (const tb::TestBuilder* tb = tr_.get(opts.test_name); tb != nullptr) {
-      return run(opts, tb);
-    } else {
-      return false;
-    }
-  }
-
-  bool run(const tb::TestOptions& opts, const tb::TestBuilder* tb) {
-    std::unique_ptr<tb::Test> t{tb->construct(opts)};
-    return t->run();
-  }
-
-  void print_usage() {
-    std::cout << " -h|--help         Print help and quit.\n"
-              << " -v                Verbose\n"
-              << " -s|--seed         Randomization seed.\n"
-              << " --list            List testcases\n"
+  void print_usage(std::ostream& os) {
+    os  << " -h|--help         Print help and quit.\n"
+        << " -v                Verbose\n"
+        << " -f|--file         Trace to file\n"
+        << " -s|--seed         Randomization seed.\n"
+        << " --list            List testcases\n"
 #ifndef ENABLE_VCD
-              << " --vcd             Enable waveform tracing (VCD)\n"
+        << " --vcd             Enable waveform tracing (VCD)\n"
 #endif
-              << " --run <test>      Run testcase\n"
-              << " --args <args>     Testcase arguments.\n";
+        << " --run <test>      Run testcase\n"
+        << " -a|--args <arg>   Append testcase argument\n";
+  }
+  void print_tests(std::ostream& os) {
+    os << "Available tests:\n";
+    for (const tb::TestBuilder* tb : tr_.tests()) {
+      os << tb->name() << "\n";
+    }
   }
 
   tb::TestRegistry tr_;

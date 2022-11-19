@@ -50,9 +50,9 @@ class Scope;
     }                                                     \
     std::string name() const override { return #__name; } \
     std::unique_ptr<::tb::Test> construct(                \
-        const ::tb::TestOptions& opts) const override {   \
+      ::tb::log::Scope* logger) const override {          \
       auto t = std::make_unique<__name>();                \
-      build(t.get(), opts);                               \
+      build(t.get(), logger);                             \
       return std::move(t);                                \
     }                                                     \
   }
@@ -61,18 +61,15 @@ class Test {
   friend class TestBuilder;
 
  public:
-  explicit Test() = default;
+  explicit Test();
   virtual ~Test();
 
-  log::Scope* lg() const { return opts_.l; }
-  const TestOptions& opts() const { return opts_; }
-  VKernel* k() const { return k_.get(); }
+  log::Scope* logger() const { return logger_; }
 
   virtual bool run() = 0;
 
  private:
-  TestOptions opts_;
-  std::unique_ptr<VKernel> k_;
+  log::Scope* logger_{nullptr};
 };
 
 class TestBuilder {
@@ -81,11 +78,10 @@ class TestBuilder {
   virtual ~TestBuilder() = default;
 
   virtual std::string name() const = 0;
-  virtual std::unique_ptr<Test> construct(
-      const TestOptions& opts = TestOptions{}) const = 0;
+  virtual std::unique_ptr<Test> construct(::tb::log::Scope*) const = 0;
 
  protected:
-  void build(Test* t, const TestOptions& opts) const;
+  void build(Test* t, log::Scope* logger) const;
 };
 
 class TestRegistry {

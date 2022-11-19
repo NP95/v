@@ -208,7 +208,7 @@ class Mdl {
   std::unique_ptr<Impl> impl_;
 
  public:
-  explicit Mdl(Vtb* tb, log::Scope* lg);
+  explicit Mdl(Vtb* tb, log::Scope* logger);
   ~Mdl();
 
   void step();

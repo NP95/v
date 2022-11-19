@@ -31,7 +31,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
-#include <sstream>
+#include <ostream>
 #include <optional>
 #include "verilated.h"
 
@@ -52,6 +52,19 @@
 
 
 namespace tb::log {
+
+#define LOG_LEVELS(__func)  \
+  __func(Debug)\
+  __func(Info)\
+  __func(Warning)\
+  __func(Error)\
+  __func(Fatal)
+
+enum class Level {
+#define __declare_level(__level) __level,
+  LOG_LEVELS(__declare_level)
+#undef __declare_level
+};  
 
 class Msg {};
 
@@ -76,20 +89,25 @@ struct StreamRenderer<const char*> {
   static void write(std::ostream& os, const char* msg);
 };
 
+template<>
+struct StreamRenderer<Level> {
+  static void write(std::ostream& os, Level l, bool shortform = false);
+};
+
 #define VERILATOR_TYPES(__func) \
   __func(vlsint64_t) \
   __func(vluint32_t) \
   __func(vluint8_t)
 
-#define DECLARE_HANDLER(__type) \
+#define __declare_handler(__type) \
 template<> \
 struct StreamRenderer<__type> { \
   static void write(std::ostream& os, const __type& t) { \
     os << t; \
   } \
 };
-VERILATOR_TYPES(DECLARE_HANDLER)
-#undef DECLARE_HANDLER
+VERILATOR_TYPES(__declare_handler)
+#undef __declare_handler
 
 class RecordRenderer {
   static constexpr const char* LPAREN = "{";
@@ -140,43 +158,6 @@ private:
   std::ostream& os_;
 };
 
-class Message {
-  friend class Scope;
-public:
-#define __declare_message_builder(__level) \
-  template<typename ...T> \
-  static Message __level(T&& ...ts) { \
-    return Build(Level::__level, std::forward<T>(ts)...); \
-  }
-  LOG_LEVELS(__declare_message_builder)
-#undef __declare_message_builder
-
-  Level level() const { return level_; }
-  
-  void to(std::string& s) const { s = ss_.str(); }
-  void to(std::ostream& os) const { os << ss_.rdbuf(); }
-
-private:
-  template<typename ...T>
-  static Message Build(Level level, T&& ...ts) {
-    Message message{level};
-    message.append(std::forward<T>(ts)...);
-    return message;
-  }
-
-  explicit Message(Level level)
-    : level_(level) {}
-
-  template<typename ...T>
-  void append(T&& ...ts) { 
-    (StreamRenderer<std::decay_t<T>>::write(ss_, std::forward<T>(ts)), ...);
-  }
-  //! Current accumulated message.
-  std::stringstream ss_;
-  Level level_;
-};
-
-
 class Scope {
   friend class Logger;
 
@@ -225,28 +206,46 @@ public:
   class Context {
     friend class Logger;
 
+    static constexpr const char* STATUS_LPAREN = "[";
+    static constexpr const char* STATUS_RPAREN = "]";
     static constexpr const char* PATH_LPAREN = "{";
     static constexpr const char* PATH_RPAREN = "}";
-    static constexpr const char* PATH_COLON = ":";
+    static constexpr const char* PATH_COLON = ": ";
 
     explicit Context(const Scope* s, Logger* logger)
      : s_(s), logger_(logger)
     {}
   public:
-    void write(const Message& message) const {
-      std::ostream& os{logger_->os()};
-      os << PATH_LPAREN << s_->path() << PATH_RPAREN << PATH_COLON << " ";
-      message.to(os);
+    template<typename ...Ts>
+    void write(Level l, Ts&& ...ts) {
+      if (logger_->get_log_level() <= l) {
+        std::ostream& os{logger_->os()};
+        preamble(os, l);
+        (StreamRenderer<std::decay_t<Ts>>::write(os, std::forward<Ts>(ts)), ...);
+      }      
     }
 
   private:
+    void preamble(std::ostream& os, Level l) const {
+      // [(Fatal|Error|Warning|Info|Debug)]{path}: <message>
+      os << STATUS_LPAREN;
+      StreamRenderer<Level>::write(os, l);
+      os << STATUS_RPAREN
+         << PATH_LPAREN << s_->path() << PATH_RPAREN
+         << PATH_COLON;
+    }
     const Scope* s_;
     Logger* logger_;
+
   };
 
   explicit Logger(std::ostream& os);
 
   Scope* top();
+
+  Level get_log_level() const { return log_level_; }
+  
+  void set_log_level(Level log_level) { log_level_ = log_level; }
 
   Context create_context(const Scope* s) { return Context{s, this}; }
 
@@ -257,12 +256,14 @@ private:
   std::unique_ptr<Scope> parent_scope_;
   //! Output logging stream.
   std::ostream& os_;
+  //! Current log level (everything above is traced)
+  Level log_level_{Level::Debug};
 };
 
 template<typename ...Ts>
 void Scope::write(Level l, Ts&& ...ts) const {
   auto context{logger_->create_context(this)};
-  context.write(Message::Build(l, std::forward<Ts>(ts)...));
+  context.write(l, std::forward<Ts>(ts)...);
 }
 
 }  // namespace tb::log

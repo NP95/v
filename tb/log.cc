@@ -44,6 +44,26 @@ void StreamRenderer<const char*>::write(std::ostream& os, const char* msg) {
   os << msg;
 }
 
+void StreamRenderer<Level>::write(std::ostream& os, Level l, bool shortform) {
+  if (shortform) {
+    switch (l) {
+#define __declare_level(__level) \
+    case Level::__level: os << #__level[0]; break;
+    LOG_LEVELS(__declare_level)
+#undef __declare_level
+    default: os << "U"; break;
+    }
+  } else {
+    switch (l) {
+#define __declare_level(__level) \
+    case Level::__level: os << #__level; break;
+      LOG_LEVELS(__declare_level)
+#undef __declare_level
+      default: os << "Unknown";
+    }
+  }
+}
+
 Scope::Scope(const std::string& name, Logger* logger, Scope* parent)
   : name_(name), logger_(logger), parent_(parent) {
 }

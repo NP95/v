@@ -32,6 +32,8 @@
 #include "log.h"
 #include "mdl.h"
 #include "test.h"
+#include "sim.h"
+#include "rnd.h"
 #include "tests/regress.h"
 #include "tests/reset.h"
 #include "tests/smoke_cmds.h"
@@ -63,12 +65,23 @@ void init(TestRegistry* tr) {
   tests::smoke_cmds::init(tr);
 }
 
-VKernel::VKernel(const VKernelOptions& opts) : opts_(opts), tb_time_(0) {
-  // Fix up, logger with kernel pointer to allow for it to access the current
-  // cycle count.
-//  opts_.l->log()->set_kernel(this);
-  build_verilated_environment();
-  mdl_ = std::make_unique<Mdl>(vtb_.get(), opts_.l->create_child("mdl"));
+VKernel::VKernel() : tb_time_(0) {
+  vctxt_ = std::make_unique<VerilatedContext>();
+  vtb_ = std::make_unique<Vtb>(vctxt_.get());
+#ifdef ENABLE_VCD
+  if (Sim::vcd_on) {
+    vctxt_->traceEverOn(true);
+    vcd_ = std::make_unique<VerilatedVcdC>();
+    vtb_->trace(vcd_.get(), 99);
+    vcd_->open(Sim::vcd_fn.c_str());
+  }
+#endif
+  log::Scope* mdl_logger_scope = nullptr;
+  if (Sim::log) {
+    logger_scope_ = Sim::log->top();
+    mdl_logger_scope = logger_scope_->create_child("mdl");
+  }
+  mdl_ = std::make_unique<Mdl>(vtb_.get(), mdl_logger_scope);
 }
 
 VKernel::~VKernel() {}
@@ -132,19 +145,6 @@ void VKernel::end() {
 }
 
 std::uint64_t VKernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
-
-void VKernel::build_verilated_environment() {
-  vctxt_ = std::make_unique<VerilatedContext>();
-  vtb_ = std::make_unique<Vtb>(vctxt_.get());
-#ifdef ENABLE_VCD
-  if (opts_.vcd_on) {
-    vctxt_->traceEverOn(true);
-    vcd_ = std::make_unique<VerilatedVcdC>();
-    vtb_->trace(vcd_.get(), 99);
-    vcd_->open(opts_.vcd_fn.c_str());
-  }
-#endif
-}
 
 // Drive Update Command Interface
 void VDriver::issue(Vtb* tb, const UpdateCommand& up) {

@@ -30,6 +30,8 @@
 #include "../log.h"
 #include "../tb.h"
 #include "../test.h"
+#include "../sim.h"
+#include "../rnd.h"
 #include "directed.h"
 
 namespace {
@@ -75,8 +77,8 @@ struct CheckReset : public tb::Test {
   CREATE_TEST_BUILDER(CheckReset);
 
   bool run() override {
-    CheckResetCB cb{lg()};
-    return k()->run(std::addressof(cb));
+    CheckResetCB cb{logger()};
+    return tb::Sim::kernel->run(std::addressof(cb));
   };
 };
 

@@ -32,18 +32,17 @@
 #include "mdl.h"
 #include "opts.h"
 #include "tb.h"
+#include "rnd.h"
+#include "sim.h"
 
 namespace tb {
 
+Test::Test() {}
+
 Test::~Test() {}
 
-void TestBuilder::build(Test* t, const TestOptions& opts) const {
-  t->opts_ = opts;
-  VKernelOptions vopts;
-  vopts.vcd_on = opts.vcd_on;
-  vopts.vcd_fn = opts.vcd_fn;
-//  vopts.l = opts.l->create_child("kernel");
-  t->k_ = std::make_unique<VKernel>(vopts);
+void TestBuilder::build(Test* t, log::Scope* logger) const {
+  t->logger_ = logger;
 }
 
 void TestRegistry::add(std::unique_ptr<TestBuilder> br) {

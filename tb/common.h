@@ -32,18 +32,7 @@
 
 namespace tb {
 
-#define LOG_LEVELS(__func)  \
-  __func(Debug)\
-  __func(Info)\
-  __func(Warning)\
-  __func(Error)\
-  __func(Fatal)
 
-enum class Level {
-#define __declare_level(__level) __level,
-  LOG_LEVELS(__declare_level)
-#undef __declare_level
-};
 
 } // namespace tb
 

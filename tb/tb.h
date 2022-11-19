@@ -71,7 +71,7 @@ class VKernelException {
 
 class VKernel {
  public:
-  explicit VKernel(const VKernelOptions& opts);
+  explicit VKernel();
   ~VKernel();
 
   bool run(VKernelCB* cb);
@@ -82,7 +82,6 @@ class VKernel {
   const Mdl* mdl() const { return mdl_.get(); }
 
  private:
-  void build_verilated_environment();
   bool eval_clock_edge(VKernelCB* cb, bool edge);
 
   std::unique_ptr<Mdl> mdl_;
@@ -91,9 +90,8 @@ class VKernel {
 #ifdef ENABLE_VCD
   std::unique_ptr<VerilatedVcdC> vcd_;
 #endif
-  VKernelOptions opts_;
   std::uint64_t tb_time_;
-  log::Scope* l_;
+  log::Scope* logger_scope_{nullptr};
 };
 
 struct VDriver {
@@ -106,6 +104,7 @@ struct VDriver {
   //
   static bool is_busy(Vtb* tb);
 
+  //
   static void reset(Vtb* tb, bool r);
 };
 

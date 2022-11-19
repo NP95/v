@@ -31,6 +31,8 @@
 
 #include "../log.h"
 #include "../tb.h"
+#include "../rnd.h"
+#include "../sim.h"
 
 enum class Opcode {
   ApplyReset,
@@ -118,9 +120,8 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
     parent_->epilogue();
     program_epilogue();
 
-    VKernel* k{parent_->k()};
-    k->run(this);
-    k->end();
+    Sim::kernel->run(this);
+    Sim::kernel->end();
     return true;
   }
 
@@ -149,22 +150,21 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
       do_next_command = false;
       switch (i->op) {
         case Opcode::ApplyReset: {
-          VKernel* k{parent_->k()};
           if (i->n == 0) {
-            V_LOG(parent_->lg(), Info, "Resetting UUT.");
+            V_LOG(parent_->logger(), Info, "Resetting UUT.");
           }
           const bool do_apply_reset = (i->n++ < 10);
           VDriver::reset(tb, !do_apply_reset);
           consume_instruction = !do_apply_reset;
           if (consume_instruction) {
-            V_LOG(parent_->lg(), Info, "Reset complete!");
+            V_LOG(parent_->logger(), Info, "Reset complete!");
           }
         } break;
         case Opcode::WaitUntilNotBusy: {
           const bool is_busy = VDriver::is_busy(tb);
           consume_instruction = !is_busy;
           if (consume_instruction) {
-            V_LOG(parent_->lg(), Info, "Initialization complete!");
+            V_LOG(parent_->logger(), Info, "Initialization complete!");
           }
         } break;
         case Opcode::WaitCycles: {
@@ -177,16 +177,16 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
           VDriver::issue(tb, i->qc);
         } break;
         case Opcode::EndSimulation: {
-          V_LOG(parent_->lg(), Info, "Simulation complete!");
+          V_LOG(parent_->logger(), Info, "Simulation complete!");
           return false;
         } break;
         case Opcode::LogMessage: {
-          V_LOG_MSG(parent_->lg(), i->msg);
+          V_LOG_MSG(parent_->logger(), i->msg);
           do_next_command = true;
         } break;
         default: {
           // Unknown command!
-          V_LOG(parent_->lg(), Info, "Unknown command!");
+          V_LOG(parent_->logger(), Info, "Unknown command!");
           return false;
         } break;
       }
@@ -208,7 +208,9 @@ class tb::tests::Directed::Impl : public tb::VKernelCB {
 
 namespace tb::tests {
 
-Directed::Directed() { impl_ = std::make_unique<Impl>(this); }
+Directed::Directed() {
+   impl_ = std::make_unique<Impl>(this);
+}
 
 Directed::~Directed() {}
 
