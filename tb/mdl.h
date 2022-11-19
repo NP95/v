@@ -29,6 +29,7 @@
 #define V_TB_MDL_H
 
 #include "verilated.h"
+
 #include "log.h"
 
 class Vtb;
@@ -48,11 +49,6 @@ enum class Cmd : vluint8_t {
   Rep = 3,
   Invalid = 0xff
 };
-
-namespace log {
-template<>
-void render_to_stream(std::ostream& os, const Cmd& cmd);
-}
 
 const char* to_string(Cmd c);
 
@@ -193,7 +189,17 @@ struct StreamRenderer<QueryResponse> {
   static void write(std::ostream& os, const QueryResponse& qr);
 };
 
-} // namespace log
+template<>
+struct StreamRenderer<NotifyResponse> {
+  static void write(std::ostream& os, const NotifyResponse& qr);
+};
+
+template<>
+struct StreamRenderer<Cmd> {
+  static void write(std::ostream& os, const Cmd& cmd);
+};
+
+};
 
 class Mdl {
   friend class MdlValidation;

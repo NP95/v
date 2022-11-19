@@ -25,57 +25,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#ifndef V_TB_TESTS_DIRECTED_H
-#define V_TB_TESTS_DIRECTED_H
+#ifndef V_TB_SIM_H
+#define V_TB_SIM_H
 
-#include <memory>
+#include "common.h"
 
-#include "../common.h"
-#include "../mdl.h"
-#include "../test.h"
+namespace tb {
 
-class Instruction;
-namespace tb::log {
-class Msg;
+class Sim {
+public:
+
+    static void log_event(Level level);
 };
 
-namespace tb::tests {
-
-#define V_NOTE(__msg)
-
-class Directed : public Test {
-  friend class Impl;
-
-  class Impl;
-  std::unique_ptr<Impl> impl_;
-
- public:
-  explicit Directed();
-  ~Directed();
-
-  bool run() override;
-
-  virtual void prologue() {}
-  virtual void program() = 0;
-  virtual void epilogue() {}
-
-  void apply_reset();
-
-  void note(const log::Msg& msg);
-
-  void wait_until_not_busy();
-
-  void push_back(const UpdateCommand& uc,
-                 const QueryCommand& qc = QueryCommand{});
-
-  void push_back(const QueryCommand& qc,
-                 const UpdateCommand& uc = UpdateCommand{}) {
-    push_back(uc, qc);
-  }
-
-  void wait_cycles(std::size_t n = 1);
-};
-
-}  // namespace tb::tests
+} // namespace tb
 
 #endif

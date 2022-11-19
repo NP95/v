@@ -71,75 +71,6 @@
 
 namespace tb {
 
-namespace log {
-
-template<>
-void render_to_stream(std::ostream& os, const Cmd& cmd) {
-  switch (cmd) {
-    case Cmd::Clr:  os << "Clr";
-    case Cmd::Add:  os << "Add";
-    case Cmd::Del:  os << "Del";
-    case Cmd::Rep:  os << "Rep";
-    default:        os << "Invalid";
-  }
-}
-
-void StreamRenderer<UpdateCommand>::write(std::ostream& os, const UpdateCommand& uc) {
-  RecordRenderer rr{os, "uc"};
-  rr.add("vld", uc.vld());
-  if (uc.vld()) {
-    rr.add("prod_id", uc.prod_id());
-    rr.add("cmd", uc.cmd());
-    rr.add("key", uc.key());
-    rr.add("volume", uc.volume());
-  } else {
-    rr.add("prod_id", "x");
-    rr.add("cmd", Cmd::Invalid);
-    rr.add("key", "x");
-    rr.add("volume", "x");    
-  }
-}
-
-void StreamRenderer<UpdateResponse>::write(std::ostream& os, const UpdateResponse& ur) {
-  RecordRenderer rr{os, "ur"};
-  rr.add("vld", ur.vld());
-  if (ur.vld()) {
-    rr.add("prod_id", ur.prod_id());
-  } else {
-    rr.add("prod_id", "x");
-  }
-}
-
-void StreamRenderer<QueryCommand>::write(std::ostream& os, const QueryCommand& qc) {
-  RecordRenderer rr{os, "qc"};
-  rr.add("vld", qc.vld());
-  if (qc.vld()) {
-    rr.add("prod_id", qc.prod_id());
-    rr.add("level", qc.level());
-  } else {
-    rr.add("prod_id", "x");
-    rr.add("level", "x");
-  }
-}
-
-void StreamRenderer<QueryResponse>::write(std::ostream& os, const QueryResponse& qr) {
-  RecordRenderer rr{os, "qr"};
-  rr.add("vld", qr.vld());
-  if (qr.vld()) {
-    rr.add("key", qr.key());
-    rr.add("volume", qr.volume());
-    rr.add("error", qr.error());
-    rr.add("listsize", qr.listsize());
-  } else {
-    rr.add("key", "x");
-    rr.add("volume", "x");
-    rr.add("error", "x");
-    rr.add("listsize", "x");    
-  }
-}
-
-} // namespace log
-
 const char* to_string(Cmd c) {
   switch (c) {
     case Cmd::Clr:  return "Clr";
@@ -354,6 +285,87 @@ bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   return !operator==(lhs, rhs);
 }
 
+namespace log {
+void StreamRenderer<Cmd>::write(std::ostream& os, const Cmd& cmd) {
+  switch (cmd) {
+    case Cmd::Clr:  os << "Clr";
+    case Cmd::Add:  os << "Add";
+    case Cmd::Del:  os << "Del";
+    case Cmd::Rep:  os << "Rep";
+    default:        os << "Invalid";
+  }
+}
+
+void StreamRenderer<UpdateCommand>::write(std::ostream& os, const UpdateCommand& uc) {
+  RecordRenderer rr{os, "uc"};
+  rr.add("vld", uc.vld());
+  if (uc.vld()) {
+    rr.add("prod_id", uc.prod_id());
+    rr.add("cmd", uc.cmd());
+    rr.add("key", AsHex{uc.key()});
+    rr.add("volume", AsHex{uc.volume()});
+  } else {
+    rr.add("prod_id", "x");
+    rr.add("cmd", Cmd::Invalid);
+    rr.add("key", "x");
+    rr.add("volume", "x");    
+  }
+}
+
+void StreamRenderer<UpdateResponse>::write(std::ostream& os, const UpdateResponse& ur) {
+  RecordRenderer rr{os, "ur"};
+  rr.add("vld", ur.vld());
+  if (ur.vld()) {
+    rr.add("prod_id", ur.prod_id());
+  } else {
+    rr.add("prod_id", "x");
+  }
+}
+
+void StreamRenderer<QueryCommand>::write(std::ostream& os, const QueryCommand& qc) {
+  RecordRenderer rr{os, "qc"};
+  rr.add("vld", qc.vld());
+  if (qc.vld()) {
+    rr.add("prod_id", qc.prod_id());
+    rr.add("level", AsHex{qc.level()});
+  } else {
+    rr.add("prod_id", "x");
+    rr.add("level", "x");
+  }
+}
+
+void StreamRenderer<QueryResponse>::write(std::ostream& os, const QueryResponse& qr) {
+  RecordRenderer rr{os, "qr"};
+  rr.add("vld", qr.vld());
+  if (qr.vld()) {
+    rr.add("key", qr.key());
+    rr.add("volume", qr.volume());
+    rr.add("error", qr.error());
+    rr.add("listsize", qr.listsize());
+  } else {
+    rr.add("key", "x");
+    rr.add("volume", "x");
+    rr.add("error", "x");
+    rr.add("listsize", "x");    
+  }
+}
+
+void StreamRenderer<NotifyResponse>::write(std::ostream& os, const NotifyResponse& nr) {
+  RecordRenderer rr{os, "nr"};
+  rr.add("vld", nr.vld());
+  if (nr.vld()) {
+    rr.add("prod_id", nr.prod_id());
+    rr.add("key", nr.key());
+    rr.add("volume", nr.volume());
+  } else {
+    rr.add("prod_id", "x");
+    rr.add("key", "x");
+    rr.add("volume", "x");
+  }
+}
+
+} // namespace log
+
 struct VSampler {
   static UpdateCommand uc(Vtb* tb) {
     if (to_bool(tb->i_upd_vld)) {
@@ -486,14 +498,15 @@ class Mdl::Impl {
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 5;
 
  public:
-  Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
+  explicit Impl(Vtb* tb, log::Scope* lg) : tb_(tb), lg_(lg) {}
 
   void step() {
+    using namespace log;
     const UpdateCommand uc{VSampler::uc(tb_)};
     const QueryCommand qc{VSampler::qc(tb_)};
 
-    if (uc.vld() || qc.vld()) {
-      LOG_ISSUE(lg_, uc, qc);
+    if (lg_ && (uc.vld() || qc.vld())) {
+      lg_->append(Message::Info("Issue ", uc, " | ", qc));;
     }
 
     handle(uc);
@@ -502,8 +515,8 @@ class Mdl::Impl {
     const NotifyResponse nr{VSampler::nr(tb_)};
     const QueryResponse qr{VSampler::qr(tb_)};
 
-    if (nr.vld() || qr.vld()) {
-      LOG_RESPONSE(lg_, nr, qr);
+    if (lg_ && (nr.vld() || qr.vld())) {
+      lg_->append(Message::Info("Response ", nr, " | ", qr));
     }
 
     handle(nr);
@@ -639,14 +652,14 @@ class Mdl::Impl {
 
   template <typename T>
   void report_fail(const char* reason, const T& predicted, const T& actual) {
-    using namespace tb::log;
-    Msg msg{Level::Error};
-    msg.append(reason);
-    msg.append(": predicted ");
-    msg.append(predicted);
-    msg.append(" vs. actual ");
-    msg.append(actual);
-    lg_->write(msg);
+//    using namespace tb::log;
+//    Msg msg{Level::Error};
+//    msg.append(reason);
+//    msg.append(": predicted ");
+//    msg.append(predicted);
+//    msg.append(" vs. actual ");
+//    msg.append(actual);
+//    lg_->write(msg);
   }
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;

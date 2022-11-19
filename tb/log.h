@@ -36,90 +36,34 @@
 
 #include "common.h"
 
-#define V_ASSERT(__lg, __cond)                \
-  MACRO_BEGIN                                 \
-  if (__lg && !(__cond)) {                    \
-    using namespace ::tb::log;                \
-    Msg msg(Level::Fatal);                    \
-    msg.pp(__FILE__, __LINE__);               \
-    msg.append("Assertion failed: " #__cond); \
-    (__lg)->write(msg);                       \
-  }                                           \
-  MACRO_END
+#define V_ASSERT(__lg, __cond)
 
-#define V_EXPECT_EQ(__lg, __lhs, __rhs)               \
-  MACRO_BEGIN                                         \
-  if (__lg && !((__lhs) == (__rhs))) {                \
-    using namespace ::tb::log;                        \
-    Msg msg(Level::Error);                            \
-    msg.pp(__FILE__, __LINE__);                       \
-    msg.trace_mismatch(#__lhs, __lhs, #__rhs, __rhs); \
-    (__lg)->write(msg);                               \
-  }                                                   \
-  MACRO_END
+#define V_EXPECT_EQ(__lg, __lhs, __rhs)
 
-#define V_EXPECT_TRUE(__lg, __cond)             \
-  MACRO_BEGIN                                   \
-  if (__lg && !(__cond)) {                      \
-    using namespace ::tb::log;                  \
-    Msg msg(Level::Error);                      \
-    msg.pp(__FILE__, __LINE__);                 \
-    msg.append("Condition is false: " #__cond); \
-    (__lg)->write(msg);                         \
-  }                                             \
-  MACRO_END
 
-#define V_LOG(__lg, __level, __msg) \
-  MACRO_BEGIN                       \
-  if (__lg) {                       \
-    using namespace ::tb::log;      \
-    Msg msg(Level::__level);        \
-    msg.pp(__FILE__, __LINE__);     \
-    msg.append(__msg);              \
-    (__lg)->write(msg);             \
-  }                                 \
-  MACRO_END
+#define V_EXPECT_TRUE(__lg, __cond)
 
-#define V_LOG_MSG(__lg, __msg) \
-  MACRO_BEGIN                  \
-  if (__lg) {                  \
-    (__lg)->write(__msg);      \
-  }                            \
-  MACRO_END
 
-// Forwards:
-namespace tb {
-class UpdateCommand;
-class QueryCommand;
-class QueryResponse;
-class NotifyResponse;
-class VKernel;
-}  // namespace tb
+#define V_LOG(__lg, __level, __msg)
+
+
+#define V_LOG_MSG(__lg, __msg)
+
 
 namespace tb::log {
 
-class Log;
-class Scope;
+class Msg {};
+
 class Logger;
 
-#define LOG_LEVELS(__func)  \
-  __func(Debug)\
-  __func(Info)\
-  __func(Warning)\
-  __func(Error)\
-  __func(Fatal)
-
-enum class Level {
-#define __declare_level(__level) __level,
-  LOG_LEVELS(__declare_level)
-#undef __declare_level
+template<typename T>
+struct AsHex {
+  explicit AsHex(T t) : t(t) {}
+  T t;
 };
-
 
 template<typename T>
-struct StreamRenderer {
-  static void write(std::ostream& os, const T& t) { os << t; }
-};
+struct StreamRenderer;
 
 template<>
 struct StreamRenderer<bool> {
@@ -139,13 +83,36 @@ public:
 
   template<typename T>
   void add(const std::string& k, const T& t) {
-    if (entries_n_++) os_ << ", ";
-    os_ << k;
-    os_ << ":";
-    StreamRenderer::write(os_, t);
+    preamble(k);
+    writekey(t);
   }
 
 private:
+  void preamble(const std::string& k) {
+    if (entries_n_++) os_ << ", ";
+    os_ << k;
+    os_ << ":";    
+  }
+
+  void writekey(const char *msg) {
+    os_ << msg;
+  }
+
+  template<typename T>
+  std::enable_if_t<std::is_integral_v<T>> writekey(const T& t) {
+    os_ << t;
+  }
+
+  template<typename T>
+  void writekey(const AsHex<T>& h) {
+    os_ << std::hex << "0x" << h.t;
+  }
+  
+  template<typename T>
+  std::enable_if_t<!std::is_integral_v<T>> writekey(const T& t) {
+    StreamRenderer<T>::write(os_, t);
+  }
+
   void finalize() {
     os_ << "}";
     finalized_ = true;
@@ -159,7 +126,7 @@ private:
 };
 
 class Message {
-  friend class LoggerScope;
+  friend class Scope;
 public:
 #define __declare_message_builder(__level) \
   template<typename ...T> \
@@ -168,6 +135,10 @@ public:
   }
   LOG_LEVELS(__declare_message_builder)
 #undef __declare_message_builder
+
+  Level level() const { return level_; }
+  
+  std::string to_string() const { return ss_.str(); }
 
 private:
   template<typename ...T>
@@ -180,13 +151,18 @@ private:
   explicit Message(Level level)
     : level_(level) {}
 
-  template<typename ...T>
-  void append(T&& ...ts) {
-     (StreamRenderer<T>::write(ss_, std::forward<T>(ts)), ...);
+  void append1(const char *s) {
+    ss_ << s;
   }
 
-  Level level() const { return level_; }
-  std::string to_string() const { return ss_.str(); }
+  template<typename T>
+  void append1(T&& t) {
+    using U = std::decay_t<T>;
+    StreamRenderer<U>::write(ss_, std::forward<T>(t));
+  }
+
+  template<typename ...T>
+  void append(T&& ...ts) { (append1(std::forward<T>(ts)), ...); }
 
   std::stringstream ss_;
 
@@ -194,13 +170,13 @@ private:
 };
 
 
-class LoggerScope {
+class Scope {
   friend class Logger;
 
   static constexpr const char* scope_separator = ".";
 
-  explicit LoggerScope(
-    const std::string& name, Logger* logger, LoggerScope* parent = nullptr);
+  explicit Scope(
+    const std::string& name, Logger* logger, Scope* parent = nullptr);
 public:
   //! Current scope name
   std::string name() { return name_; }
@@ -209,18 +185,17 @@ public:
 
   void append(const Message& m);
 
-  LoggerScope* create_child(const std::string& scope_name);
+  Scope* create_child(const std::string& scope_name);
 
 private:
   //!
   std::string render_path();
-
   //! Name of current scope.
   std::string name_;
   //! Pointer to parent scope (nullptr if root scope)
-  LoggerScope* parent_{nullptr};
+  Scope* parent_{nullptr};
   //! Owning pointer to child logger scopes.
-  std::vector<std::unique_ptr<LoggerScope>> children_;
+  std::vector<std::unique_ptr<Scope>> children_;
   //! Path of scope within logger hierarchy.
   std::optional<std::string> path_;
   //!
@@ -228,122 +203,18 @@ private:
 };
 
 class Logger {
-  friend class LoggerScope;
+  friend class Scope;
 public:
   explicit Logger(std::ostream& os);
 
-  LoggerScope* scope();
+  Scope* scope();
 private:
   //! Write composed message to logger output stream.
-  void write(const std::string& s);
+  void write(const std::string& path, const Message& message);
   //!
-  std::unique_ptr<LoggerScope> parent_scope_;
+  std::unique_ptr<Scope> parent_scope_;
   //! Output logging stream.
   std::ostream& os_;
-};
-
-const char* to_string(bool b);
-
-
-
-class Msg {
-public:
-
-
-
-
-public:
-  explicit Msg() = default;
-  explicit Msg(Level l) : l_(l) {}
-
-  std::string str() const;
-
-  void pp(const std::string& f, unsigned l);
-  void fn(const std::string& fn) { fn_ = fn; }
-  std::string fn() const { return fn_; }
-  Level l() const { return l_; }
-
-  void ln(unsigned ln) { ln_ = ln; }
-  unsigned ln() const { return ln_; }
-
-
-
-
-  template <typename T>
-  void trace_mismatch(const char* lhs_s, T lhs, const char* rhs_s, T rhs) {
-    append("Mismatch detected: ");
-    append(lhs_s);
-    append(" (");
-    append(lhs);
-    append(") != ");
-    append(rhs_s);
-    append(" (");
-    append(rhs);
-    append(")");
-  }
-
-  void trace_mismatch(const char* lhs_s, bool lhs, const char* rhs_s,
-                      bool rhs) {
-    trace_mismatch(lhs_s, to_string(lhs), rhs_s, to_string(rhs));
-  }
-
-  // Specializations:
-  void append(const std::string& s);
-  void append(const UpdateCommand& uc);
-  void append(const QueryCommand& qc);
-  void append(const QueryResponse& qr);
-  void append(const NotifyResponse& nr);
-
-  std::string msg_;
-  std::string fn_;
-  unsigned ln_;
-  Level l_{Level::Fatal};
-};
-
-class Scope {
-  friend class Log;
-
-  static constexpr const char SEP = '.';
-
- public:
-  Scope(Log* log);
-  Scope(Scope* parent, const std::string& sn);
-
-  Scope* create_child(const std::string& sn);
-  void write(const Msg& msg);
-
-  std::string sn() const { return sn_; }
-  void sn(const std::string& sn) { sn_ = sn; }
-  Log* log() const { return log_; }
-
- private:
-  std::string sn_;
-  Log* log_;
-  std::vector<std::unique_ptr<Scope> > childs_;
-  Scope* parent_;
-};
-
-class Log {
-  friend class Scope;
-
- public:
-  explicit Log() = default;
-  Log(std::ostream& os);
-
-  void set_os(std::ostream& os) { os_ = std::addressof(os); }
-  void set_kernel(VKernel* k) { k_ = k; }
-
-  Scope* create_logger() {
-    lgs_.push_back(std::make_unique<Scope>(this));
-    return lgs_.back().get();
-  }
-
- private:
-  void write(const std::string& s);
-
-  std::ostream* os_{nullptr};
-  VKernel* k_{nullptr};
-  std::vector<std::unique_ptr<Scope> > lgs_;
 };
 
 }  // namespace tb::log

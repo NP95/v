@@ -47,8 +47,8 @@ class Driver {
   void execute(int argc, char** argv) {
     bool got_testname = false;
     tb::TestOptions topts;
-    tb::log::Log log;
-    topts.l = log.create_logger();
+ //   tb::log::Log log;
+ //   topts.l = log.create_logger();
     tb::Rnd rnd;
     topts.rnd = std::addressof(rnd);
     for (int i = 1; i < argc; ++i) {
@@ -58,7 +58,7 @@ class Driver {
         status_ = 1;
         return;
       } else if (argstr == "-v") {
-        log.set_os(std::cout);
+ //       log.set_os(std::cout);
       } else if (argstr == "-s" || argstr == "--seed") {
         const std::string sstr{argv[++i]};
         std::size_t pos = 0;

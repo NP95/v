@@ -42,7 +42,7 @@ void TestBuilder::build(Test* t, const TestOptions& opts) const {
   VKernelOptions vopts;
   vopts.vcd_on = opts.vcd_on;
   vopts.vcd_fn = opts.vcd_fn;
-  vopts.l = opts.l->create_child("kernel");
+//  vopts.l = opts.l->create_child("kernel");
   t->k_ = std::make_unique<VKernel>(vopts);
 }
 
