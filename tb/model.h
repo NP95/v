@@ -37,10 +37,6 @@ class Vtb;
 namespace tb {
 class Random;
 
-namespace log {
-class Scope;
-};
-
 using prod_id_t = vluint8_t;
 enum class Cmd : vluint8_t {
   Clr = 0,
@@ -49,9 +45,6 @@ enum class Cmd : vluint8_t {
   Rep = 3,
   Invalid = 0xff
 };
-
-const char* to_string(Cmd c);
-
 using key_t = vlsint64_t;
 using volume_t = vluint32_t;
 using level_t = vluint8_t;
@@ -61,8 +54,6 @@ class UpdateCommand {
  public:
   explicit UpdateCommand();
   explicit UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key, volume_t volume);
-
-  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
@@ -78,8 +69,6 @@ class UpdateCommand {
   volume_t volume_;
 };
 
-
-
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs);
 bool operator!=(const UpdateCommand& lhs, const UpdateCommand& rhs);
 
@@ -87,8 +76,6 @@ class UpdateResponse {
  public:
   explicit UpdateResponse();
   explicit UpdateResponse(prod_id_t prod_id);
-
-  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
@@ -105,8 +92,6 @@ class QueryCommand {
  public:
   explicit QueryCommand();
   explicit QueryCommand(prod_id_t prod_id, level_t level);
-
-  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }
@@ -125,8 +110,6 @@ class QueryResponse {
  public:
   explicit QueryResponse();
   explicit QueryResponse(key_t key, volume_t volume, bool error, listsize_t listsize);
-
-  std::string to_string() const;
 
   bool vld() const { return vld_; }
   key_t key() const { return key_; }
@@ -149,8 +132,6 @@ class NotifyResponse {
  public:
   explicit NotifyResponse();
   explicit NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume);
-
-  std::string to_string() const;
 
   bool vld() const { return vld_; }
   prod_id_t prod_id() const { return prod_id_; }

@@ -40,45 +40,11 @@
 
 namespace tb {
 
-const char* to_string(Cmd c) {
-  switch (c) {
-    case Cmd::Clr:
-      return "Clr";
-    case Cmd::Add:
-      return "Add";
-    case Cmd::Del:
-      return "Del";
-    case Cmd::Rep:
-      return "Rep";
-    default:
-      return "Invalid";
-  }
-}
-
 UpdateCommand::UpdateCommand() : vld_(false) {}
 
 UpdateCommand::UpdateCommand(prod_id_t prod_id, Cmd cmd, key_t key,
                              volume_t volume)
     : vld_(true), prod_id_(prod_id), cmd_(cmd), key_(key), volume_(volume) {}
-
-std::string UpdateCommand::to_string() const {
-  std::stringstream ss;
-  ss << "uc{";
-  ss << "vld:" << vld();
-  if (vld()) {
-    ss << ", prod_id:" << static_cast<int>(prod_id());
-    ss << ", cmd:" << tb::to_string(cmd());
-    ss << ", key:" << key();
-    ss << ", volume:" << volume();
-  } else {
-    ss << ", prod_id: x";
-    ss << ", cmd:" << tb::to_string(Cmd::Invalid);
-    ss << ", key: x";
-    ss << ", volume: x";
-  }
-  ss << "}";
-  return ss.str();
-}
 
 bool operator==(const UpdateCommand& lhs, const UpdateCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
@@ -103,19 +69,6 @@ UpdateResponse::UpdateResponse() : vld_(false) {}
 UpdateResponse::UpdateResponse(prod_id_t prod_id)
     : vld_(true), prod_id_(prod_id) {}
 
-std::string UpdateResponse::to_string() const {
-  std::stringstream ss;
-  ss << "ur{";
-  ss << "vld:" << vld();
-  if (vld()) {
-    ss << ", prod_id:" << static_cast<int>(prod_id());
-  } else {
-    ss << ", prod_id: x";
-  }
-  ss << "}";
-  return ss.str();
-}
-
 bool operator==(const UpdateResponse& lhs, const UpdateResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
 
@@ -135,21 +88,6 @@ QueryCommand::QueryCommand() : vld_(false) {}
 
 QueryCommand::QueryCommand(prod_id_t prod_id, level_t level)
     : vld_(true), prod_id_(prod_id), level_(level) {}
-
-std::string QueryCommand::to_string() const {
-  std::stringstream ss;
-  ss << "qc{";
-  ss << "vld:" << vld();
-  if (vld()) {
-    ss << ", prod_id:" << static_cast<int>(prod_id());
-    ss << ", level:" << static_cast<int>(level());
-  } else {
-    ss << ", prod_id: x";
-    ss << ", level: x";
-  }
-  ss << "}";
-  return ss.str();
-}
 
 bool operator==(const QueryCommand& lhs, const QueryCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
@@ -176,25 +114,6 @@ QueryResponse::QueryResponse(key_t key, volume_t volume, bool error,
   volume_ = volume;
   error_ = error;
   listsize_ = listsize;
-}
-
-std::string QueryResponse::to_string() const {
-  std::stringstream ss;
-  ss << "qr{";
-  ss << "vld:" << vld();
-  if (vld()) {
-    ss << ", key:" << key();
-    ss << ", volume:" << volume();
-    ss << ", error:" << error();
-    ss << ", listsize:" << static_cast<int>(listsize());
-  } else {
-    ss << ", key: x";
-    ss << ", volume: x";
-    ss << ", error: x";
-    ss << ", listsize: x";
-  }
-  ss << "}";
-  return ss.str();
 }
 
 bool operator==(const QueryResponse& lhs, const QueryResponse& rhs) {
@@ -227,23 +146,6 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
   volume_ = volume;
 }
 
-std::string NotifyResponse::to_string() const {
-  std::stringstream ss;
-  ss << "nr{";
-  ss << "vld:" << vld();
-  if (vld()) {
-    ss << ", prod_id:" << static_cast<int>(prod_id());
-    ss << ", key:" << key();
-    ss << ", volume:" << volume();
-  } else {
-    ss << ", prod_id: x";
-    ss << ", key: x";
-    ss << ", volume: x";
-  }
-  ss << "}";
-  return ss.str();
-}
-
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
   // If invalid, payload is don't care.
@@ -261,16 +163,11 @@ bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs) {
 
 void StreamRenderer<Cmd>::write(std::ostream& os, const Cmd& cmd) {
   switch (cmd) {
-    case Cmd::Clr:
-      os << "Clr";
-    case Cmd::Add:
-      os << "Add";
-    case Cmd::Del:
-      os << "Del";
-    case Cmd::Rep:
-      os << "Rep";
-    default:
-      os << "Invalid";
+    case Cmd::Clr: os << "Clr"; break;
+    case Cmd::Add: os << "Add"; break;
+    case Cmd::Del: os << "Del"; break;
+    case Cmd::Rep: os << "Rep"; break;
+    default:       os << "Invalid"; break;
   }
 }
 
@@ -279,10 +176,10 @@ void StreamRenderer<UpdateCommand>::write(std::ostream& os,
   RecordRenderer rr{os, "uc"};
   rr.add("vld", uc.vld());
   if (uc.vld()) {
-    rr.add("prod_id", uc.prod_id());
+    rr.add("prod_id", AsDec{uc.prod_id()});
     rr.add("cmd", uc.cmd());
     rr.add("key", AsHex{uc.key()});
-    rr.add("volume", AsHex{uc.volume()});
+    rr.add("volume", AsDec{uc.volume()});
   } else {
     rr.add("prod_id", "x");
     rr.add("cmd", Cmd::Invalid);
@@ -296,7 +193,7 @@ void StreamRenderer<UpdateResponse>::write(std::ostream& os,
   RecordRenderer rr{os, "ur"};
   rr.add("vld", ur.vld());
   if (ur.vld()) {
-    rr.add("prod_id", ur.prod_id());
+    rr.add("prod_id", AsDec{ur.prod_id()});
   } else {
     rr.add("prod_id", "x");
   }
@@ -307,8 +204,8 @@ void StreamRenderer<QueryCommand>::write(std::ostream& os,
   RecordRenderer rr{os, "qc"};
   rr.add("vld", qc.vld());
   if (qc.vld()) {
-    rr.add("prod_id", qc.prod_id());
-    rr.add("level", AsHex{qc.level()});
+    rr.add("prod_id", AsDec{qc.prod_id()});
+    rr.add("level", AsDec{qc.level()});
   } else {
     rr.add("prod_id", "x");
     rr.add("level", "x");
@@ -320,10 +217,10 @@ void StreamRenderer<QueryResponse>::write(std::ostream& os,
   RecordRenderer rr{os, "qr"};
   rr.add("vld", qr.vld());
   if (qr.vld()) {
-    rr.add("key", qr.key());
-    rr.add("volume", qr.volume());
-    rr.add("error", qr.error());
-    rr.add("listsize", qr.listsize());
+    rr.add("key", AsHex{qr.key()});
+    rr.add("volume", AsDec{qr.volume()});
+    rr.add("error", AsDec{qr.error()});
+    rr.add("listsize", AsDec{qr.listsize()});
   } else {
     rr.add("key", "x");
     rr.add("volume", "x");
@@ -337,9 +234,9 @@ void StreamRenderer<NotifyResponse>::write(std::ostream& os,
   RecordRenderer rr{os, "nr"};
   rr.add("vld", nr.vld());
   if (nr.vld()) {
-    rr.add("prod_id", nr.prod_id());
-    rr.add("key", nr.key());
-    rr.add("volume", nr.volume());
+    rr.add("prod_id", AsDec{nr.prod_id()});
+    rr.add("key", AsHex{nr.key()});
+    rr.add("volume", AsDec{nr.volume()});
   } else {
     rr.add("prod_id", "x");
     rr.add("key", "x");
@@ -487,7 +384,7 @@ class Model::Impl {
     const QueryCommand qc{VSampler::qc(tb_)};
 
     if (logger_ && (uc.vld() || qc.vld())) {
-      logger_->Info("Issue ", uc, " | ", qc);
+      logger_->Info("Issue: ", uc, " | ", qc);
       ;
     }
 
@@ -498,7 +395,7 @@ class Model::Impl {
     const QueryResponse qr{VSampler::qr(tb_)};
 
     if (logger_ && (nr.vld() || qr.vld())) {
-      logger_->Info("Response ", nr, " | ", qr);
+      logger_->Info("Response: ", nr, " | ", qr);
     }
 
     handle(nr);

@@ -34,6 +34,7 @@
 #include <ostream>
 #include <sstream>
 #include <optional>
+#include <ios>
 #include "verilated.h"
 
 #include "common.h"
@@ -73,8 +74,28 @@ class Logger;
 
 template<typename T>
 struct AsHex {
-  explicit AsHex(T t) : t(t) {}
-  T t;
+  explicit AsHex(const T& t) : t(t) {}
+  const T& t;
+};
+
+template<typename T>
+struct AsDec {
+  explicit AsDec(const T& t) : t(t) {}
+  const T& t;
+};
+
+struct SetFlags {
+  explicit SetFlags(std::ostream& os, std::ios_base::fmtflags flags_new)
+    : os_(os) {
+    flags_old_ = os_.flags(flags_new);
+  }
+  ~SetFlags() {
+    os_.flags(flags_old_);
+  }
+
+private:
+  std::ostream& os_;
+  std::ios_base::fmtflags flags_old_;
 };
 
 template<typename T>
@@ -95,10 +116,32 @@ struct StreamRenderer<Level> {
   static void write(std::ostream& os, Level l, bool shortform = false);
 };
 
+template<typename T>
+struct StreamRenderer<AsHex<T>> {
+  static void write(std::ostream& os, const AsHex<T>& h) {
+    SetFlags flags(os, std::ios_base::hex | std::ios_base::showbase);
+    StreamRenderer<T>::write(os, h.t);
+  }
+};
+
+template<typename T>
+struct StreamRenderer<AsDec<T>> {
+  static void write(std::ostream& os, const AsDec<T>& d) {
+    SetFlags flags(os, std::ios_base::dec | std::ios_base::showbase);
+    StreamRenderer<T>::write(os, d.t);
+  }
+};
+
+template<>
+struct StreamRenderer<vluint8_t> {
+  static void write(std::ostream& os, vluint8_t c) {
+    os << static_cast<vluint32_t>(c);
+  }
+};
+
 #define VERILATOR_TYPES(__func) \
   __func(vlsint64_t) \
-  __func(vluint32_t) \
-  __func(vluint8_t)
+  __func(vluint32_t)
 
 #define __declare_handler(__type) \
 template<> \
@@ -124,22 +167,17 @@ public:
   }
 
   template<typename T>
-  void add(const std::string& k, const T& t) {
+  void add(std::string_view k, const T& t) {
     if (finalized_) return;
     preamble(k);
     writekey(t);
   }
 
 private:
-  void preamble(const std::string& k) {
+  void preamble(std::string_view k) {
     if (entries_n_++) os_ << ", ";
     os_ << k;
     os_ << ":";    
-  }
-
-  template<typename T>
-  void writekey(const AsHex<T>& h) {
-    os_ << std::hex << "0x" << h.t;
   }
   
   template<typename T>
@@ -223,6 +261,7 @@ public:
         std::ostream& os{logger_->os()};
         preamble(os, l);
         (StreamRenderer<std::decay_t<Ts>>::write(os, std::forward<Ts>(ts)), ...);
+        postamble(os);
       }      
     }
 
@@ -234,6 +273,9 @@ public:
       os << STATUS_RPAREN
          << PATH_LPAREN << s_->path() << PATH_RPAREN
          << PATH_COLON;
+    }
+    void postamble(std::ostream& os) const {
+      os << "\n";
     }
     const Scope* s_;
     Logger* logger_;
