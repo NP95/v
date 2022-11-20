@@ -80,6 +80,7 @@ Kernel::Kernel() : tb_time_(0) {
     logger_scope_ = Sim::logger->top();
     mdl_logger_scope = logger_scope_->create_child("mdl");
   }
+  tb::Sim::model = std::make_unique<Model>(vtb_.get(), mdl_logger_scope);
 }
 
 Kernel::~Kernel() {}

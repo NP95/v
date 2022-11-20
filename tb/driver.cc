@@ -68,6 +68,7 @@ class Driver {
 };
 
 void Driver::init() {
+  tb::Sim::random = std::make_unique<tb::Random>();
   tb::register_tests(tr_); 
 }
 
@@ -136,7 +137,9 @@ void Driver::parse_args(int argc, char** argv) {
   }
 }
 
-void Driver::finalize() {}
+void Driver::finalize() {
+  tb::Sim::kernel = std::make_unique<tb::Kernel>();
+}
 
 void Driver::execute() {
   if (!tb::Sim::test_name) {
