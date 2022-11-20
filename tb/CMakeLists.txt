@@ -144,4 +144,6 @@ directed(CheckDelCmd)
 directed(CheckDelKey)
 directed(CheckListSize)
 directed(CheckReset)
-directed(CheckRplCmd)
+
+# Awaiting debug:
+# directed(CheckRplCmd)

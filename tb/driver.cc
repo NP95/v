@@ -56,11 +56,12 @@ class Driver {
 
  private:
   void init();
-  void parse_args(int argc, char** argv);
+  bool parse_args(int argc, char** argv);
   void finalize();
   void execute();
   void print_usage(std::ostream& os) const;
   void print_tests(std::ostream& os) const;
+  int report(bool failed = false) const;
 
   tb::TestRegistry tr_;
   int status_ = 0;
@@ -73,29 +74,29 @@ void Driver::init() {
 }
 
 int Driver::run(int argc, char** argv) {
+  bool failed = false;
   try {
     init();
-    parse_args(argc, argv);
-    if(status() == 0) {
+    failed = !parse_args(argc, argv);
+    if (!failed) {
       finalize();
       execute();
     }
   } catch (std::exception& ex) {
     std::cout << "Driver execution failed with:" << ex.what() << "!\n";
-    status_ = 1;
+    failed = true;
   }
-  return status_;
+  return report(failed);
 }
 
-void Driver::parse_args(int argc, char** argv) {
+bool Driver::parse_args(int argc, char** argv) {
   std::vector<std::string_view> vs{argv, argv + argc};
   for (int i = 1; i < vs.size(); ++i) {
     const std::string_view argstr{vs.at(i)};
     if (is_one_of(argstr, "-h", "--help")) {
       // -h|--help: Print help information
       print_usage(std::cout);
-      status_ = 1;
-      return;
+      return false;
     } else if (is_one_of(argstr, "-v", "--verbose")) {
       // -v|--vebose: Enable verbose tracing.
       tb::Sim::logger = std::make_unique<tb::Logger>();
@@ -106,13 +107,11 @@ void Driver::parse_args(int argc, char** argv) {
     } else if (is_one_of(argstr, "-s", "--seed")) {
       // -s|--seed: Randomization seed (integer)
       const std::string sstr{vs.at(++i)};
-      std::size_t pos = 0;
-      tb::Sim::random->seed(std::stoi(sstr, &pos));
+      tb::Sim::random->seed(std::stoi(sstr));
     } else if (is_one_of(argstr, "--list")) {
       // --list: List set of currently registered tests.
       print_tests(std::cout);
-      status_ = 1;
-      return;
+      return false;
     } else if (is_one_of(argstr, "--vcd")) {
       // --vcd: emit VCD of simulation.
 #ifdef ENABLE_VCD
@@ -122,21 +121,25 @@ void Driver::parse_args(int argc, char** argv) {
       std::cout
           << "Waveform tracing has not been enabled in current build.\n";
       status_ = 1;
-      return;
+      return false;
 #endif
     } else if (is_one_of(argstr, "--run")) {
       // -r|--run: Testname to run.
       tb::Sim::test_name = vs.at(++i);
+    } else if (is_one_of(argstr, "-e", "--errors")) {
+      // -e|--errors: Tolerated error count (integer)
+      const std::string sstr{vs.at(++i)};
+      tb::Sim::error_max = std::stoi(sstr);
     } else if (is_one_of(argstr, "-a", "--args")) {
       // -a|--args: Arguments passed to test.
       tb::Sim::test_args.emplace_back(vs.at(++i));
     } else {
       std::cout << "Unknown argument: " << argstr << "\n";
       print_usage(std::cout);
-      status_ = 1;
-      return;
+      return false;
     }
   }
+  return true;
 }
 
 void Driver::finalize() {
@@ -173,6 +176,7 @@ void Driver::print_usage(std::ostream& os) const {
      << "   --vcd             Enable waveform tracing (VCD)\n"
 #endif
      << "   --run <test>      Run testcase\n"
+     << "   -e|--errors <arg> Tolerated error count\n"
      << "   -a|--args <arg>   Append testcase argument\n";
 }
 
@@ -180,6 +184,16 @@ void Driver::print_tests(std::ostream& os) const {
   for (const tb::TestBuilder* tb : tr_.tests()) {
     os << tb->name() << "\n";
   }
+}
+
+int Driver::report(bool failed) const {
+  int issue_n = failed ? 1 : 0;
+
+  issue_n += tb::Sim::errors;
+  issue_n += tb::Sim::warnings;
+
+  std::cout << (issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
+  return issue_n;
 }
 
 }  // namespace

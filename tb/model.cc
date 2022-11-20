@@ -470,6 +470,7 @@ class Model::Impl {
       } break;
       case Cmd::Invalid:
       default: {
+          ++tb::Sim::errors;
           logger_->Error("Invalid command received: ", uc.cmd());
       } break;
     }
@@ -528,6 +529,7 @@ class Model::Impl {
 
   template <typename T>
   void report_fail(const char* reason, const T& predicted, const T& actual) const {
+    ++tb::Sim::errors;
     if (logger_)
       logger_->Error(reason, " predicted: ", predicted, " actual:", actual);
   }

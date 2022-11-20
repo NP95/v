@@ -9,7 +9,7 @@
             "args": ["--run", "CheckRplCmd"],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"
-        }
+        },
         {
             "name": "(gdb) Launch Regress",
             "type": "cppdbg",

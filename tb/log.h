@@ -245,8 +245,6 @@ public:
   class Context {
     friend class Logger;
 
-    static constexpr const char* STATUS_LPAREN = "[";
-    static constexpr const char* STATUS_RPAREN = "]";
     static constexpr const char* PATH_LPAREN = "{";
     static constexpr const char* PATH_RPAREN = "}";
     static constexpr const char* PATH_COLON = ": ";
@@ -266,17 +264,9 @@ public:
     }
 
   private:
-    void preamble(std::ostream& os, Level l) const {
-      // [(Fatal|Error|Warning|Info|Debug)]{path}: <message>
-      os << STATUS_LPAREN;
-      StreamRenderer<Level>::write(os, l);
-      os << STATUS_RPAREN
-         << PATH_LPAREN << s_->path() << PATH_RPAREN
-         << PATH_COLON;
-    }
-    void postamble(std::ostream& os) const {
-      os << "\n";
-    }
+    void preamble(std::ostream& os, Level l) const;
+    void postamble(std::ostream& os) const;
+
     const Scope* s_;
     Logger* logger_;
 

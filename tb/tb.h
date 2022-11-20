@@ -79,6 +79,19 @@ struct Sim {
 
   //! Global validation model.
   inline static std::unique_ptr<Model> model;
+
+  //! Pass indication status (final traced line)
+  inline static std::string_view pass_note = "PASS!\n";
+
+  //! Fail indirection status (final traced line)
+  inline static std::string_view fail_note = "FAIL!\n";
+
+  inline static int errors = 0;
+
+  inline static int warnings = 0;
+
+  //! Total number of errors encountered before the simulations is terminated.
+  inline static int error_max = 1;
 };
 
 struct KernelCallbacks {

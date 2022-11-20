@@ -65,6 +65,20 @@ void StreamRenderer<Level>::write(std::ostream& os, Level l, bool shortform) {
   }
 }
 
+void Logger::Context::preamble(std::ostream& os, Level l) const {
+  // [(Fatal|Error|Warning|Info|Debug)]{path}: <message>
+  StreamRenderer<Level>::write(os, l, true);
+  os << PATH_LPAREN;
+  if (tb::Sim::kernel) {
+    os << tb::Sim::kernel->tb_cycle() << " - ";
+  }
+  os << s_->path() << PATH_RPAREN << PATH_COLON;
+}
+
+void Logger::Context::postamble(std::ostream& os) const {
+  os << "\n";
+}
+
 Scope::Scope(const std::string& name, Logger* logger, Scope* parent)
   : name_(name), logger_(logger), parent_(parent) {
 }

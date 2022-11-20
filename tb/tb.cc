@@ -108,6 +108,9 @@ bool Kernel::run(KernelCallbacks* cb) {
         if (do_stepping) {
           do_stepping = eval_clock_edge(cb, edge);
         }
+        if (tb::Sim::errors >= tb::Sim::error_max) {
+          do_stepping = false;
+        }
         VPorts::clk(vtb, !edge);
       }
     } catch (const KernelException& ex) {
