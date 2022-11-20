@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "../log.h"
-#include "../mdl.h"
+#include "../model.h"
 #include "../rnd.h"
 #include "../tb.h"
 #include "../test.h"
@@ -75,10 +75,6 @@ struct Options {
   int context_n = cfg::CONTEXT_N;
 
   int n = 100000;
-
-  tb::Random* rnd = nullptr;
-
-  const tb::Model* mdl = nullptr;
 };
 
 Options Options::construct_from_sim() {
@@ -123,7 +119,7 @@ const char* to_string(State st) {
 
 class Stimulus {
  public:
-  Stimulus(const Options& opts) : opts_(opts), val_(opts.mdl) {
+  Stimulus(const Options& opts) : opts_(opts) {
     bag_.push_back(tb::Cmd::Clr, opts_.clr_weight);
     bag_.push_back(tb::Cmd::Add, opts_.add_weight);
     bag_.push_back(tb::Cmd::Del, opts_.del_weight);
@@ -190,7 +186,7 @@ class Stimulus {
   }
 
   void generate(tb::UpdateCommand& uc) {
-    const tb::Cmd cmd = bag_.pick(opts_.rnd);
+    const tb::Cmd cmd = bag_.pick(tb::Sim::random.get());
     switch (cmd) {
       case tb::Cmd::Clr: {
         // No further updates required.
@@ -201,14 +197,14 @@ class Stimulus {
       case tb::Cmd::Add: {
         const tb::prod_id_t prod_id =
             tb::Sim::random->uniform(opts_.context_n - 1, 0);
-        const tb::key_t key = opts_.rnd->uniform<tb::key_t>();
-        const tb::volume_t volume = opts_.rnd->uniform<tb::volume_t>();
+        const tb::key_t key = tb::Sim::random->uniform<tb::key_t>();
+        const tb::volume_t volume = tb::Sim::random->uniform<tb::volume_t>();
         uc = tb::UpdateCommand{prod_id, cmd, key, volume};
       } break;
       case tb::Cmd::Rep:
       case tb::Cmd::Del: {
         const tb::prod_id_t prod_id = 0;
-        auto [success, key] = val_.pick_active_key(opts_.rnd, prod_id);
+        auto [success, key] = val_.pick_active_key(prod_id);
         uc = tb::UpdateCommand{prod_id, tb::Cmd::Del, key, 0};
       } break;
       case tb::Cmd::Invalid: {
@@ -230,8 +226,8 @@ class Stimulus {
   bool b = true;
   tb::Bag<tb::Cmd> bag_;
   Options opts_;
-  tb::ModelValidation val_;
   State st_;
+  tb::ModelValidation val_;
 };
 
 struct RegressCB : public tb::KernelCallbacks {

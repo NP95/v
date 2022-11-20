@@ -32,7 +32,7 @@
 #include <algorithm>
 
 #include "common.h"
-#include "mdl.h"
+#include "model.h"
 #include "tb.h"
 
 namespace tb {

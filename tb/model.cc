@@ -25,7 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
-#include "mdl.h"
+#include "model.h"
 
 #include <array>
 #include <sstream>
@@ -36,48 +36,22 @@
 #include "common.h"
 #include "log.h"
 #include "rnd.h"
-
-// clang-format off
-#define LOG_ISSUE(__ls, __uc, __qc)             \
-  MACRO_BEGIN                                   \
-  if (__ls) {                                   \
-    using namespace ::tb::log;                  \
-    Msg msg(Level::Info);                       \
-    msg.pp(__FILE__, __LINE__);                 \
-    msg.append("Issue: ");                      \
-    msg.append(__uc);                           \
-    msg.append(" | ");                          \
-    msg.append(__qc);                           \
-    (__ls)->write(msg);                         \
-  }                                             \
-  MACRO_END
-// clang-format on
-
-// clang-format off
-#define LOG_RESPONSE(__ls, __nr, __qr)          \
-  MACRO_BEGIN                                   \
-  if (__ls) {                                   \
-    using namespace ::tb::log;                  \
-    Msg msg(Level::Info);                       \
-    msg.pp(__FILE__, __LINE__);                 \
-    msg.append("Response: ");                   \
-    msg.append(__nr);                           \
-    msg.append(" | ");                          \
-    msg.append(__qr);                           \
-    (__ls)->write(msg);                         \
-  }                                             \
-  MACRO_END
-// clang-format on
+#include "tb.h"
 
 namespace tb {
 
 const char* to_string(Cmd c) {
   switch (c) {
-    case Cmd::Clr:  return "Clr";
-    case Cmd::Add:  return "Add";
-    case Cmd::Del:  return "Del";
-    case Cmd::Rep:  return "Rep";
-    default:        return "Invalid";
+    case Cmd::Clr:
+      return "Clr";
+    case Cmd::Add:
+      return "Add";
+    case Cmd::Del:
+      return "Del";
+    case Cmd::Rep:
+      return "Rep";
+    default:
+      return "Invalid";
   }
 }
 
@@ -287,15 +261,21 @@ bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs) {
 
 void StreamRenderer<Cmd>::write(std::ostream& os, const Cmd& cmd) {
   switch (cmd) {
-    case Cmd::Clr:  os << "Clr";
-    case Cmd::Add:  os << "Add";
-    case Cmd::Del:  os << "Del";
-    case Cmd::Rep:  os << "Rep";
-    default:        os << "Invalid";
+    case Cmd::Clr:
+      os << "Clr";
+    case Cmd::Add:
+      os << "Add";
+    case Cmd::Del:
+      os << "Del";
+    case Cmd::Rep:
+      os << "Rep";
+    default:
+      os << "Invalid";
   }
 }
 
-void StreamRenderer<UpdateCommand>::write(std::ostream& os, const UpdateCommand& uc) {
+void StreamRenderer<UpdateCommand>::write(std::ostream& os,
+                                          const UpdateCommand& uc) {
   RecordRenderer rr{os, "uc"};
   rr.add("vld", uc.vld());
   if (uc.vld()) {
@@ -307,11 +287,12 @@ void StreamRenderer<UpdateCommand>::write(std::ostream& os, const UpdateCommand&
     rr.add("prod_id", "x");
     rr.add("cmd", Cmd::Invalid);
     rr.add("key", "x");
-    rr.add("volume", "x");    
+    rr.add("volume", "x");
   }
 }
 
-void StreamRenderer<UpdateResponse>::write(std::ostream& os, const UpdateResponse& ur) {
+void StreamRenderer<UpdateResponse>::write(std::ostream& os,
+                                           const UpdateResponse& ur) {
   RecordRenderer rr{os, "ur"};
   rr.add("vld", ur.vld());
   if (ur.vld()) {
@@ -321,7 +302,8 @@ void StreamRenderer<UpdateResponse>::write(std::ostream& os, const UpdateRespons
   }
 }
 
-void StreamRenderer<QueryCommand>::write(std::ostream& os, const QueryCommand& qc) {
+void StreamRenderer<QueryCommand>::write(std::ostream& os,
+                                         const QueryCommand& qc) {
   RecordRenderer rr{os, "qc"};
   rr.add("vld", qc.vld());
   if (qc.vld()) {
@@ -333,7 +315,8 @@ void StreamRenderer<QueryCommand>::write(std::ostream& os, const QueryCommand& q
   }
 }
 
-void StreamRenderer<QueryResponse>::write(std::ostream& os, const QueryResponse& qr) {
+void StreamRenderer<QueryResponse>::write(std::ostream& os,
+                                          const QueryResponse& qr) {
   RecordRenderer rr{os, "qr"};
   rr.add("vld", qr.vld());
   if (qr.vld()) {
@@ -345,11 +328,12 @@ void StreamRenderer<QueryResponse>::write(std::ostream& os, const QueryResponse&
     rr.add("key", "x");
     rr.add("volume", "x");
     rr.add("error", "x");
-    rr.add("listsize", "x");    
+    rr.add("listsize", "x");
   }
 }
 
-void StreamRenderer<NotifyResponse>::write(std::ostream& os, const NotifyResponse& nr) {
+void StreamRenderer<NotifyResponse>::write(std::ostream& os,
+                                           const NotifyResponse& nr) {
   RecordRenderer rr{os, "nr"};
   rr.add("vld", nr.vld());
   if (nr.vld()) {
@@ -495,8 +479,7 @@ class Model::Impl {
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 5;
 
  public:
-  explicit Impl(Vtb* tb, Scope* logger)
-   : tb_(tb), logger_(logger) {}
+  explicit Impl(Vtb* tb, Scope* logger) : tb_(tb), logger_(logger) {}
 
   void step() {
     using namespace log;
@@ -504,7 +487,8 @@ class Model::Impl {
     const QueryCommand qc{VSampler::qc(tb_)};
 
     if (logger_ && (uc.vld() || qc.vld())) {
-      logger_->Info("Issue ", uc, " | ", qc);;
+      logger_->Info("Issue ", uc, " | ", qc);
+      ;
     }
 
     handle(uc);
@@ -650,14 +634,14 @@ class Model::Impl {
 
   template <typename T>
   void report_fail(const char* reason, const T& predicted, const T& actual) {
-//    using namespace tb::log;
-//    Msg msg{Level::Error};
-//    msg.append(reason);
-//    msg.append(": predicted ");
-//    msg.append(predicted);
-//    msg.append(" vs. actual ");
-//    msg.append(actual);
-//    lg_->write(msg);
+    //    using namespace tb::log;
+    //    Msg msg{Level::Error};
+    //    msg.append(reason);
+    //    msg.append(": predicted ");
+    //    msg.append(predicted);
+    //    msg.append(" vs. actual ");
+    //    msg.append(actual);
+    //    lg_->write(msg);
   }
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;
@@ -681,28 +665,27 @@ const Model::Impl* Model::impl() const { return impl_.get(); }
 
 class ModelValidation::Impl {
  public:
-  Impl(const Model* mdl) : impl_(mdl->impl()) {}
+  explicit Impl() = default;
 
   bool has_active_entries(prod_id_t id) const {
-    if (impl_ == nullptr) return false;
+    const Model::Impl* impl{Sim::model->impl()};
+    if (impl == nullptr) return false;
 
-    return (id < impl_->tbl_.size()) && !impl_->tbl_[id].empty();
+    return (id < impl->tbl_.size()) && !impl->tbl_[id].empty();
   }
 
-  std::pair<bool, key_t> pick_active_key(Random* rnd, prod_id_t id) const {
-    const std::vector<Entry>& es_{impl_->tbl_[id]};
-    if (es_.empty()) { return {false, key_t{}}; }
+  std::pair<bool, key_t> pick_active_key(prod_id_t id) const {
+    const Model::Impl* impl{Sim::model->impl()};
+    const std::vector<Entry>& es{impl->tbl_[id]};
+    if (es.empty()) {
+      return {false, key_t{}};
+    }
 
-    return {true, es_[rnd->uniform(es_.size() - 1)].key};
+    return {true, es[Sim::random->uniform(es.size() - 1)].key};
   }
-
- private:
-  const Model::Impl* impl_;
 };
 
-ModelValidation::ModelValidation(const Model* mdl) {
-  impl_ = std::make_unique<Impl>(mdl);
-}
+ModelValidation::ModelValidation() { impl_ = std::make_unique<Impl>(); }
 
 ModelValidation::~ModelValidation() {}
 
@@ -710,9 +693,8 @@ bool ModelValidation::has_active_entries(prod_id_t id) const {
   return impl_->has_active_entries(id);
 }
 
-std::pair<bool, key_t> ModelValidation::pick_active_key(Random* rnd,
-                                                      prod_id_t id) const {
-  return impl_->pick_active_key(rnd, id);
+std::pair<bool, key_t> ModelValidation::pick_active_key(prod_id_t id) const {
+  return impl_->pick_active_key(id);
 }
 
 }  // namespace tb

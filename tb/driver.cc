@@ -32,7 +32,7 @@
 #include <string_view>
 
 #include "log.h"
-#include "mdl.h"
+#include "model.h"
 #include "rnd.h"
 #include "tb.h"
 #include "test.h"
@@ -87,24 +87,24 @@ void Driver::execute(const std::vector<std::string_view>& vs) {
       print_usage(msgos);
       status_ = 1;
       return;
-    } else if (argstr == "-v" || argstr == "--verbose") {
+    } else if (is_one_of(argstr, "-v", "--verbose")) {
       // -v|--vebose: Enable verbose tracing.
       tb::Sim::logger = std::make_unique<tb::Logger>(msgos);
-    } else if (argstr == "-f" || argstr == "--file") {
+    } else if (is_one_if(argstr, "-f", "--file")) {
       // -f|--file: Trace to file.
       ofs = std::make_unique<std::ofstream>(std::filesystem::path{vs.at(++i)});
       tb::Sim::logger = std::make_unique<tb::Logger>(*ofs);
-    } else if (argstr == "-s" || argstr == "--seed") {
+    } else if (is_one_of(argstr, "-s", "--seed")) {
       // -s|--seed: Randomization seed (integer)
       const std::string sstr{vs.at(++i)};
       std::size_t pos = 0;
       tb::Sim::random->seed(std::stoi(sstr, &pos));
-    } else if (argstr == "--list") {
+    } else if (is_one_of(argstr, "--list")) {
       // --list: List set of currently registered tests.
       print_tests(msgos);
       status_ = 1;
       return;
-    } else if (argstr == "--vcd") {
+    } else if (is_one_of(argstr, "--vcd")) {
       // --vcd: emit VCD of simulation.
 #ifdef ENABLE_VCD
       tb::Sim::vcd_on = true;
@@ -114,10 +114,10 @@ void Driver::execute(const std::vector<std::string_view>& vs) {
       status_ = 1;
       return;
 #endif
-    } else if (argstr == "--run") {
+    } else if (is_one_of(argstr, "--run")) {
       // -r|--run: Testname to run.
       tb::Sim::test_name = vs.at(++i);
-    } else if (argstr == "-a" || argstr == "--args") {
+    } else if (is_one_of(argstr, "-a", "--args")) {
       // -a|--args: Arguments passed to test.
       tb::Sim::test_args.emplace_back(vs.at(++i));
     } else {

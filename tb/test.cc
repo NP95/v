@@ -29,7 +29,7 @@
 
 #include "Vobj/Vtb.h"
 #include "log.h"
-#include "mdl.h"
+#include "model.h"
 #include "opts.h"
 #include "tb.h"
 #include "rnd.h"

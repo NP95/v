@@ -106,7 +106,7 @@ set(DRIVER_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/reset.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/test.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/mdl.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/model.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/log.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/driver.cc"

@@ -30,7 +30,7 @@
 #include "Vobj/Vtb.h"
 #include "cfg.h"
 #include "log.h"
-#include "mdl.h"
+#include "model.h"
 #include "test.h"
 #include "rnd.h"
 #include "tests/regress.h"

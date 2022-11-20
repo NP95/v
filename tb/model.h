@@ -218,12 +218,12 @@ class ModelValidation {
   std::unique_ptr<Impl> impl_;
 
  public:
-  explicit ModelValidation(const Model* mdl);
+  explicit ModelValidation();
   ~ModelValidation();
 
   bool has_active_entries(prod_id_t id) const;
 
-  std::pair<bool, key_t> pick_active_key(Random* rnd, prod_id_t id) const;
+  std::pair<bool, key_t> pick_active_key(prod_id_t id) const;
 };
 
 }  // namespace tb
