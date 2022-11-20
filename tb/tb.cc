@@ -58,7 +58,7 @@ struct VPorts {
 
 namespace tb {
 
-void init(TestRegistry& tr) {
+void register_tests(TestRegistry& tr) {
   tests::reset::init(tr);
   tests::regress::init(tr);
   tests::smoke_cmds::init(tr);

@@ -240,7 +240,7 @@ public:
 
   };
 
-  explicit Logger(std::ostream& os);
+  explicit Logger();
 
   Scope* top();
 
@@ -248,15 +248,17 @@ public:
   
   void set_log_level(Level log_level) { log_level_ = log_level; }
 
+  void set_os(std::ostream* os) { os_ = os; }
+
   Context create_context(const Scope* s) { return Context{s, this}; }
 
 private:
   //! 
-  std::ostream& os() const { return os_; }
+  std::ostream& os() const { return *os_; }
   //!
   std::unique_ptr<Scope> parent_scope_;
   //! Output logging stream.
-  std::ostream& os_;
+  std::ostream* os_;
   //! Current log level (everything above is traced)
   Level log_level_{Level::Debug};
 };

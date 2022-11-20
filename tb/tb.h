@@ -53,7 +53,7 @@ class Kernel;
 class Logger;
 class Scope;
 
-void init(TestRegistry& tr);
+void register_tests(TestRegistry& tr);
 
 struct Sim {
   static void initialize();

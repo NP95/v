@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <iostream>
 
 #include "common.h"
 #include "model.h"
@@ -100,8 +101,7 @@ std::string Scope::render_path() const {
   return path;
 }
 
-Logger::Logger(std::ostream& os)
-  : os_(os) {}
+Logger::Logger() : os_(std::addressof(std::cout)) {}
 
 Scope* Logger::top() {
   if (!parent_scope_) {
