@@ -210,20 +210,23 @@ void Driver::print_tests(std::ostream& os, bool as_json) const {
 }
 
 int Driver::report(bool failed) const {
-  std::string thick_row(80, '=');
-  std::string thin_row(80, '-');
-  tb::Sim::logger->write(thick_row);
-  tb::Sim::logger->write("Simulation terminates: ");
-  tb::Sim::logger->write(thin_row);
-  tb::Sim::logger->write("   Error(s)   - ", tb::Sim::errors);
-  tb::Sim::logger->write("   Warning(s) - ", tb::Sim::warnings);
-  tb::Sim::logger->write(thick_row);
-
   int issue_n = failed ? 1 : 0;
   issue_n += tb::Sim::errors;
   issue_n += tb::Sim::warnings;
 
-  tb::Sim::logger->write(issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
+  tb::Logger* logger{tb::Sim::logger.get()};
+  if (logger) {
+    std::string thick_row(80, '=');
+    std::string thin_row(80, '-');
+    tb::Sim::logger->write(thick_row);
+    tb::Sim::logger->write("Simulation terminates: ");
+    tb::Sim::logger->write(thin_row);
+    tb::Sim::logger->write("   Error(s)   - ", tb::Sim::errors);
+    tb::Sim::logger->write("   Warning(s) - ", tb::Sim::warnings);
+    tb::Sim::logger->write(thick_row);
+    tb::Sim::logger->write(issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
+  }
+
   return issue_n;
 }
 

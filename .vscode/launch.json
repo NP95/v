@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/tb/driver",
-            "args": ["-j", "--list"],
+            "args": ["--run", "CheckAddCmd"],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"
         },
