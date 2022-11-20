@@ -123,6 +123,7 @@ bool Kernel::run(KernelCallbacks* cb) {
     if (vcd_) vcd_->dump(tb_time_);
 #endif
   }
+  end();
   return failed;
 }
 
@@ -138,12 +139,13 @@ bool Kernel::eval_clock_edge(KernelCallbacks* cb, bool edge) {
 }
 
 void Kernel::end() {
+  vtb_->final();
 #ifdef ENABLE_VCD
   if (vcd_) {
     vcd_->close();
+    vcd_.reset(nullptr);
   }
 #endif
-  vtb_->final();
 }
 
 std::uint64_t Kernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
