@@ -32,7 +32,6 @@
 #include <algorithm>
 #include <iostream>
 
-#include "common.h"
 #include "model.h"
 #include "tb.h"
 

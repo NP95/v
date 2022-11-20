@@ -33,7 +33,6 @@
 
 #include "Vobj/Vtb.h"
 #include "cfg.h"
-#include "common.h"
 #include "log.h"
 #include "rnd.h"
 #include "tb.h"

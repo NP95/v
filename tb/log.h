@@ -37,8 +37,6 @@
 #include <ios>
 #include "verilated.h"
 
-#include "common.h"
-
 #define V_ASSERT(__lg, __cond)
 
 #define V_EXPECT_EQ(__lg, __lhs, __rhs)
