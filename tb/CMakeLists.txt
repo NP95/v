@@ -121,18 +121,27 @@ target_link_libraries(driver vlib ${VERILATOR_A})
 add_dependencies(driver verilate)
 
 # ---------------------------------------------------------------------------- #
-# Regression target
-add_custom_target(smoke
-  COMMENT "Running regression."
-  COMMAND $<TARGET_FILE:driver> -v --vcd
-     --run Regress --args 'n=100,p=0.01;5.0;1.0;2.0;0.1'
-  DEPENDS driver
-  )
-
-# ---------------------------------------------------------------------------- #
 # Tests
-add_test(NAME test_smoke
- COMMAND $<TARGET_FILE:driver> 
-   --run Regress --args 'n=10000,p=0.01;5.0;1.0;2.0;0.1'
-   )
+macro (regress_test name n clr add del rep inv )
+  add_test(NAME ${name}_${n}_${clr}_${add}_${del}_${rep}_${inv}
+    COMMAND $<TARGET_FILE:driver> --run Regress
+      -a n=${n} -a clr_weight=${clr} -a add_weight=${add} -a del_weight=${del}
+      -a inv_weight=${inv})
+endmacro ()
 
+regress_test(basic 10 0.01 5.0 1.0 2.0 0.1)
+
+macro (directed name)
+  add_test(NAME ${name}
+    COMMAND $<TARGET_FILE:driver> --run ${name}
+  )
+endmacro ()
+
+directed(CheckAddCmd)
+directed(CheckAddOrder)
+directed(ClearClrCmd)
+directed(CheckDelCmd)
+directed(CheckDelKey)
+directed(CheckListSize)
+directed(CheckReset)
+directed(CheckRplCmd)

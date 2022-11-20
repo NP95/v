@@ -76,8 +76,10 @@ int Driver::run(int argc, char** argv) {
   try {
     init();
     parse_args(argc, argv);
-    finalize();
-    execute();
+    if(status() == 0) {
+      finalize();
+      execute();
+    }
   } catch (std::exception& ex) {
     std::cout << "Driver execution failed with:" << ex.what() << "!\n";
     status_ = 1;
@@ -166,7 +168,7 @@ void Driver::print_usage(std::ostream& os) const {
      << "   -v                Verbose\n"
      << "   -f|--file         Trace to file\n"
      << "   -s|--seed         Randomization seed.\n"
-     << "   --list            List testcases\n"
+     << "   --list            List testcases and quit\n"
 #ifndef ENABLE_VCD
      << "   --vcd             Enable waveform tracing (VCD)\n"
 #endif
@@ -175,7 +177,6 @@ void Driver::print_usage(std::ostream& os) const {
 }
 
 void Driver::print_tests(std::ostream& os) const {
-  os << "Available tests:\n";
   for (const tb::TestBuilder* tb : tr_.tests()) {
     os << tb->name() << "\n";
   }

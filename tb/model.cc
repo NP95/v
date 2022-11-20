@@ -93,7 +93,7 @@ bool operator==(const QueryCommand& lhs, const QueryCommand& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
 
   // If invalid, payload is don't care.
-  if (lhs.vld()) return true;
+  if (!lhs.vld()) return true;
 
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.level() != rhs.level()) return false;
@@ -119,7 +119,7 @@ QueryResponse::QueryResponse(key_t key, volume_t volume, bool error,
 bool operator==(const QueryResponse& lhs, const QueryResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
   // If invalid, payload is don't care.
-  if (lhs.vld()) return true;
+  if (!lhs.vld()) return true;
 
   if (lhs.error() != rhs.error()) return false;
 
@@ -149,7 +149,7 @@ NotifyResponse::NotifyResponse(prod_id_t prod_id, key_t key, volume_t volume) {
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   if (lhs.vld() != rhs.vld()) return false;
   // If invalid, payload is don't care.
-  if (lhs.vld()) return true;
+  if (!lhs.vld()) return true;
   if (lhs.prod_id() != rhs.prod_id()) return false;
   if (lhs.key() != rhs.key()) return false;
   if (lhs.volume() != rhs.volume()) return false;
@@ -347,14 +347,17 @@ class DelayPipe<UpdateResponse, N> : public DelayPipeBase<UpdateResponse, N> {
 };
 
 struct Entry {
-  std::string to_string() const {
-    std::stringstream ss;
-    ss << key << ", " << volume;
-    return ss.str();
-  }
-
   key_t key;
   volume_t volume;
+};
+
+template<>
+struct StreamRenderer<Entry> {
+  static void write(std::ostream& os, const Entry& e) {
+    RecordRenderer rr{os, "e"};
+    rr.add("key", AsHex{e.key});
+    rr.add("volume", AsDec{e.volume});
+  }
 };
 
 bool compare_keys(key_t rhs, key_t lhs) {
@@ -363,10 +366,6 @@ bool compare_keys(key_t rhs, key_t lhs) {
 
 bool compare_entries(const Entry& lhs, const Entry& rhs) {
   return compare_keys(lhs.key, rhs.key);
-}
-
-std::ostream& operator<<(std::ostream& os, const Entry& e) {
-  return os << e.to_string();
 }
 
 class Model::Impl {
@@ -440,10 +439,8 @@ class Model::Impl {
         std::stable_sort(ctxt.begin(), ctxt.end(), compare_entries);
         if (ctxt.size() > cfg::ENTRIES_N) {
           // Entry has been spilled on this Add.
-          //
-          // TODO: Raise some error notification to indicate that the context
-          // has been truncated due to a capacity conflict and an entry has been
-          // dropped.
+          if (logger_)
+            logger_->Warning("Context overflow! Rejected entry: ", ctxt.back());
           ctxt.pop_back();
         }
       } break;
@@ -472,9 +469,9 @@ class Model::Impl {
         }
       } break;
       case Cmd::Invalid:
-      default:
-          // Bad command
-          ;
+      default: {
+          logger_->Error("Invalid command received: ", uc.cmd());
+      } break;
     }
 
     // Update predicted notify responses based upon outcome of prior command.
@@ -530,15 +527,9 @@ class Model::Impl {
   }
 
   template <typename T>
-  void report_fail(const char* reason, const T& predicted, const T& actual) {
-    //    using namespace tb::log;
-    //    Msg msg{Level::Error};
-    //    msg.append(reason);
-    //    msg.append(": predicted ");
-    //    msg.append(predicted);
-    //    msg.append(" vs. actual ");
-    //    msg.append(actual);
-    //    lg_->write(msg);
+  void report_fail(const char* reason, const T& predicted, const T& actual) const {
+    if (logger_)
+      logger_->Error(reason, " predicted: ", predicted, " actual:", actual);
   }
 
   std::array<std::vector<Entry>, cfg::CONTEXT_N> tbl_;

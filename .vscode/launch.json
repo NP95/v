@@ -2,7 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch Driver",
+            "name": "(gdb) Launch Directed",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/tb/driver",
+            "args": ["--run", "CheckRplCmd"],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb"
+        }
+        {
+            "name": "(gdb) Launch Regress",
             "type": "cppdbg",
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
