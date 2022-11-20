@@ -90,13 +90,13 @@ std::string Scope::render_path() const {
     vs.push_back(scope->name());
     scope = scope->parent_;
   }
-  std::reverse(vs.begin(), vs.end());
   std::string path;
-  for (std::size_t i = 0; i < vs.size(); i++) {
-    if (i != 0) {
+  while (!vs.empty()) {
+    if (!path.empty()) {
       path += scope_separator;
     }
-    path += vs[i];
+    path += vs.back();
+    vs.pop_back();
   }
   return path;
 }
