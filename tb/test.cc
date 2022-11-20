@@ -27,6 +27,7 @@
 
 #include "test.h"
 
+#include <iomanip>
 #include "Vobj/Vtb.h"
 #include "log.h"
 #include "model.h"
@@ -39,6 +40,79 @@ namespace tb {
 Test::Test() {}
 
 Test::~Test() {}
+
+JsonObject* JsonDict::clone() const {
+  JsonDict *d = new JsonDict;
+  for (auto& [k, v]: m_) {
+    d->m_.insert(std::make_pair(k, v->clone()));
+  }
+  return d;
+}
+
+void JsonDict::serialize(std::ostream& os, std::size_t offset) const {
+  os << "{";
+  int i = 0;
+  for (auto& [k, v] : m_) {
+    if (i++ != 0) os << ", ";
+    JsonString{k}.serialize(os);
+    os << ":";
+    v->serialize(os);
+  }
+  os << "}";
+}
+
+#define DECLARE_ADD(__type) \
+void JsonDict::add(const std::string& k, const __type& t) { \
+  m_.insert(std::make_pair(k, t.clone())); \
+}
+DECLARE_ADD(JsonString)
+DECLARE_ADD(JsonInteger)
+DECLARE_ADD(JsonArray)
+DECLARE_ADD(JsonDict)
+#undef DECLARE_ADD
+
+JsonObject* JsonArray::clone() const {
+  JsonArray* a = new JsonArray;
+  for (const std::unique_ptr<JsonObject>& o : children_) {
+    a->children_.emplace_back(o->clone());
+  }
+  return a;
+}
+
+void JsonArray::serialize(std::ostream& os, std::size_t offset) const {
+  os << "[";
+  for (std::size_t i = 0; i < children_.size(); i++) {
+    if (i != 0) os << ", ";
+    children_[i]->serialize(os);
+  }
+  os << "]";
+}
+
+#define DECLARE_ADD(__type) \
+void JsonArray::add(const __type& t) { \
+  children_.emplace_back(t.clone()); \
+}
+DECLARE_ADD(JsonString)
+DECLARE_ADD(JsonInteger)
+DECLARE_ADD(JsonArray)
+DECLARE_ADD(JsonDict)
+#undef DECLARE_ADD
+
+JsonObject* JsonString::clone() const {
+  return new JsonString(s_);
+}
+
+void JsonString::serialize(std::ostream& os, std::size_t offset) const {
+  os << std::quoted(s_);
+}
+
+JsonObject* JsonInteger::clone() const {
+  return new JsonInteger(i_);
+}
+
+void JsonInteger::serialize(std::ostream& os, std::size_t offset) const {
+  os << i_;
+}
 
 void TestBuilder::build(Test* t, Scope* logger) const {
   t->logger_ = logger;

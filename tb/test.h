@@ -46,6 +46,11 @@ class Scope;
       tr.add(std::make_unique<Builder>());                \
     }                                                     \
     std::string name() const override { return #__name; } \
+    ::tb::JsonDict args() const override {                \
+      ::tb::JsonDict d;                                   \
+      d.add("name", name());                              \
+      return d;                                           \
+    }                                                     \
     std::unique_ptr<::tb::Test> construct(                \
         ::tb::Scope* logger) const override {             \
       auto t = std::make_unique<__name>();                \
@@ -53,6 +58,101 @@ class Scope;
       return std::move(t);                                \
     }                                                     \
   }
+
+#define CREATE_TEST_BUILDER_WITH_ARGS(__name, __args)     \
+  struct Builder : ::tb::TestBuilder {                    \
+    static void init(::tb::TestRegistry& tr) {            \
+      tr.add(std::make_unique<Builder>());                \
+    }                                                     \
+    std::string name() const override { return #__name; } \
+    ::tb::JsonDict args() const override {                \
+      ::tb::JsonDict d{__name::args()};                   \
+      d.add("name", name());                              \
+      return d;                                           \
+    }                                                     \
+    std::unique_ptr<::tb::Test> construct(                \
+        ::tb::Scope* logger) const override {             \
+      auto t = std::make_unique<__name>();                \
+      build(t.get(), logger);                             \
+      return std::move(t);                                \
+    }                                                     \
+  }
+
+class JsonArray;
+class JsonInteger;
+class JsonString;
+
+class JsonObject {
+protected:
+  enum class Type { Object, String, Integer, Array, Dict };
+  virtual Type type() const { return Type::Object; }
+public:
+  explicit JsonObject() = default;
+  virtual ~JsonObject() = default;
+
+  virtual JsonObject* clone() const = 0;
+
+  virtual void serialize(std::ostream& os, std::size_t offset = 0) const = 0;
+
+private:
+};
+
+class JsonDict : public JsonObject {
+  Type type() const override { return Type::Dict; }
+public:
+  explicit JsonDict() = default;
+
+  JsonObject* clone() const override;
+  void serialize(std::ostream& os, std::size_t offset = 0) const;
+
+  void add(const std::string& k, const JsonString& s);
+  void add(const std::string& k, const JsonInteger& i);
+  void add(const std::string& k, const JsonArray& a);
+  void add(const std::string& k, const JsonDict& d);
+
+private:
+  std::map<std::string, std::unique_ptr<JsonObject>> m_;
+};
+
+class JsonArray : public JsonObject {
+  Type type() const override { return Type::Array; }
+public:
+  explicit JsonArray() = default;
+
+  JsonObject* clone() const override;
+  void serialize(std::ostream& os, std::size_t offset = 0) const;
+
+  void add(const JsonString& s);
+  void add(const JsonInteger& i);
+  void add(const JsonArray& a);
+  void add(const JsonDict& d);
+
+private:
+  std::vector<std::unique_ptr<JsonObject>> children_;
+};
+
+class JsonString : public JsonObject {
+  Type type() const override { return Type::String; }
+public:
+  /* no explicit */ JsonString(const std::string& s) : s_(s) {}
+  /* no explicit */ JsonString(const char* s) : s_(s) {}
+
+  JsonObject* clone() const override;
+  void serialize(std::ostream& os, std::size_t offset = 0) const;
+private:
+  std::string s_;
+};
+
+class JsonInteger : public JsonObject {
+  Type type() const override { return Type::Integer; }
+public:
+  /* no explicit */ JsonInteger(int i) : i_(i) {}
+
+  JsonObject* clone() const override;
+  void serialize(std::ostream& os, std::size_t offset = 0) const;
+private:
+  int i_;
+};
 
 class Test {
   friend class TestBuilder;
@@ -76,6 +176,7 @@ class TestBuilder {
 
   virtual std::string name() const = 0;
   virtual std::unique_ptr<Test> construct(::tb::Scope*) const = 0;
+  virtual JsonDict args() const = 0;
 
  protected:
   void build(Test* t, Scope* logger) const;

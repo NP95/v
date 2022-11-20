@@ -139,9 +139,12 @@ struct StreamRenderer<vluint8_t> {
   }
 };
 
-#define VERILATOR_TYPES(__func) \
+#define GENERIC_TYPES(__func) \
   __func(vlsint64_t) \
-  __func(vluint32_t)
+  __func(vluint32_t) \
+  __func(int) \
+  __func(std::string) \
+  __func(std::string_view)
 
 #define __declare_handler(__type) \
 template<> \
@@ -150,7 +153,7 @@ struct StreamRenderer<__type> { \
     os << t; \
   } \
 };
-VERILATOR_TYPES(__declare_handler)
+GENERIC_TYPES(__declare_handler)
 #undef __declare_handler
 
 class RecordRenderer {
@@ -274,13 +277,11 @@ public:
 
   explicit Logger();
 
-#define __declare_handler(__level) \
-  template<typename ...Ts> \
-  void __level(Ts&& ...ts) { \
-    write(Level::__level, std::forward<Ts>(ts)...); \
+  template<typename ...Ts>
+  void write(Ts&& ...ts) {
+    (StreamRenderer<std::decay_t<Ts>>::write(os(), std::forward<Ts>(ts)), ...);
+    os() << "\n";
   }
-  LOG_LEVELS(__declare_handler)
-#undef __declare_handler
 
   Scope* top();
 
@@ -293,22 +294,6 @@ public:
   Context create_context(const Scope* s) { return Context{s, this}; }
 
 private:
-  template<typename ...Ts>
-  void write(Level l, Ts&& ...ts) {
-    preamble(l);
-    (StreamRenderer<std::decay_t<Ts>>(os(), std::forward(ts)),...);
-    postamble();
-  }
-
-  void preamble(Level l) {
-    StreamRenderer<Level>::write(os(), l);
-    os() << "{!!GLOBAL!!}: ";
-  }
-
-  void postamble() {
-    os() << "\n";
-  }
-
   //! 
   std::ostream& os() const { return *os_; }
   //!

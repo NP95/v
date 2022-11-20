@@ -124,14 +124,13 @@ class Kernel {
 
  private:
   bool eval_clock_edge(KernelCallbacks* cb, bool edge);
-
-  std::unique_ptr<VerilatedContext> vctxt_;
-  std::unique_ptr<Vtb> vtb_;
 #ifdef ENABLE_VCD
   std::unique_ptr<VerilatedVcdC> vcd_;
 #endif
+  std::unique_ptr<VerilatedContext> vctxt_;
+  std::unique_ptr<Vtb> vtb_;
   std::uint64_t tb_time_;
-  Scope* logger_scope_{nullptr};
+  Scope* logger_{nullptr};
 };
 
 struct VDriver {

@@ -48,6 +48,7 @@ bool is_one_of(std::string_view in, Ts&&... ts) {
 }
 
 class Driver {
+  enum class ArgResult : int { Bad, Good, Exit };
  public:
   explicit Driver() = default;
 
@@ -56,11 +57,11 @@ class Driver {
 
  private:
   void init();
-  bool parse_args(int argc, char** argv);
+  ArgResult parse_args(int argc, char** argv);
   void finalize();
   void execute();
   void print_usage(std::ostream& os) const;
-  void print_tests(std::ostream& os) const;
+  void print_tests(std::ostream& os, bool as_json = false) const;
   int report(bool failed = false) const;
 
   tb::TestRegistry tr_;
@@ -77,10 +78,17 @@ int Driver::run(int argc, char** argv) {
   bool failed = false;
   try {
     init();
-    failed = !parse_args(argc, argv);
-    if (!failed) {
-      finalize();
-      execute();
+    switch (parse_args(argc, argv)) {
+      case ArgResult::Bad:
+        failed = true;
+        break;
+      case ArgResult::Good:
+        finalize();
+        execute();
+        break;
+      case ArgResult::Exit:
+        std::exit(1);
+        break;
     }
   } catch (std::exception& ex) {
     std::cout << "Driver execution failed with:" << ex.what() << "!\n";
@@ -89,14 +97,15 @@ int Driver::run(int argc, char** argv) {
   return report(failed);
 }
 
-bool Driver::parse_args(int argc, char** argv) {
+auto Driver::parse_args(int argc, char** argv) -> ArgResult {
+  bool as_json = false;
   std::vector<std::string_view> vs{argv, argv + argc};
   for (int i = 1; i < vs.size(); ++i) {
     const std::string_view argstr{vs.at(i)};
     if (is_one_of(argstr, "-h", "--help")) {
       // -h|--help: Print help information
       print_usage(std::cout);
-      return false;
+      return ArgResult::Exit;
     } else if (is_one_of(argstr, "-v", "--verbose")) {
       // -v|--vebose: Enable verbose tracing.
       tb::Sim::logger = std::make_unique<tb::Logger>();
@@ -108,10 +117,12 @@ bool Driver::parse_args(int argc, char** argv) {
       // -s|--seed: Randomization seed (integer)
       const std::string sstr{vs.at(++i)};
       tb::Sim::random->seed(std::stoi(sstr));
+    } else if (is_one_of(argstr, "-j", "--json")) {
+      as_json = true;
     } else if (is_one_of(argstr, "--list")) {
       // --list: List set of currently registered tests.
-      print_tests(std::cout);
-      return false;
+      print_tests(std::cout, as_json);
+      std::exit(0);
     } else if (is_one_of(argstr, "--vcd")) {
       // --vcd: emit VCD of simulation.
 #ifdef ENABLE_VCD
@@ -121,7 +132,7 @@ bool Driver::parse_args(int argc, char** argv) {
       std::cout
           << "Waveform tracing has not been enabled in current build.\n";
       status_ = 1;
-      return false;
+      return ArgResult::Bad;
 #endif
     } else if (is_one_of(argstr, "--run")) {
       // -r|--run: Testname to run.
@@ -136,10 +147,10 @@ bool Driver::parse_args(int argc, char** argv) {
     } else {
       std::cout << "Unknown argument: " << argstr << "\n";
       print_usage(std::cout);
-      return false;
+      return ArgResult::Exit;
     }
   }
-  return true;
+  return ArgResult::Good;
 }
 
 void Driver::finalize() {
@@ -171,6 +182,7 @@ void Driver::print_usage(std::ostream& os) const {
      << "   -v                Verbose\n"
      << "   -f|--file         Trace to file\n"
      << "   -s|--seed         Randomization seed.\n"
+     << "   -j|--json         Testcases listed as JSON (for --list option)\n"
      << "   --list            List testcases and quit\n"
 #ifndef ENABLE_VCD
      << "   --vcd             Enable waveform tracing (VCD)\n"
@@ -180,19 +192,38 @@ void Driver::print_usage(std::ostream& os) const {
      << "   -a|--args <arg>   Append testcase argument\n";
 }
 
-void Driver::print_tests(std::ostream& os) const {
-  for (const tb::TestBuilder* tb : tr_.tests()) {
-    os << tb->name() << "\n";
+void Driver::print_tests(std::ostream& os, bool as_json) const {
+  if (as_json) {
+    // Render as JSON.
+    tb::JsonArray a;
+    for (const tb::TestBuilder* tb : tr_.tests()) {
+      a.add(tb->args());
+    }
+    a.serialize(os);
+    os << "\n";
+  } else {
+    // Otherwise, simply echo the registered test names.
+    for (const tb::TestBuilder* tb : tr_.tests()) {
+      os << tb->name() << "\n";
+    }
   }
 }
 
 int Driver::report(bool failed) const {
-  int issue_n = failed ? 1 : 0;
+  std::string thick_row(80, '=');
+  std::string thin_row(80, '-');
+  tb::Sim::logger->write(thick_row);
+  tb::Sim::logger->write("Simulation terminates: ");
+  tb::Sim::logger->write(thin_row);
+  tb::Sim::logger->write("   Error(s)   - ", tb::Sim::errors);
+  tb::Sim::logger->write("   Warning(s) - ", tb::Sim::warnings);
+  tb::Sim::logger->write(thick_row);
 
+  int issue_n = failed ? 1 : 0;
   issue_n += tb::Sim::errors;
   issue_n += tb::Sim::warnings;
 
-  std::cout << (issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
+  tb::Sim::logger->write(issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
   return issue_n;
 }
 

@@ -262,12 +262,44 @@ struct RegressCB : public tb::KernelCallbacks {
 };
 
 struct Regress : public tb::Test {
-  CREATE_TEST_BUILDER(Regress);
+  CREATE_TEST_BUILDER_WITH_ARGS(Regress, args);
 
   bool run() override {
     Stimulus s{Options::construct_from_sim()};
     RegressCB cb{this, std::addressof(s)};
     return tb::Sim::kernel->run(std::addressof(cb));
+  }
+
+  static tb::JsonDict args() { 
+    tb::JsonArray args;
+
+    tb::JsonDict n;
+    n.add("name", "n");
+    args.add(n);
+
+    tb::JsonDict clr;
+    clr.add("name", "clr_weight");
+    args.add(clr);
+
+    tb::JsonDict add;
+    add.add("name", "add_weight");
+    args.add(add);
+
+    tb::JsonDict del;
+    del.add("name", "del_weight");
+    args.add(del);
+
+    tb::JsonDict rep;
+    rep.add("name", "rep_weight");
+    args.add(rep);
+
+    tb::JsonDict inv;
+    inv.add("name", "inv_weight");
+    args.add(inv);
+
+    tb::JsonDict d;
+    d.add("arguments", args);
+    return d;
   }
 };
 

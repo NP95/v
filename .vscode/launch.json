@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/tb/driver",
-            "args": ["--run", "CheckRplCmd"],
+            "args": ["-j", "--list"],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"
         },
@@ -23,7 +23,8 @@
                 "--args", "add_weight=5.0",
                 "--args", "del_weight=1.0",
                 "--args", "rep_weight=2.0",
-                "--args", "inv_weight=0.1"
+                "--args", "inv_weight=0.1",
+                "--vcd"
             ],
             "stopAtEntry": false,
             "cwd":"${workspaceFolder}",
