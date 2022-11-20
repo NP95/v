@@ -416,7 +416,7 @@ class Model::Impl {
     };
 
     // Validate that ID provided by stimulus is within [0, cfg::CONTEXT_N).
-    V_ASSERT(lg_, uc.prod_id() < cfg::CONTEXT_N);
+    V_ASSERT(logger_, uc.prod_id() < cfg::CONTEXT_N);
 
     UpdateResponse ur{};
     NotifyResponse nr{};
@@ -495,7 +495,7 @@ class Model::Impl {
   void handle(const QueryCommand& qc) {
     QueryResponse qr;
     if (qc.vld()) {
-      V_ASSERT(lg_, qc.prod_id() < cfg::CONTEXT_N);
+      V_ASSERT(logger_, qc.prod_id() < cfg::CONTEXT_N);
       const std::vector<Entry>& ctxt{tbl_[qc.prod_id()]};
 
       if ((qc.level() >= ctxt.size()) || ur_pipe_.has_prod_id(qc.prod_id())) {

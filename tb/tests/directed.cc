@@ -172,7 +172,7 @@ class tb::tests::Directed::Impl : public tb::KernelCallbacks {
           return false;
         } break;
         case Opcode::LogMessage: {
-          V_LOG_MSG(parent_->logger(), i->msg);
+          V_LOG(parent_->logger(), Info, i->msg);
           do_next_command = true;
         } break;
         default: {

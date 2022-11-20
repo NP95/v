@@ -35,9 +35,6 @@
 #include <sstream>
 
 class Instruction;
-namespace tb::log {
-class Scope;
-};
 
 namespace tb::tests {
 

@@ -37,19 +37,32 @@
 #include <ios>
 #include "verilated.h"
 
-#define V_ASSERT(__lg, __cond)
+#define MACRO_BEGIN    do {
+#define MACRO_END      } while (false)
 
-#define V_EXPECT_EQ(__lg, __lhs, __rhs)
+#define V_ASSERT(__lg, __cond) \
+  MACRO_BEGIN \
+  if (!(__cond)) { \
+    ++::tb::Sim::errors; \
+    if (__lg) { \
+      __lg->Fatal("Assertion failed: ", #__cond); \
+    } \
+  } \
+  MACRO_END
 
+#define V_LOG(__lg, __level, __msg) \
+  V_LOG_IF(__lg, true, __level, __msg)
 
-#define V_EXPECT_TRUE(__lg, __cond)
-
-
-#define V_LOG(__lg, __level, __msg)
-
-
-#define V_LOG_MSG(__lg, __msg)
-
+#define V_LOG_IF(__lg, __cond, __level, ...) \
+  MACRO_BEGIN \
+  if ((__lg) && (__cond)) { \
+    __lg->__level(__VA_ARGS__); \
+  } \
+  switch (::tb::Level::__level) { \
+  case ::tb::Level::Warning: ++::tb::Sim::warnings; break; \
+  case ::tb::Level::Error:   ++::tb::Sim::errors; break; \
+  } \
+  MACRO_END
 
 namespace tb {
 
@@ -64,9 +77,7 @@ enum class Level {
 #define __declare_level(__level) __level,
   LOG_LEVELS(__declare_level)
 #undef __declare_level
-};  
-
-class Msg {};
+};
 
 class Logger;
 

@@ -106,11 +106,13 @@ void ResetTracker::check_reset(Vtb* tb) {
     case State::PostReset: {
       const bool is_busy = tb::VDriver::is_busy(tb);
       is_failed_ = !is_busy;
-      V_EXPECT_TRUE(ls_, is_busy);
       if (is_busy) {
         V_LOG(ls_, Info, "Machine becomes busy...");
         cnt_ = expected_init_cycles();
         st_ = is_failed_ ? State::Done : State::PostInit;
+      } else {
+        ++tb::Sim::errors;
+        V_LOG(ls_, Error, "Machine expected to be busy...");
       }
     } break;
     case State::PostInit: {
@@ -118,10 +120,16 @@ void ResetTracker::check_reset(Vtb* tb) {
       const bool is_busy = tb::VDriver::is_busy(tb);
       if (timeout) {
         is_failed_ |= is_busy;
-        V_EXPECT_TRUE(ls_, !is_busy);
+        if (is_busy) {
+          ++tb::Sim::errors;
+          V_LOG(ls_, Error, "Machine is not expected to be busy...");
+        }
       } else if (!timeout) {
         is_failed_ |= !is_busy;
-        V_EXPECT_TRUE(ls_, is_busy);
+        if (!is_busy) {
+          ++tb::Sim::errors;
+          V_LOG(ls_, Error, "Machine is expected to be busy...");
+        }
       }
       if (timeout || !is_busy) {
         V_LOG(ls_, Info, "Machine becomes idle...");
@@ -135,9 +143,7 @@ void ResetTracker::check_reset(Vtb* tb) {
     } break;
     case State::Done: {
       is_done_ = (--cnt_ > 0);
-      if (is_done_) {
-        V_LOG(ls_, Info, "Reset test complete...");
-      }
+      V_LOG_IF(ls_, is_done_, Info, "Reset test completes...");
     } break;
   }
 }
