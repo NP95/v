@@ -34,7 +34,7 @@ class TestRegistry;
 
 namespace tests::regress {
 
-void init(TestRegistry* r);
+void init(TestRegistry& r);
 
 }  // namespace tests::regress
 

@@ -30,7 +30,6 @@
 #include "../log.h"
 #include "../tb.h"
 #include "../test.h"
-#include "../sim.h"
 #include "../rnd.h"
 #include "directed.h"
 
@@ -62,8 +61,8 @@ std::uint32_t expected_init_cycles() {
   return cfg::CONTEXT_N + 2;
 }
 
-struct CheckResetCB : tb::VKernelCB {
-  CheckResetCB(tb::log::Scope* lg) : r_(lg, true) {}
+struct CheckResetCB : tb::KernelCallbacks {
+  CheckResetCB(tb::Scope* lg) : r_(lg, true) {}
   bool on_negedge_clk(Vtb* tb) override {
     r_.check_reset(tb);
     return !r_.is_done();
@@ -86,7 +85,7 @@ struct CheckReset : public tb::Test {
 
 namespace tb {
 
-ResetTracker::ResetTracker(tb::log::Scope* ls, bool is_active_low)
+ResetTracker::ResetTracker(tb::Scope* ls, bool is_active_low)
  : ls_(ls), is_active_low_(is_active_low) {}
 
 void ResetTracker::check_reset(Vtb* tb) {
@@ -147,6 +146,6 @@ void ResetTracker::check_reset(Vtb* tb) {
 
 namespace tb::tests::reset {
 
-void init(TestRegistry* r) { CheckReset::Builder::init(r); }
+void init(TestRegistry& r) { CheckReset::Builder::init(r); }
 
 }  // namespace tb::tests::reset

@@ -285,7 +285,6 @@ bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs) {
   return !operator==(lhs, rhs);
 }
 
-namespace log {
 void StreamRenderer<Cmd>::write(std::ostream& os, const Cmd& cmd) {
   switch (cmd) {
     case Cmd::Clr:  os << "Clr";
@@ -363,8 +362,6 @@ void StreamRenderer<NotifyResponse>::write(std::ostream& os, const NotifyRespons
     rr.add("volume", "x");
   }
 }
-
-} // namespace log
 
 struct VSampler {
   static UpdateCommand uc(Vtb* tb) {
@@ -491,14 +488,14 @@ std::ostream& operator<<(std::ostream& os, const Entry& e) {
   return os << e.to_string();
 }
 
-class Mdl::Impl {
-  friend class MdlValidation;
+class Model::Impl {
+  friend class ModelValidation;
 
   static constexpr const std::size_t QUERY_PIPE_DELAY = 1;
   static constexpr const std::size_t UPDATE_PIPE_DELAY = 5;
 
  public:
-  explicit Impl(Vtb* tb, log::Scope* logger)
+  explicit Impl(Vtb* tb, Scope* logger)
    : tb_(tb), logger_(logger) {}
 
   void step() {
@@ -669,22 +666,22 @@ class Mdl::Impl {
   DelayPipe<QueryResponse, QUERY_PIPE_DELAY> qr_pipe_;
 
   Vtb* tb_;
-  log::Scope* logger_{nullptr};
+  Scope* logger_{nullptr};
 };
 
-Mdl::Mdl(Vtb* tb, log::Scope* logger) {
+Model::Model(Vtb* tb, Scope* logger) {
   impl_ = std::make_unique<Impl>(tb, logger);
 }
 
-Mdl::~Mdl() {}
+Model::~Model() {}
 
-void Mdl::step() { impl_->step(); }
+void Model::step() { impl_->step(); }
 
-const Mdl::Impl* Mdl::impl() const { return impl_.get(); }
+const Model::Impl* Model::impl() const { return impl_.get(); }
 
-class MdlValidation::Impl {
+class ModelValidation::Impl {
  public:
-  Impl(const Mdl* mdl) : impl_(mdl->impl()) {}
+  Impl(const Model* mdl) : impl_(mdl->impl()) {}
 
   bool has_active_entries(prod_id_t id) const {
     if (impl_ == nullptr) return false;
@@ -692,7 +689,7 @@ class MdlValidation::Impl {
     return (id < impl_->tbl_.size()) && !impl_->tbl_[id].empty();
   }
 
-  std::pair<bool, key_t> pick_active_key(Rnd* rnd, prod_id_t id) const {
+  std::pair<bool, key_t> pick_active_key(Random* rnd, prod_id_t id) const {
     const std::vector<Entry>& es_{impl_->tbl_[id]};
     if (es_.empty()) { return {false, key_t{}}; }
 
@@ -700,20 +697,20 @@ class MdlValidation::Impl {
   }
 
  private:
-  const Mdl::Impl* impl_;
+  const Model::Impl* impl_;
 };
 
-MdlValidation::MdlValidation(const Mdl* mdl) {
+ModelValidation::ModelValidation(const Model* mdl) {
   impl_ = std::make_unique<Impl>(mdl);
 }
 
-MdlValidation::~MdlValidation() {}
+ModelValidation::~ModelValidation() {}
 
-bool MdlValidation::has_active_entries(prod_id_t id) const {
+bool ModelValidation::has_active_entries(prod_id_t id) const {
   return impl_->has_active_entries(id);
 }
 
-std::pair<bool, key_t> MdlValidation::pick_active_key(Rnd* rnd,
+std::pair<bool, key_t> ModelValidation::pick_active_key(Random* rnd,
                                                       prod_id_t id) const {
   return impl_->pick_active_key(rnd, id);
 }

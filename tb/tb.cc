@@ -32,7 +32,6 @@
 #include "log.h"
 #include "mdl.h"
 #include "test.h"
-#include "sim.h"
 #include "rnd.h"
 #include "tests/regress.h"
 #include "tests/reset.h"
@@ -59,13 +58,13 @@ struct VPorts {
 
 namespace tb {
 
-void init(TestRegistry* tr) {
+void init(TestRegistry& tr) {
   tests::reset::init(tr);
   tests::regress::init(tr);
   tests::smoke_cmds::init(tr);
 }
 
-VKernel::VKernel() : tb_time_(0) {
+Kernel::Kernel() : tb_time_(0) {
   vctxt_ = std::make_unique<VerilatedContext>();
   vtb_ = std::make_unique<Vtb>(vctxt_.get());
 #ifdef ENABLE_VCD
@@ -76,17 +75,16 @@ VKernel::VKernel() : tb_time_(0) {
     vcd_->open(Sim::vcd_fn.c_str());
   }
 #endif
-  log::Scope* mdl_logger_scope = nullptr;
-  if (Sim::log) {
-    logger_scope_ = Sim::log->top();
+  Scope* mdl_logger_scope = nullptr;
+  if (Sim::logger) {
+    logger_scope_ = Sim::logger->top();
     mdl_logger_scope = logger_scope_->create_child("mdl");
   }
-  mdl_ = std::make_unique<Mdl>(vtb_.get(), mdl_logger_scope);
 }
 
-VKernel::~VKernel() {}
+Kernel::~Kernel() {}
 
-bool VKernel::run(VKernelCB* cb) {
+bool Kernel::run(KernelCallbacks* cb) {
   if (!cb) return false;
 
   tb_time_ = 0;
@@ -111,7 +109,7 @@ bool VKernel::run(VKernelCB* cb) {
         }
         VPorts::clk(vtb, !edge);
       }
-    } catch (const VKernelException& ex) {
+    } catch (const KernelException& ex) {
       failed = true;
       do_stepping = false;
     }
@@ -124,18 +122,18 @@ bool VKernel::run(VKernelCB* cb) {
   return failed;
 }
 
-bool VKernel::eval_clock_edge(VKernelCB* cb, bool edge) {
+bool Kernel::eval_clock_edge(KernelCallbacks* cb, bool edge) {
   bool do_stepping;
   if (edge) {
     do_stepping = cb->on_negedge_clk(vtb_.get());
-    mdl_->step();
+    Sim::model->step();
   } else {
     do_stepping = cb->on_posedge_clk(vtb_.get());
   }
   return do_stepping;
 }
 
-void VKernel::end() {
+void Kernel::end() {
 #ifdef ENABLE_VCD
   if (vcd_) {
     vcd_->close();
@@ -144,7 +142,7 @@ void VKernel::end() {
   vtb_->final();
 }
 
-std::uint64_t VKernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
+std::uint64_t Kernel::tb_cycle() const { return VPorts::tb_cycle(vtb_.get()); }
 
 // Drive Update Command Interface
 void VDriver::issue(Vtb* tb, const UpdateCommand& up) {

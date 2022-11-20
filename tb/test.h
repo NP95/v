@@ -37,20 +37,17 @@
 
 namespace tb {
 
-class VKernel;
-
-namespace log {
+class Kernel;
 class Scope;
-}
 
 #define CREATE_TEST_BUILDER(__name)                       \
   struct Builder : ::tb::TestBuilder {                    \
-    static void init(::tb::TestRegistry* tr) {            \
-      tr->add(std::make_unique<Builder>());               \
+    static void init(::tb::TestRegistry& tr) {            \
+      tr.add(std::make_unique<Builder>());                \
     }                                                     \
     std::string name() const override { return #__name; } \
     std::unique_ptr<::tb::Test> construct(                \
-      ::tb::log::Scope* logger) const override {          \
+        ::tb::Scope* logger) const override {             \
       auto t = std::make_unique<__name>();                \
       build(t.get(), logger);                             \
       return std::move(t);                                \
@@ -64,12 +61,12 @@ class Test {
   explicit Test();
   virtual ~Test();
 
-  log::Scope* logger() const { return logger_; }
+  Scope* logger() const { return logger_; }
 
   virtual bool run() = 0;
 
  private:
-  log::Scope* logger_{nullptr};
+  Scope* logger_{nullptr};
 };
 
 class TestBuilder {
@@ -78,10 +75,10 @@ class TestBuilder {
   virtual ~TestBuilder() = default;
 
   virtual std::string name() const = 0;
-  virtual std::unique_ptr<Test> construct(::tb::log::Scope*) const = 0;
+  virtual std::unique_ptr<Test> construct(::tb::Scope*) const = 0;
 
  protected:
-  void build(Test* t, log::Scope* logger) const;
+  void build(Test* t, Scope* logger) const;
 };
 
 class TestRegistry {

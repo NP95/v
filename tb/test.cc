@@ -33,7 +33,6 @@
 #include "opts.h"
 #include "tb.h"
 #include "rnd.h"
-#include "sim.h"
 
 namespace tb {
 
@@ -41,7 +40,7 @@ Test::Test() {}
 
 Test::~Test() {}
 
-void TestBuilder::build(Test* t, log::Scope* logger) const {
+void TestBuilder::build(Test* t, Scope* logger) const {
   t->logger_ = logger;
 }
 

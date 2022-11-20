@@ -33,7 +33,7 @@
 
 // Forwards
 namespace tb {
-class Rnd;
+class Random;
 }
 namespace tb::log {
 class Scope;
@@ -59,7 +59,7 @@ struct TestOptions : tb::VKernelOptions {
   std::string_view args;
 
   // Randomization state
-  tb::Rnd* rnd = nullptr;
+  tb::Random* rnd = nullptr;
 };
 
 }  // namespace tb

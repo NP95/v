@@ -32,7 +32,6 @@
 #include "../log.h"
 #include "../tb.h"
 #include "../rnd.h"
-#include "../sim.h"
 
 enum class Opcode {
   ApplyReset,
@@ -47,17 +46,16 @@ struct Instruction {
   static std::unique_ptr<Instruction> make_emit(const tb::UpdateCommand& uc,
                                                 const tb::QueryCommand& qc);
   static std::unique_ptr<Instruction> make_wait(std::size_t n);
-  static std::unique_ptr<Instruction> make_note(const tb::log::Msg& msg);
   static std::unique_ptr<Instruction> make_wait_until_not_busy();
   static std::unique_ptr<Instruction> make_apply_reset();
   static std::unique_ptr<Instruction> make_end_simulation();
-  static std::unique_ptr<Instruction> make_log_message(const tb::log::Msg& msg);
+  static std::unique_ptr<Instruction> make_log_message(const std::string& msg);
 
   Opcode op{Opcode::EndSimulation};
   std::size_t n;
   tb::UpdateCommand uc;
   tb::QueryCommand qc;
-  tb::log::Msg msg;
+  std::string msg;
 };
 
 std::unique_ptr<Instruction> Instruction::make_emit(
@@ -73,13 +71,6 @@ std::unique_ptr<Instruction> Instruction::make_wait(std::size_t n) {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::WaitCycles;
   i->n = n;
-  return i;
-}
-
-std::unique_ptr<Instruction> Instruction::make_note(const tb::log::Msg& msg) {
-  std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
-  i->op = Opcode::LogMessage;
-  i->msg = msg;
   return i;
 }
 
@@ -103,14 +94,14 @@ std::unique_ptr<Instruction> Instruction::make_end_simulation() {
 }
 
 std::unique_ptr<Instruction> Instruction::make_log_message(
-    const tb::log::Msg& msg) {
+    const std::string& msg) {
   std::unique_ptr<Instruction> i = std::make_unique<Instruction>();
   i->op = Opcode::LogMessage;
   i->msg = msg;
   return i;
 }
 
-class tb::tests::Directed::Impl : public tb::VKernelCB {
+class tb::tests::Directed::Impl : public tb::KernelCallbacks {
  public:
   Impl(Directed* parent) : parent_(parent) {}
   bool run() {
@@ -232,7 +223,7 @@ void Directed::apply_reset() {
   impl_->push_back(Instruction::make_apply_reset());
 }
 
-void Directed::note(const log::Msg& msg) {
+void Directed::note(const std::string& msg) {
   impl_->push_back(Instruction::make_log_message(msg));
 }
 

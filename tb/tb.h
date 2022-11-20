@@ -31,9 +31,12 @@
 #include <exception>
 #include <memory>
 #include <string>
+#include <optional>
+#include <vector>
 
 #include "cfg.h"
 #include "opts.h"
+#include "rnd.h"
 
 // Verilator artifacts
 class Vtb;
@@ -43,55 +46,79 @@ class VerilatedContext;
 namespace tb {
 
 class TestRegistry;
-class Mdl;
+class Model;
 class UpdateCommand;
 class QueryCommand;
-namespace log {
+class Kernel;
+class Logger;
 class Scope;
-}  // namespace log
 
-void init(TestRegistry* tr);
+void init(TestRegistry& tr);
 
-struct VKernelCB {
-  virtual ~VKernelCB() = default;
+struct Sim {
+  static void initialize();
+
+  inline static std::optional<std::string> test_name;
+
+  inline static std::vector<std::string> test_args;
+
+#ifdef ENABLE_VCD
+  inline static bool vcd_on = false;
+
+  inline static std::string vcd_fn = "v.vcd";
+#endif
+
+  //! Global logger
+  inline static std::unique_ptr<Logger> logger;
+
+  //! Global randomization state.
+  inline static std::unique_ptr<Random> random;
+
+  //! Global simulation kernel.
+  inline static std::unique_ptr<Kernel> kernel;
+
+  //! Global validation model.
+  inline static std::unique_ptr<Model> model;
+};
+
+struct KernelCallbacks {
+  virtual ~KernelCallbacks() = default;
 
   virtual bool on_negedge_clk(Vtb* tb) { return true; }
 
   virtual bool on_posedge_clk(Vtb* tb) { return true; }
 };
 
-class VKernelException {
+class KernelException {
  public:
-  VKernelException(const char* msg) : msg_(msg) {}
+  KernelException(const char* msg) : msg_(msg) {}
   const char* msg() const { return msg_; }
 
  private:
   const char* msg_;
 };
 
-class VKernel {
+class Kernel {
  public:
-  explicit VKernel();
-  ~VKernel();
+  explicit Kernel();
+  ~Kernel();
 
-  bool run(VKernelCB* cb);
+  bool run(KernelCallbacks* cb);
   void end();
 
   std::uint64_t tb_time() const { return tb_time_; }
   std::uint64_t tb_cycle() const;
-  const Mdl* mdl() const { return mdl_.get(); }
 
  private:
-  bool eval_clock_edge(VKernelCB* cb, bool edge);
+  bool eval_clock_edge(KernelCallbacks* cb, bool edge);
 
-  std::unique_ptr<Mdl> mdl_;
   std::unique_ptr<VerilatedContext> vctxt_;
   std::unique_ptr<Vtb> vtb_;
 #ifdef ENABLE_VCD
   std::unique_ptr<VerilatedVcdC> vcd_;
 #endif
   std::uint64_t tb_time_;
-  log::Scope* logger_scope_{nullptr};
+  Scope* logger_scope_{nullptr};
 };
 
 struct VDriver {

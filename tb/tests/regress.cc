@@ -33,7 +33,6 @@
 #include "../rnd.h"
 #include "../tb.h"
 #include "../test.h"
-#include "../sim.h"
 #include "Vobj/Vtb.h"
 #include "cfg.h"
 #include "reset.h"
@@ -77,9 +76,9 @@ struct Options {
 
   int n = 100000;
 
-  tb::Rnd* rnd = nullptr;
+  tb::Random* rnd = nullptr;
 
-  const tb::Mdl* mdl = nullptr;
+  const tb::Model* mdl = nullptr;
 };
 
 Options Options::construct_from_sim() {
@@ -196,12 +195,12 @@ class Stimulus {
       case tb::Cmd::Clr: {
         // No further updates required.
         const tb::prod_id_t prod_id =
-            tb::Sim::rnd->uniform(opts_.context_n - 1, 0);
+            tb::Sim::random->uniform(opts_.context_n - 1, 0);
         uc = tb::UpdateCommand{prod_id, cmd, 0, 0};
       } break;
       case tb::Cmd::Add: {
         const tb::prod_id_t prod_id =
-            tb::Sim::rnd->uniform(opts_.context_n - 1, 0);
+            tb::Sim::random->uniform(opts_.context_n - 1, 0);
         const tb::key_t key = opts_.rnd->uniform<tb::key_t>();
         const tb::volume_t volume = opts_.rnd->uniform<tb::volume_t>();
         uc = tb::UpdateCommand{prod_id, cmd, key, volume};
@@ -221,8 +220,8 @@ class Stimulus {
   }
 
   void generate(tb::QueryCommand& qc) {
-    const tb::prod_id_t prod_id = tb::Sim::rnd->uniform(opts_.context_n - 1, 0);
-    const tb::level_t level = tb::Sim::rnd->uniform(cfg::ENTRIES_N - 1);
+    const tb::prod_id_t prod_id = tb::Sim::random->uniform(opts_.context_n - 1, 0);
+    const tb::level_t level = tb::Sim::random->uniform(cfg::ENTRIES_N - 1);
     qc = tb::QueryCommand{prod_id, level};
   }
 
@@ -231,11 +230,11 @@ class Stimulus {
   bool b = true;
   tb::Bag<tb::Cmd> bag_;
   Options opts_;
-  tb::MdlValidation val_;
+  tb::ModelValidation val_;
   State st_;
 };
 
-struct RegressCB : public tb::VKernelCB {
+struct RegressCB : public tb::KernelCallbacks {
   RegressCB(tb::Test* parent, Stimulus* s)
       : parent_(parent), s_(s), rstt_(parent->logger(), true) {}
 
@@ -280,6 +279,6 @@ struct Regress : public tb::Test {
 
 namespace tb::tests::regress {
 
-void init(tb::TestRegistry* r) { Regress::Builder::init(r); }
+void init(tb::TestRegistry& r) { Regress::Builder::init(r); }
 
 }  // namespace tb::tests::regress

@@ -33,6 +33,7 @@
 #include "../common.h"
 #include "../mdl.h"
 #include "../test.h"
+#include <sstream>
 
 class Instruction;
 namespace tb::log {
@@ -41,7 +42,7 @@ class Scope;
 
 namespace tb::tests {
 
-#define V_NOTE(__msg)
+#define V_NOTE(...) render_note(__VA_ARGS__)
 
 class Directed : public Test {
   friend class Impl;
@@ -61,7 +62,12 @@ class Directed : public Test {
 
   void apply_reset();
 
-  void note(const log::Msg& msg);
+  template<typename ...Ts>
+  void render_note(Ts&& ...ts) {
+    std::stringstream ss;
+    (ss << ... << ts);
+    note(ss.str());
+  }
 
   void wait_until_not_busy();
 
@@ -74,6 +80,10 @@ class Directed : public Test {
   }
 
   void wait_cycles(std::size_t n = 1);
+
+private:
+
+  void note(const std::string& msg);
 };
 
 }  // namespace tb::tests

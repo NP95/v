@@ -34,9 +34,7 @@ namespace tb {
 
 // Forwards
 class TestRegistry;
-namespace log {
 class Scope;
-}
 
 enum class State { PreReset, AssertReset, InReset, PostReset, PostInit, Done };
 
@@ -44,7 +42,7 @@ const char* to_string(State s);
 
 class ResetTracker {
  public:
-  explicit ResetTracker(tb::log::Scope* ls, bool active_low = false);
+  explicit ResetTracker(tb::Scope* ls, bool active_low = false);
 
   void check_reset(Vtb* tb);
 
@@ -58,12 +56,12 @@ class ResetTracker {
   bool is_active_low_{false};
   int cnt_;
   State st_{State::PreReset};
-  tb::log::Scope* ls_;
+  tb::Scope* ls_;
 };
 
 namespace tests::reset {
 
-void init(TestRegistry* r);
+void init(TestRegistry& r);
 
 };
 

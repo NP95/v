@@ -33,11 +33,11 @@
 
 namespace tb {
 
-class Rnd {
+class Random {
   using seed_type = std::mt19937::result_type;
 
  public:
-  explicit Rnd(seed_type s = seed_type{}) { seed(s); }
+  explicit Random(seed_type s = seed_type{}) { seed(s); }
 
   // Set seed of randomization engine.
   void seed(seed_type s) { mt_.seed(s); }
@@ -74,7 +74,7 @@ class Bag {
     weight_total_ += weight;
   }
 
-  T pick(Rnd* r) const {
+  T pick(Random* r) const {
     if (ts_.empty()) return T{};
 
     // assert(!ts_.empty());

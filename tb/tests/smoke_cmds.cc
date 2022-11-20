@@ -273,7 +273,7 @@ struct CheckDelKey : tb::tests::Directed {
 
 namespace tb::tests::smoke_cmds {
 
-void init(tb::TestRegistry* r) {
+void init(tb::TestRegistry& r) {
   CheckAddCmd::Builder::init(r);
   CheckDelCmd::Builder::init(r);
   CheckListSize::Builder::init(r);

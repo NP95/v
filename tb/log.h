@@ -32,6 +32,7 @@
 #include <vector>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <optional>
 #include "verilated.h"
 
@@ -51,7 +52,7 @@
 #define V_LOG_MSG(__lg, __msg)
 
 
-namespace tb::log {
+namespace tb {
 
 #define LOG_LEVELS(__func)  \
   __func(Debug)\
@@ -266,6 +267,6 @@ void Scope::write(Level l, Ts&& ...ts) const {
   context.write(l, std::forward<Ts>(ts)...);
 }
 
-}  // namespace tb::log
+}  // namespace tb
 
 #endif

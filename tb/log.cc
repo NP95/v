@@ -35,7 +35,7 @@
 #include "mdl.h"
 #include "tb.h"
 
-namespace tb::log {
+namespace tb {
 
 void StreamRenderer<bool>::write(std::ostream& os, const bool& b) {
   os << (b ? "1" : "0");
@@ -110,4 +110,4 @@ Scope* Logger::top() {
   return parent_scope_.get();
 }
 
-}  // namespace tb::log
+}  // namespace tb

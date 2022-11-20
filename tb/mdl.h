@@ -35,7 +35,7 @@
 class Vtb;
 
 namespace tb {
-class Rnd;
+class Random;
 
 namespace log {
 class Scope;
@@ -167,8 +167,6 @@ class NotifyResponse {
 bool operator==(const NotifyResponse& lhs, const NotifyResponse& rhs);
 bool operator!=(const NotifyResponse& lhs, const NotifyResponse& rhs);
 
-namespace log {
-
 template<>
 struct StreamRenderer<UpdateCommand> {
   static void write(std::ostream& os, const UpdateCommand& uc);
@@ -199,17 +197,15 @@ struct StreamRenderer<Cmd> {
   static void write(std::ostream& os, const Cmd& cmd);
 };
 
-};
-
-class Mdl {
-  friend class MdlValidation;
+class Model {
+  friend class ModelValidation;
 
   class Impl;
   std::unique_ptr<Impl> impl_;
 
  public:
-  explicit Mdl(Vtb* tb, log::Scope* logger);
-  ~Mdl();
+  explicit Model(Vtb* tb, Scope* logger);
+  ~Model();
 
   void step();
 
@@ -217,17 +213,17 @@ class Mdl {
   const Impl* impl() const;
 };
 
-class MdlValidation {
+class ModelValidation {
   class Impl;
   std::unique_ptr<Impl> impl_;
 
  public:
-  explicit MdlValidation(const Mdl* mdl);
-  ~MdlValidation();
+  explicit ModelValidation(const Model* mdl);
+  ~ModelValidation();
 
   bool has_active_entries(prod_id_t id) const;
 
-  std::pair<bool, key_t> pick_active_key(Rnd* rnd, prod_id_t id) const;
+  std::pair<bool, key_t> pick_active_key(Random* rnd, prod_id_t id) const;
 };
 
 }  // namespace tb

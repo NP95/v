@@ -34,7 +34,7 @@ class TestRegistry;
 
 namespace tests::smoke_cmds {
 
-void init(TestRegistry* r);
+void init(TestRegistry& r);
 
 }  // namespace tests::smoke_cmds
 
