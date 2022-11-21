@@ -61,6 +61,7 @@
   switch (::tb::Level::__level) { \
   case ::tb::Level::Warning: ++::tb::Sim::warnings; break; \
   case ::tb::Level::Error:   ++::tb::Sim::errors; break; \
+  default: break; \
   } \
   MACRO_END
 

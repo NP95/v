@@ -101,7 +101,7 @@ public:
   explicit JsonDict() = default;
 
   JsonObject* clone() const override;
-  void serialize(std::ostream& os, std::size_t offset = 0) const;
+  void serialize(std::ostream& os, std::size_t offset = 0) const override;
 
   void add(const std::string& k, const JsonString& s);
   void add(const std::string& k, const JsonInteger& i);
@@ -118,7 +118,7 @@ public:
   explicit JsonArray() = default;
 
   JsonObject* clone() const override;
-  void serialize(std::ostream& os, std::size_t offset = 0) const;
+  void serialize(std::ostream& os, std::size_t offset = 0) const override;
 
   void add(const JsonString& s);
   void add(const JsonInteger& i);
@@ -136,7 +136,7 @@ public:
   /* no explicit */ JsonString(const char* s) : s_(s) {}
 
   JsonObject* clone() const override;
-  void serialize(std::ostream& os, std::size_t offset = 0) const;
+  void serialize(std::ostream& os, std::size_t offset = 0) const override;
 private:
   std::string s_;
 };
@@ -147,7 +147,7 @@ public:
   /* no explicit */ JsonInteger(int i) : i_(i) {}
 
   JsonObject* clone() const override;
-  void serialize(std::ostream& os, std::size_t offset = 0) const;
+  void serialize(std::ostream& os, std::size_t offset = 0) const override;
 private:
   int i_;
 };
