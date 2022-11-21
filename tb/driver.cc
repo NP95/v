@@ -216,15 +216,15 @@ int Driver::report(bool failed) const {
 
   tb::Logger* logger{tb::Sim::logger.get()};
   if (logger) {
-    std::string thick_row(80, '=');
-    std::string thin_row(80, '-');
-    tb::Sim::logger->write(thick_row);
-    tb::Sim::logger->write("Simulation terminates: ");
-    tb::Sim::logger->write(thin_row);
-    tb::Sim::logger->write("   Error(s)   - ", tb::Sim::errors);
-    tb::Sim::logger->write("   Warning(s) - ", tb::Sim::warnings);
-    tb::Sim::logger->write(thick_row);
-    tb::Sim::logger->write(issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
+    const std::string thick_row(80, '=');
+    const std::string thin_row(80, '-');
+    logger->write(thick_row);
+    logger->write("Simulation terminates: ");
+    logger->write(thin_row);
+    logger->write("   Error(s)   - ", tb::Sim::errors);
+    logger->write("   Warning(s) - ", tb::Sim::warnings);
+    logger->write(thick_row);
+    logger->write(issue_n ? tb::Sim::fail_note : tb::Sim::pass_note);
   }
 
   return issue_n;

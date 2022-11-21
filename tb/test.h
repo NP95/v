@@ -33,8 +33,6 @@
 #include <string>
 #include <vector>
 
-#include "opts.h"
-
 namespace tb {
 
 class Kernel;

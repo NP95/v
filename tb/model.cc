@@ -377,7 +377,6 @@ class Model::Impl {
   explicit Impl(Vtb* tb, Scope* logger) : tb_(tb), logger_(logger) {}
 
   void step() {
-    using namespace log;
     const UpdateCommand uc{VSampler::uc(tb_)};
     const QueryCommand qc{VSampler::qc(tb_)};
 

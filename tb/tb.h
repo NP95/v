@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "cfg.h"
-#include "opts.h"
 #include "rnd.h"
 
 // Verilator artifacts
