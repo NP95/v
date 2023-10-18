@@ -291,7 +291,7 @@ struct VSampler {
 template <typename T, std::size_t N>
 class DelayPipeBase {
  public:
-  DelayPipeBase() { clear(); }
+  explicit DelayPipeBase() { clear(); }
 
   std::string to_string() const {
     std::stringstream ss;
@@ -382,7 +382,6 @@ class Model::Impl {
 
     if (logger_ && (uc.vld() || qc.vld())) {
       logger_->Info("Issue: ", uc, " | ", qc);
-      ;
     }
 
     handle(uc);
